@@ -1,0 +1,47 @@
+# Render Blueprint: веб-сервис + PostgreSQL.
+# https://render.com/docs/blueprint-spec
+#
+# Развёртывание: Render Dashboard → New → Blueprint → указать репозиторий.
+# Render прочитает этот файл и создаст оба ресурса.
+
+databases:
+  - name: cv-app-db
+    databaseName: cv_app
+    user: app
+    plan: free
+    postgresMajorVersion: "16"
+    # Бесплатный план Render удаляет базу через 30 дней.
+    # Перед защитой проекта стоит либо перейти на платный план,
+    # либо пересоздать базу и прогнать фикстуры заново.
+
+services:
+  - type: web
+    name: cv-app
+    runtime: docker
+    plan: free
+    dockerfilePath: ./docker/prod.Dockerfile
+    # Контекст сборки — корень репозитория, потому что Dockerfile
+    # копирует и backend/, и frontend/.
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeploy: true
+
+    envVars:
+      # Строка подключения берётся из созданной выше базы.
+      # Symfony ожидает суффикс ?serverVersion=16, поэтому DATABASE_URL
+      # собирается в entrypoint из этого значения (см. ниже).
+      - key: DATABASE_URL_RAW
+        fromDatabase:
+          name: cv-app-db
+          property: connectionString
+
+      - key: APP_ENV
+        value: prod
+
+      - key: APP_DEBUG
+        value: "0"
+
+      # Секрет для подписи сессий/токенов. sync: false означает,
+      # что Render сгенерирует значение сам и не станет хранить его в git.
+      - key: APP_SECRET
+        generateValue: true

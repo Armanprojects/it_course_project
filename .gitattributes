@@ -1,0 +1,7 @@
+# Скрипты, исполняемые внутри Linux-контейнеров, обязаны иметь LF.
+# Иначе Alpine отвечает "bad interpreter: no such file or directory".
+*.sh            text eol=lf
+entrypoint.sh   text eol=lf
+Dockerfile      text eol=lf
+*.Dockerfile    text eol=lf
+*.conf          text eol=lf

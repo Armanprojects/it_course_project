@@ -1,0 +1,21 @@
+# Зависимости ставятся внутри образа: хостовые версии собраны под Windows
+# и в Linux-контейнере нерабочие.
+backend/vendor/
+frontend/node_modules/
+frontend/dist/
+
+# Кэш и логи Symfony — генерируются entrypoint'ом на старте.
+backend/var/
+
+# Локальные переменные окружения не должны попадать в образ:
+# в проде значения приходят из настроек Render.
+backend/.env.local
+backend/.env.*.local
+
+# Не нужно в образе.
+.git/
+.idea/
+.vscode/
+*.md
+project_requirements*.txt
+docker-compose.yml

@@ -1,0 +1,15 @@
+# --- Backend (Symfony) ---
+/backend/vendor/
+/backend/var/
+/backend/.env.local
+/backend/.env.*.local
+
+# --- Frontend ---
+/frontend/node_modules/
+/frontend/dist/
+
+# --- IDE / OS ---
+.idea/
+.vscode/
+*.log
+Thumbs.db
