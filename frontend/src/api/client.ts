@@ -34,13 +34,17 @@ api.interceptors.request.use((config) => {
  * violations для подсветки конкретных полей.
  */
 export class RequestError extends Error {
-  constructor(
-    message: string,
-    readonly code: string,
-    readonly violations: Record<string, string> = {},
-  ) {
+  // Поля объявлены отдельно, а не параметрами конструктора: сборка идёт с
+  // erasableSyntaxOnly, где параметры-свойства запрещены — такой синтаксис
+  // нельзя просто стереть при компиляции, он порождает код.
+  readonly code: string
+  readonly violations: Record<string, string>
+
+  constructor(message: string, code: string, violations: Record<string, string> = {}) {
     super(message)
     this.name = 'RequestError'
+    this.code = code
+    this.violations = violations
   }
 }
 

@@ -13,3 +13,5 @@
 .vscode/
 *.log
 Thumbs.db
+.claude
+/.claude
