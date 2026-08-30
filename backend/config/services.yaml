@@ -19,5 +19,39 @@ services:
     App\:
         resource: '../src/'
 
+    # The OAuth callback has to know where the SPA lives to hand the token back.
+    App\Controller\OAuthController:
+        arguments:
+            $frontendUrl: '%env(FRONTEND_URL)%'
+
+    App\Service\Auth\EmailVerificationService:
+        arguments:
+            $frontendUrl: '%env(FRONTEND_URL)%'
+            $senderAddress: '%env(MAILER_FROM_ADDRESS)%'
+            $senderName: '%env(MAILER_FROM_NAME)%'
+
+    App\EventSubscriber\ApiExceptionSubscriber:
+        arguments:
+            $debug: '%kernel.debug%'
+
+    # Архив писем: в dev складывает отправленные письма в var/mail,
+    # чтобы ссылку подтверждения можно было открыть без SMTP.
+    # В prod автоподписка снимается (см. when@prod ниже): копии писем
+    # на диске в бою не нужны и были бы утечкой персональных данных.
+    App\EventSubscriber\MailArchiveSubscriber:
+        arguments:
+            $archiveDir: '%kernel.project_dir%/var/mail'
+
+    App\Command\ShowLastMailCommand:
+        arguments:
+            $archiveDir: '%kernel.project_dir%/var/mail'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+when@prod:
+    services:
+        App\EventSubscriber\MailArchiveSubscriber:
+            arguments:
+                $archiveDir: '%kernel.project_dir%/var/mail'
+            autoconfigure: false

@@ -45,3 +45,36 @@ services:
       # что Render сгенерирует значение сам и не станет хранить его в git.
       - key: APP_SECRET
         generateValue: true
+
+      # Пароль приватного ключа JWT. Ключи не коммитятся: пара генерируется
+      # в entrypoint при старте контейнера из этого значения.
+      - key: JWT_PASSPHRASE
+        generateValue: true
+
+      - key: JWT_SECRET_KEY
+        value: /var/www/backend/config/jwt/private.pem
+
+      - key: JWT_PUBLIC_KEY
+        value: /var/www/backend/config/jwt/public.pem
+
+      # Время жизни токена в секундах.
+      - key: JWT_TTL
+        value: "3600"
+
+      # Ключи OAuth-приложений. sync: false — значения вводятся в дашборде
+      # Render вручную и не попадают в репозиторий.
+      - key: OAUTH_GOOGLE_ID
+        sync: false
+
+      - key: OAUTH_GOOGLE_SECRET
+        sync: false
+
+      - key: OAUTH_GITHUB_ID
+        sync: false
+
+      - key: OAUTH_GITHUB_SECRET
+        sync: false
+
+      # FRONTEND_URL не задаём: фронтенд обслуживается тем же сервисом,
+      # и entrypoint подставляет в него RENDER_EXTERNAL_URL, который
+      # платформа передаёт в контейнер сама.

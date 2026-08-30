@@ -26,7 +26,30 @@ if [ -n "$DATABASE_URL_RAW" ] && [ -z "$DATABASE_URL" ]; then
     export DATABASE_URL
 fi
 
-# --- 3. Кэш Symfony ---
+# --- 3. Адрес фронтенда ---
+# OAuth-колбэк редиректит браузер обратно в SPA по абсолютному адресу.
+# Render передаёт публичный адрес сервиса в RENDER_EXTERNAL_URL; локально
+# и в других окружениях FRONTEND_URL задаётся вручную.
+if [ -z "$FRONTEND_URL" ] && [ -n "$RENDER_EXTERNAL_URL" ]; then
+    FRONTEND_URL="$RENDER_EXTERNAL_URL"
+    export FRONTEND_URL
+fi
+
+# --- 4. Ключи JWT ---
+# Каталог config/jwt/ не входит в образ (ключи не коммитятся), поэтому пара
+# генерируется на старте из JWT_PASSPHRASE. Ключи живут в файловой системе
+# контейнера: при рестарте они пересоздаются, и все выданные токены становятся
+# недействительными — пользователям придётся войти заново.
+if [ ! -f config/jwt/private.pem ]; then
+    mkdir -p config/jwt
+    openssl genpkey -out config/jwt/private.pem         -aes256 -algorithm rsa -pkeyopt rsa_keygen_bits:4096         -pass "pass:${JWT_PASSPHRASE}"
+    openssl pkey -in config/jwt/private.pem -out config/jwt/public.pem -pubout         -passin "pass:${JWT_PASSPHRASE}"
+    chown -R www-data:www-data config/jwt
+    chmod 640 config/jwt/private.pem
+    chmod 644 config/jwt/public.pem
+fi
+
+# --- 5. Кэш Symfony ---
 # Каталог var/ не входит в образ (он в .dockerignore), создаём заново.
 mkdir -p var/cache var/log
 chown -R www-data:www-data var
@@ -36,7 +59,7 @@ chown -R www-data:www-data var
 php bin/console cache:clear --no-interaction
 php bin/console cache:warmup --no-interaction
 
-# --- 4. Миграции ---
+# --- 6. Миграции ---
 # Выполняются на старте, а не в сборке: во время build базы ещё нет.
 # --allow-no-migration: на первом деплое миграций ещё не существует,
 # и без флага команда вернула бы ненулевой код.
@@ -46,7 +69,7 @@ if [ -n "$DATABASE_URL" ]; then
         --allow-no-migration
 fi
 
-# --- 5. Запуск процессов ---
+# --- 7. Запуск процессов ---
 # php-fpm уходит в фон, nginx остаётся в foreground как PID 1:
 # Docker отслеживает именно его, и остановка nginx роняет контейнер,
 # что для хостинга и есть сигнал перезапустить сервис.

@@ -1,0 +1,17 @@
+knpu_oauth2_client:
+    clients:
+        # Redirect URIs registered in the provider consoles must match these
+        # routes exactly, otherwise the provider refuses the callback.
+        google:
+            type: google
+            client_id: '%env(OAUTH_GOOGLE_ID)%'
+            client_secret: '%env(OAUTH_GOOGLE_SECRET)%'
+            redirect_route: api_auth_oauth_callback
+            redirect_params: { provider: google }
+
+        github:
+            type: github
+            client_id: '%env(OAUTH_GITHUB_ID)%'
+            client_secret: '%env(OAUTH_GITHUB_SECRET)%'
+            redirect_route: api_auth_oauth_callback
+            redirect_params: { provider: github }

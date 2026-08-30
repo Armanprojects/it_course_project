@@ -21,6 +21,26 @@ doctrine:
                 prefix: 'App\Entity'
                 alias: App
 
+when@dev:
+    doctrine:
+        orm:
+            # Без этого метаданные сущностей парсятся заново на каждый запрос
+            # (~800 мс на медленной ФС), потому что дефолтный кэш живёт только
+            # внутри процесса, а php-fpm состояние между запросами не хранит.
+            # Пул файловый: правки в сущностях требуют cache:clear.
+            metadata_cache_driver:
+                type: pool
+                pool: doctrine.system_cache_pool
+            query_cache_driver:
+                type: pool
+                pool: doctrine.system_cache_pool
+
+    framework:
+        cache:
+            pools:
+                doctrine.system_cache_pool:
+                    adapter: cache.system
+
 when@test:
     doctrine:
         dbal:

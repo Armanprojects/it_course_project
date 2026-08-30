@@ -1,0 +1,50 @@
+security:
+    password_hashers:
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+
+    providers:
+        app_users:
+            entity:
+                class: App\Entity\User
+                property: email
+
+    # A candidate is the baseline; recruiters and admins inherit its rights so
+    # that voters only ever have to check the highest role a rule needs.
+    role_hierarchy:
+        ROLE_RECRUITER: [ROLE_CANDIDATE]
+        ROLE_ADMIN: [ROLE_RECRUITER, ROLE_CANDIDATE, ROLE_ALLOWED_TO_SWITCH]
+
+    firewalls:
+        dev:
+            pattern: ^/(_profiler|_wdt|assets|build)/
+            security: false
+
+        # Login, registration, email confirmation and the whole OAuth dance
+        # must stay reachable without a token — the confirmation link is opened
+        # by someone who has no account yet — so they get their own firewall.
+        auth:
+            pattern: ^/api/auth/(login|register|verify|oauth)
+            stateless: true
+            security: false
+
+        api:
+            pattern: ^/api
+            stateless: true
+            provider: app_users
+            jwt: ~
+            entry_point: App\Security\JsonAuthenticationEntryPoint
+
+    access_control:
+        - { path: ^/api/health, roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/(login|register|verify|oauth), roles: PUBLIC_ACCESS }
+        - { path: ^/api/admin, roles: ROLE_ADMIN }
+        - { path: ^/api/auth, roles: IS_AUTHENTICATED_FULLY }
+
+when@test:
+    security:
+        password_hashers:
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: auto
+                cost: 4
+                time_cost: 3
+                memory_cost: 10
