@@ -22,8 +22,10 @@ use Symfony\Component\Routing\Attribute\Route;
  * фронтенд показывает «Сервер недоступен» (см. toRequestError в
  * frontend/src/api/client.ts).
  *
- * Endpoint проверяет TCP-связность до SMTP-хоста с коротким таймаутом,
- * так что сам он 504 не вызывает и отвечает за считанные секунды.
+ * Решение — Mailgun через HTTP API (mailgun+api://): он ходит по 443,
+ * который открыт. Endpoint это и проверяет: для API-транспортов пробует
+ * HTTPS до Mailgun, для SMTP — TCP до почтового хоста. Таймаут короткий,
+ * так что сам endpoint 504 не вызывает и отвечает за считанные секунды.
  *
  * Доступ закрыт токеном: endpoint раскрывает адрес и порт почтового
  * сервера. Работает только если задана переменная DIAGNOSTICS_TOKEN,
@@ -87,11 +89,15 @@ final class MailDiagnosticsController extends AbstractController
     }
 
     /**
-     * Пробует открыть TCP-соединение до SMTP-хоста.
+     * Проверяет связность до почтового провайдера.
+     *
+     * Куда стучаться, зависит от транспорта: у mailgun+api хост в DSN —
+     * это заглушка "default", а реальный адрес api.mailgun.net, поэтому
+     * такие DSN проверяются отдельно (см. probeMailgunApi).
      *
      * Как читать результат:
-     *   ok            — порт открыт, значит дело в учётных данных или в самом
-     *                   SMTP-диалоге, смотрите causes в логах канала mail;
+     *   ok            — канал открыт; если письма всё равно не уходят, дело
+     *                   в ключе или домене — смотрите causes в логах mail;
      *   timeout       — пакеты уходят в никуда: порт режет хостинг (типично
      *                   для бесплатного плана Render), нужен HTTP API почты;
      *   refused       — хост есть, но порт закрыт — скорее всего не тот порт;
@@ -99,7 +105,17 @@ final class MailDiagnosticsController extends AbstractController
      */
     private function probe(array|false $parts): array
     {
-        if (!\is_array($parts) || !isset($parts['host'])) {
+        if (!\is_array($parts) || !isset($parts['scheme'])) {
+            return ['checked' => false, 'reason' => 'unparsable MAILER_DSN'];
+        }
+
+        // Транспорты вида mailgun+api / mailgun+https ходят по HTTPS,
+        // и хост "default" в DSN проверять бессмысленно.
+        if (str_contains($parts['scheme'], '+api') || str_contains($parts['scheme'], '+https')) {
+            return $this->probeMailgunApi($parts);
+        }
+
+        if (!isset($parts['host'])) {
             return ['checked' => false, 'reason' => 'no host in MAILER_DSN'];
         }
 
@@ -123,6 +139,41 @@ final class MailDiagnosticsController extends AbstractController
             'result'    => $this->classify($errno, $elapsedMs),
             'host'      => $host,
             'port'      => $port,
+            'elapsedMs' => $elapsedMs,
+            'errno'     => $errno,
+            'error'     => $errstr,
+        ];
+    }
+
+    /**
+     * Проверяет доступность HTTPS-эндпоинта Mailgun.
+     *
+     * Открытый 443 — и есть весь смысл перехода с SMTP: по нему работает
+     * сам сайт, значит блокировки исходящих портов здесь нет. Проверяется
+     * только связность, ключ не используется — валидность ключа видна
+     * по ответу Mailgun в логах канала mail при реальной отправке.
+     */
+    private function probeMailgunApi(array $parts): array
+    {
+        // region=eu в DSN означает европейский дата-центр с отдельным хостом.
+        parse_str($parts['query'] ?? '', $query);
+        $host = 'eu' === ($query['region'] ?? 'us') ? 'api.eu.mailgun.net' : 'api.mailgun.net';
+
+        $startedAt = microtime(true);
+        $socket    = @fsockopen('ssl://' . $host, 443, $errno, $errstr, self::PROBE_TIMEOUT_SECONDS);
+        $elapsedMs = (int) round((microtime(true) - $startedAt) * 1000);
+
+        if (false !== $socket) {
+            fclose($socket);
+
+            return ['checked' => true, 'result' => 'ok', 'host' => $host, 'port' => 443, 'elapsedMs' => $elapsedMs];
+        }
+
+        return [
+            'checked'   => true,
+            'result'    => $this->classify($errno, $elapsedMs),
+            'host'      => $host,
+            'port'      => 443,
             'elapsedMs' => $elapsedMs,
             'errno'     => $errno,
             'error'     => $errstr,

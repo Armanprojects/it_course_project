@@ -76,12 +76,24 @@ services:
         sync: false
 
       # --- Почта ---
-      # Письма с подтверждением регистрации. sync: false — строку с логином
-      # и паролем SMTP вводим в дашборде, в репозиторий она не попадает.
-      # Пример значения: smtp://user:app-password@smtp.gmail.com:587
+      # Письма с подтверждением регистрации. sync: false — строку с ключом
+      # вводим в дашборде, в репозиторий она не попадает.
+      #
+      # Только Mailgun через HTTP API:
+      #   mailgun+api://KEY:DOMAIN@default?region=us
+      #
+      # SMTP здесь не работает в принципе: на бесплатном плане Render
+      # исходящие порты 25/465/587 заблокированы — соединение не отвергается,
+      # а висит до таймаута, и nginx отдаёт 504. Проверить можно запросом
+      # к /api/diagnostics/mail с заголовком X-Diagnostics-Token.
       - key: MAILER_DSN
         sync: false
 
+      # Адрес отправителя ОБЯЗАН быть на домене, подключённом в Mailgun,
+      # иначе API отвечает отказом и письмо не уходит. Для sandbox-домена
+      # это, например, no-reply@sandbox123.mailgun.org.
+      # На sandbox-домене письма к тому же уходят только на адреса,
+      # добавленные в Mailgun как Authorized Recipients.
       - key: MAILER_FROM_ADDRESS
         sync: false
 
