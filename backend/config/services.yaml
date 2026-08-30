@@ -65,6 +65,13 @@ services:
         arguments:
             $archiveDir: '%kernel.project_dir%/var/mail'
 
+    App\Command\SendTestMailCommand:
+        arguments:
+            # DSN только для вывода схемы транспорта, секреты не печатаются.
+            $mailerDsn: '%env(MAILER_DSN)%'
+            $senderAddress: '%env(MAILER_FROM_ADDRESS)%'
+            $senderName: '%env(MAILER_FROM_NAME)%'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
 
