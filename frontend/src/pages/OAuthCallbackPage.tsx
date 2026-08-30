@@ -9,16 +9,12 @@ const ERROR_MESSAGES: Record<string, string> = {
   missing_code: 'Провайдер не передал код авторизации. Попробуйте ещё раз.',
   provider_failed: 'Провайдер отклонил запрос. Попробуйте ещё раз.',
   provider_email_missing:
-    'Провайдер не передал подтверждённый email. Откройте доступ к email или войдите по паролю.',
+    'Провайдер не передал подтверждённый адрес. Откройте доступ к почте или войдите по паролю.',
   identity_taken: 'Этот аккаунт уже привязан к другому пользователю.',
   account_blocked: 'Аккаунт заблокирован. Обратитесь к администратору.',
   unknown_provider: 'Неизвестный провайдер входа.',
 }
 
-/**
- * Бэкенд возвращает браузер сюда с токеном во фрагменте URL.
- * Фрагмент не уходит на сервер — не попадает в логи nginx и в Referer.
- */
 /**
  * Разбирается один раз на модуле, а не в эффекте: фрагмент URL — это входные
  * данные навигации, они известны до первого рендера и не меняются.
@@ -45,41 +41,58 @@ function consumeCallback(): { redirecting: boolean; error: string | null } {
   }
 }
 
+/**
+ * Бэкенд возвращает браузер сюда с токеном во фрагменте URL.
+ * Фрагмент не уходит на сервер — не попадает в логи nginx и в Referer.
+ */
 export function OAuthCallbackPage() {
   const [{ error }] = useState(consumeCallback)
 
-  if (!error) {
-    return (
-      <main className="min-vh-100 d-flex align-items-center justify-content-center">
-        <div className="text-center">
-          <span className="spinner-border text-primary mb-3" role="status" aria-hidden="true" />
-          <p className="text-body-secondary mb-0">Завершаем вход…</p>
-        </div>
-      </main>
-    )
-  }
-
   return (
-    <main className="min-vh-100 d-flex align-items-center py-5">
-      <div className="container">
-        <div className="row justify-content-center">
-          <div className="col-12 col-sm-10 col-md-6 col-lg-5">
-            <div className="app-surface p-4 text-center">
+    <div className="auth">
+      <div className="auth__pane">
+        <div className="auth__brand">
+          <span className="auth__logo" aria-hidden="true">
+            C
+          </span>
+          <span>CVMatch</span>
+        </div>
+
+        <div className="auth__box">
+          {!error ? (
+            <p className="muted" style={{ margin: 0 }} role="status">
+              Завершаем вход…
+            </p>
+          ) : (
+            <div className="col g4">
               <WarningCircleIcon
                 size={40}
                 weight="fill"
                 aria-hidden="true"
-                className="text-danger mb-3"
+                style={{ color: 'var(--err-fg)' }}
               />
-              <h1 className="h5 mb-2">Вход не выполнен</h1>
-              <p className="text-body-secondary small">{error}</p>
-              <Link to="/login" className="btn btn-primary mt-2">
+              <div>
+                <h1 className="h2">Вход не выполнен</h1>
+                <p className="muted mt3" style={{ margin: 0 }}>
+                  {error}
+                </p>
+              </div>
+
+              <Link
+                to="/login"
+                className="btn btn--primary btn--lg"
+                style={{ alignSelf: 'flex-start' }}
+              >
                 Вернуться ко входу
               </Link>
             </div>
-          </div>
+          )}
         </div>
+
+        <p className="auth__foot" style={{ margin: 0 }}>
+          © {new Date().getFullYear()} CVMatch
+        </p>
       </div>
-    </main>
+    </div>
   )
 }

@@ -1,9 +1,10 @@
 import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react'
 import { useId, useState } from 'react'
+import { evaluatePassword } from '../lib/passwordStrength'
 
 interface Props {
   label: string
-  type: 'email' | 'password'
+  type: 'email' | 'password' | 'text'
   value: string
   onChange: (value: string) => void
   onBlur?: () => void
@@ -11,7 +12,8 @@ interface Props {
   autoComplete: string
   placeholder?: string
   disabled?: boolean
-  required?: boolean
+  /** Показывать индикатор надёжности — только при создании пароля. */
+  showStrength?: boolean
 }
 
 /**
@@ -28,67 +30,91 @@ export function FormField({
   autoComplete,
   placeholder,
   disabled = false,
-  required = true,
+  showStrength = false,
 }: Props) {
   const id = useId()
   const errorId = `${id}-error`
+  const hintId = `${id}-hint`
   const [revealed, setRevealed] = useState(false)
 
   const isPassword = type === 'password'
   const inputType = isPassword && revealed ? 'text' : type
+  const strength = showStrength ? evaluatePassword(value) : null
+
+  // Подсказку про требования показываем всегда, ошибку — поверх неё:
+  // две записи в describedby читались бы подряд и путали.
+  const describedBy = error ? errorId : strength ? hintId : undefined
+
+  const input = (
+    <input
+      id={id}
+      type={inputType}
+      className={`input${error ? ' input--invalid' : ''}`}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onBlur={onBlur}
+      // Менеджеры паролей должны работать, вставка не блокируется —
+      // требование WCAG 2.2 к доступной аутентификации.
+      autoComplete={autoComplete}
+      placeholder={placeholder}
+      disabled={disabled}
+      aria-invalid={error ? true : undefined}
+      aria-describedby={describedBy}
+    />
+  )
 
   return (
-    <div className="mb-3">
-      <label htmlFor={id} className="form-label fw-semibold">
+    <div className="field">
+      <label htmlFor={id} className="label">
         {label}
-        {required && (
-          <span className="text-danger ms-1" aria-hidden="true">
-            *
-          </span>
-        )}
       </label>
 
-      <div className={isPassword ? 'position-relative' : undefined}>
-        <input
-          id={id}
-          type={inputType}
-          className={`form-control form-control-lg${error ? ' is-invalid' : ''}`}
-          style={isPassword ? { paddingRight: '3rem' } : undefined}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
-          // Менеджеры паролей должны работать, вставка не блокируется —
-          // требование WCAG 2.2 к доступной аутентификации.
-          autoComplete={autoComplete}
-          placeholder={placeholder}
-          disabled={disabled}
-          required={required}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? errorId : undefined}
-        />
-
-        {isPassword && (
+      {isPassword ? (
+        <div className="field__wrap">
+          {input}
           <button
             type="button"
-            className="btn btn-link position-absolute top-0 end-0 h-100 px-3 text-body-secondary text-decoration-none"
-            style={{ zIndex: 5 }}
+            className="field__reveal"
             onClick={() => setRevealed((v) => !v)}
             disabled={disabled}
             aria-label={revealed ? 'Скрыть пароль' : 'Показать пароль'}
           >
             {revealed ? (
-              <EyeSlashIcon size={20} aria-hidden="true" />
+              <EyeSlashIcon size={17} aria-hidden="true" />
             ) : (
-              <EyeIcon size={20} aria-hidden="true" />
+              <EyeIcon size={17} aria-hidden="true" />
             )}
           </button>
-        )}
-      </div>
+        </div>
+      ) : (
+        input
+      )}
+
+      {strength && (
+        <>
+          {/* Полоски — только визуальная подсказка, смысл несёт текст ниже:
+              по одному цвету состояние не определить при дальтонизме. */}
+          <div className="pwmeter" aria-hidden="true">
+            {[1, 2, 3].map((segment) => (
+              <span
+                key={segment}
+                className={segment <= strength.score ? `is-${strength.level}` : undefined}
+              />
+            ))}
+          </div>
+
+          {/* aria-live не ставим: индикатор меняется на каждый символ, и
+              озвучивание каждого шага мешало бы вводу. */}
+          <span id={hintId} className="t-xs muted-3">
+            {strength.label ? `${strength.label} · ${strength.hint}` : strength.hint}
+          </span>
+        </>
+      )}
 
       {error && (
-        <div id={errorId} className="invalid-feedback d-block">
+        <span id={errorId} className="field__error">
           {error}
-        </div>
+        </span>
       )}
     </div>
   )

@@ -1,12 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
-// Bootstrap подключаем до собственных стилей, чтобы их можно было
-// переопределять. JS-бандл нужен для интерактивных компонентов
-// (dropdown, modal) — понадобится начиная с этапа 4.
-import 'bootstrap/dist/css/bootstrap.min.css'
-import 'bootstrap/dist/js/bootstrap.bundle.min.js'
-
+// Собственная дизайн-система в index.css: Bootstrap убран, потому что
+// его палитра и плотность конфликтовали с макетом, а из его компонентов
+// здесь использовалась только сетка.
 import './index.css'
 import App from './App.tsx'
 

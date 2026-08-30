@@ -47,48 +47,55 @@ export function HomePage() {
     navigate('/login', { replace: true })
   }
 
-  if (state.kind === 'loading') {
-    return (
-      <main className="min-vh-100 d-flex align-items-center justify-content-center">
-        <span className="spinner-border text-primary" role="status" aria-label="Загрузка" />
-      </main>
-    )
-  }
-
-  if (state.kind === 'error') {
-    return (
-      <main className="container py-5">
-        <div className="alert alert-danger" role="alert">
-          {state.message}
-        </div>
-      </main>
-    )
-  }
-
   return (
-    <main className="container py-5">
-      <div className="row justify-content-center">
-        <div className="col-12 col-lg-7">
-          <div className="app-surface p-4">
-            <h1 className="h5 mb-3">Вход выполнен</h1>
+    <div style={{ maxWidth: 640, margin: '0 auto', padding: 'var(--s10) var(--s5)' }}>
+      {state.kind === 'loading' && (
+        <p className="muted" style={{ margin: 0 }} role="status">
+          Загружаем…
+        </p>
+      )}
 
-            <dl className="row small mb-4">
-              <dt className="col-4">Email</dt>
-              <dd className="col-8">{state.user.email}</dd>
-
-              <dt className="col-4">Роли</dt>
-              <dd className="col-8">{state.user.roles.join(', ')}</dd>
-
-              <dt className="col-4">Профиль</dt>
-              <dd className="col-8">#{state.user.profileId}</dd>
-            </dl>
-
-            <button type="button" className="btn btn-outline-secondary" onClick={logout}>
-              Выйти
-            </button>
-          </div>
+      {state.kind === 'error' && (
+        <div className="notice notice--error" role="alert">
+          <span>{state.message}</span>
         </div>
-      </div>
-    </main>
+      )}
+
+      {state.kind === 'authenticated' && (
+        <div className="col g4">
+          <h1 className="h2">Вход выполнен</h1>
+
+          <dl className="col g2 t-sm" style={{ margin: 0 }}>
+            <div className="row g3">
+              <dt className="muted" style={{ minWidth: 120 }}>
+                Почта
+              </dt>
+              <dd style={{ margin: 0 }}>{state.user.email}</dd>
+            </div>
+            <div className="row g3">
+              <dt className="muted" style={{ minWidth: 120 }}>
+                Роли
+              </dt>
+              <dd style={{ margin: 0 }}>{state.user.roles.join(', ')}</dd>
+            </div>
+            <div className="row g3">
+              <dt className="muted" style={{ minWidth: 120 }}>
+                Профиль
+              </dt>
+              <dd style={{ margin: 0 }}>#{state.user.profileId}</dd>
+            </div>
+          </dl>
+
+          <button
+            type="button"
+            className="btn btn--outline"
+            style={{ alignSelf: 'flex-start' }}
+            onClick={logout}
+          >
+            Выйти
+          </button>
+        </div>
+      )}
+    </div>
   )
 }

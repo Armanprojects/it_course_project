@@ -1,213 +1,755 @@
-/* Оформление берём из Bootstrap; здесь только собственные дополнения.
-   Дефолтные стили Vite удалены — они центрировали body и задавали
-   свою цветовую схему, что конфликтует с сеткой Bootstrap. */
+/* Оформление берём из Bootstrap; здесь собственные токены и компоненты.
+   Палитра, типографика и плотность перенесены из макета hiring-mockup:
+   нейтральные серые вместо синего, чёрная основная кнопка, индиго только
+   как акцент фокуса. */
 
-@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* Токены палитры. Компоненты ссылаются только на них, а не на конкретные
-   hex-значения: тема меняется в одном месте, а не по всем файлам. */
 :root {
-  --app-primary: #0369a1;
-  --app-primary-hover: #075985;
-  --app-on-primary: #ffffff;
-  --app-accent: #16a34a;
-  --app-background: #f0f9ff;
-  --app-foreground: #0c4a6e;
-  --app-card: #ffffff;
-  --app-muted: #e7eff5;
-  --app-muted-foreground: #475569;
-  --app-border: #bae6fd;
-  --app-destructive: #dc2626;
-  --app-ring: #0369a1;
+  /* Нейтральная шкала — основа всего оформления. */
+  --n-0: #ffffff;
+  --n-50: #fafafa;
+  --n-100: #f4f4f5;
+  --n-150: #ececee;
+  --n-200: #e4e4e7;
+  --n-300: #d4d4d8;
+  --n-400: #a1a1aa;
+  --n-500: #71717a;
+  --n-600: #52525b;
+  --n-800: #27272a;
+  --n-900: #18181b;
+  --n-950: #09090b;
 
-  --app-radius: 0.5rem;
-  --app-transition: 160ms ease;
+  /* Акцент: только фокус и активные состояния, не фон кнопок. */
+  --a-50: #eef2ff;
+  --a-100: #e0e7ff;
+  --a-600: #4f46e5;
+  --a-700: #4338ca;
 
-  /* Bootstrap читает свои переменные, поэтому переопределяем их здесь —
-     иначе btn-primary и focus-ring остались бы фиолетовыми. */
-  --bs-primary: var(--app-primary);
-  --bs-primary-rgb: 3, 105, 161;
-  --bs-body-bg: var(--app-background);
-  --bs-body-color: var(--app-foreground);
-  --bs-border-color: var(--app-border);
-  --bs-border-radius: var(--app-radius);
-  --bs-link-color: var(--app-primary);
-  --bs-link-hover-color: var(--app-primary-hover);
-  --bs-focus-ring-color: rgba(3, 105, 161, 0.35);
+  --ok-bg: #ecfdf5;
+  --ok-fg: #047857;
+  --ok-br: #a7f3d0;
+  --warn-fg: #b45309;
+  --err-bg: #fef2f2;
+  --err-fg: #b91c1c;
+  --err-br: #fecaca;
+
+  --bg-app: var(--n-50);
+  --bg-surface: var(--n-0);
+  --text-1: var(--n-950);
+  --text-2: var(--n-600);
+  --text-3: var(--n-500);
+  --text-inv: var(--n-0);
+  --line: var(--n-200);
+  --line-soft: var(--n-150);
+  --line-strong: var(--n-300);
+
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-full: 999px;
+
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 20px;
+  --s6: 24px;
+  --s8: 32px;
+  --s10: 40px;
+
+  --f-ui: 'Inter', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --t-fast: 0.13s ease;
 }
 
+* {
+  box-sizing: border-box;
+}
+
+html,
 body {
-  font-family: 'Open Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  background-color: var(--app-background);
-  color: var(--app-foreground);
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  font-family: var(--f-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-1);
+  background: var(--bg-app);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-h1,
-h2,
-h3,
-.app-display {
-  font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  font-weight: 600;
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
 }
 
-/* Focus виден всегда и одинаково — на карточках роли, полях и кнопках.
-   Толщина 3px и цвет ring дают контраст состояния выше 3:1. */
+/* Единый видимый фокус: индиго на 2px заметен и на белом, и на сером. */
 :focus-visible {
-  outline: 3px solid var(--app-ring);
+  outline: 2px solid var(--a-600);
   outline-offset: 2px;
+  border-radius: var(--r-xs);
 }
 
-.btn:focus-visible,
-.form-control:focus-visible {
-  outline: 3px solid var(--app-ring);
-  outline-offset: 2px;
-  box-shadow: none;
+::selection {
+  background: var(--a-100);
 }
 
-.btn {
-  --bs-btn-border-radius: var(--app-radius);
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- Типографика ------------------------------------------------------- */
+.h1 {
+  font-size: 28px;
   font-weight: 600;
-  transition: background-color var(--app-transition), border-color var(--app-transition),
-    color var(--app-transition);
+  letter-spacing: -0.022em;
+  line-height: 1.25;
+  margin: 0;
 }
 
-.btn-primary {
-  --bs-btn-bg: var(--app-primary);
-  --bs-btn-border-color: var(--app-primary);
-  --bs-btn-color: var(--app-on-primary);
-  --bs-btn-hover-bg: var(--app-primary-hover);
-  --bs-btn-hover-border-color: var(--app-primary-hover);
-  --bs-btn-hover-color: var(--app-on-primary);
-  --bs-btn-active-bg: var(--app-primary-hover);
-  --bs-btn-active-border-color: var(--app-primary-hover);
-  --bs-btn-disabled-bg: var(--app-primary);
-  --bs-btn-disabled-border-color: var(--app-primary);
+.h2 {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  line-height: 1.3;
+  margin: 0;
 }
 
-.form-control {
-  border-color: var(--app-border);
-  transition: border-color var(--app-transition);
+.muted {
+  color: var(--text-2);
 }
 
-.form-control:focus {
-  border-color: var(--app-primary);
+.muted-3 {
+  color: var(--text-3);
 }
 
-.form-control::placeholder {
-  color: #94a3b8;
+.t-sm {
+  font-size: 13px;
 }
 
-/* Текстовая кнопка внутри строки: визуально это ссылка, но цель касания
-   должна оставаться не меньше 44px по высоте. */
-.btn-link.app-inline-action {
-  min-height: 44px;
-  padding-inline: 0.25rem;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
+.t-xs {
+  font-size: 12px;
 }
 
-/* Заголовок шага получает фокус программно — чтобы скринридер объявил
-   смену экрана. Рамку убираем: пользователь мыши туда не переходил, и
-   она читалась бы как ошибка. Клавиатурная навигация сюда не попадает
-   (tabIndex=-1), так что видимый фокус здесь ничего не теряет. */
+/* --- Кнопки ------------------------------------------------------------ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  height: 36px;
+  padding: 0 var(--s3);
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: -0.006em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast);
+  user-select: none;
+}
+
+.btn svg {
+  flex: none;
+}
+
+.btn--primary {
+  background: var(--n-900);
+  color: var(--text-inv);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--n-800);
+}
+
+.btn--primary:active:not(:disabled) {
+  background: var(--n-950);
+}
+
+.btn--outline {
+  border-color: var(--line);
+  background: var(--bg-surface);
+  color: var(--text-1);
+}
+
+.btn--outline:hover:not(:disabled) {
+  background: var(--n-50);
+  border-color: var(--line-strong);
+}
+
+.btn--ghost {
+  color: var(--text-2);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background: var(--n-100);
+  color: var(--text-1);
+}
+
+.btn--lg {
+  height: 42px;
+  padding: 0 var(--s5);
+  font-size: 14.5px;
+}
+
+.btn--block {
+  width: 100%;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* --- Поля ввода -------------------------------------------------------- */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.input {
+  width: 100%;
+  height: 36px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg-surface);
+  color: var(--text-1);
+  font-size: 13.5px;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+
+.input::placeholder {
+  color: var(--n-400);
+}
+
+.input:hover:not(:disabled) {
+  border-color: var(--line-strong);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--a-600);
+  box-shadow: 0 0 0 3px var(--a-50);
+}
+
+.input:disabled {
+  background: var(--n-50);
+  color: var(--text-3);
+  cursor: not-allowed;
+}
+
+.input--invalid {
+  border-color: var(--err-br);
+}
+
+.input--invalid:focus {
+  border-color: var(--err-fg);
+  box-shadow: 0 0 0 3px var(--err-bg);
+}
+
+/* Поле пароля: кнопка показа лежит поверх, поэтому справа резервируем место. */
+.field__wrap {
+  position: relative;
+}
+
+.field__wrap .input {
+  padding-right: 40px;
+}
+
+.field__reveal {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  border-radius: var(--r-md);
+}
+
+.field__reveal:hover {
+  color: var(--text-1);
+}
+
+.field__error {
+  font-size: 12px;
+  color: var(--err-fg);
+}
+
+/* --- Индикатор надёжности пароля --------------------------------------- */
+.pwmeter {
+  display: flex;
+  gap: 3px;
+  margin-top: 6px;
+}
+
+.pwmeter span {
+  flex: 1;
+  height: 3px;
+  border-radius: var(--r-full);
+  background: var(--n-200);
+  transition: background var(--t-fast);
+}
+
+/* Цвет несёт смысл, поэтому рядом всегда есть текстовая подпись. */
+.pwmeter span.is-weak {
+  background: var(--err-fg);
+}
+
+.pwmeter span.is-medium {
+  background: var(--warn-fg);
+}
+
+.pwmeter span.is-strong {
+  background: var(--ok-fg);
+}
+
+/* --- Экран аутентификации ---------------------------------------------- */
+/* Макет был двухколоночным: форма слева, смысловая панель справа. Правая
+   часть не нужна, поэтому колонка одна — но её ширину ограничиваем, иначе
+   на широком экране содержимое растянулось бы по всей странице. */
+.auth {
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--bg-surface);
+}
+
+.auth__pane {
+  display: flex;
+  flex-direction: column;
+  padding: var(--s8) var(--s10);
+  width: 100%;
+  max-width: 560px;
+  min-width: 0;
+}
+
+.auth__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex: none;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+
+.auth__logo {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-md);
+  background: var(--n-900);
+  color: var(--text-inv);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.auth__box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  padding: var(--s8) 0;
+}
+
+.auth__foot {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.auth__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: flex-start;
+  margin-bottom: var(--s4);
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 13px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.auth__back:hover {
+  color: var(--text-1);
+}
+
+/* Заголовок шага получает фокус программно — чтобы скринридер объявил смену
+   экрана. Рамку убираем: пользователь мыши туда не переходил, и она читалась
+   бы как ошибка. Клавиатура сюда не попадает (tabIndex=-1). */
 .app-step-title:focus {
   outline: none;
 }
 
-/* Кнопка «назад»: иконка 22px, но зона нажатия — полноразмерная. */
-.btn-link.app-icon-action {
-  display: inline-flex;
+.auth__or {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  min-width: 44px;
-  min-height: 44px;
-  margin-inline-start: -0.5rem;
+  gap: var(--s3);
+  font-size: 12px;
+  color: var(--text-3);
 }
 
-.btn-link.app-icon-action:hover {
-  color: var(--app-primary) !important;
-}
-
-/* Flat Design: плоские поверхности без теней, разделение через границу. */
-.app-surface {
-  background-color: var(--app-card);
-  border: 1px solid var(--app-border);
-  border-radius: calc(var(--app-radius) * 1.5);
-}
-
-/* --- Выбор роли ---------------------------------------------------------
-   Под капотом нативные radio: они дают группировку, стрелки клавиатуры и
-   объявление "выбрано 1 из 2" скринридером бесплатно. Сам input скрыт
-   визуально, но не от ассистивных технологий, поэтому не display:none. */
-/* Скрыт визуально, но остаётся в дереве доступности и кликабельным:
-   display:none или pointer-events:none убрали бы его из tab-порядка
-   и сломали бы стрелки клавиатуры внутри группы. */
-.role-option__input {
-  position: absolute;
-  width: 1px;
+.auth__or::before,
+.auth__or::after {
+  content: '';
+  flex: 1;
   height: 1px;
-  opacity: 0;
+  background: var(--line);
 }
 
-.role-option__label {
+/* --- Выбор роли --------------------------------------------------------- */
+.rolepick {
   display: flex;
-  align-items: center;
-  gap: 0.875rem;
-  width: 100%;
-  padding: 1rem;
-  min-height: 72px;
-  background-color: var(--app-card);
-  border: 2px solid var(--app-border);
-  border-radius: var(--app-radius);
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.rolecard {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s4);
+  padding: var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--bg-surface);
+  text-align: left;
   cursor: pointer;
-  transition: border-color var(--app-transition), background-color var(--app-transition);
+  transition: border-color var(--t-fast), background var(--t-fast), box-shadow var(--t-fast);
+  width: 100%;
 }
 
-.role-option__label:hover {
-  border-color: var(--app-primary);
+.rolecard:hover {
+  border-color: var(--n-900);
+  box-shadow: 0 2px 10px rgba(9, 9, 11, 0.06);
 }
 
-.role-option__input:checked + .role-option__label {
-  border-color: var(--app-primary);
-  background-color: #e0f2fe;
-}
-
-/* Focus рисуем на label: сам input скрыт, и без этого при переходе
-   стрелками не было бы видно, какая карточка сейчас в фокусе. */
-.role-option__input:focus-visible + .role-option__label {
-  outline: 3px solid var(--app-ring);
-  outline-offset: 2px;
-}
-
-.role-option__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
+.rolecard__icon {
   width: 40px;
   height: 40px;
-  border-radius: var(--app-radius);
-  background-color: var(--app-muted);
-  color: var(--app-muted-foreground);
-  transition: background-color var(--app-transition), color var(--app-transition);
+  border-radius: var(--r-md);
+  flex: none;
+  display: grid;
+  place-items: center;
 }
 
-.role-option__input:checked + .role-option__label .role-option__icon {
-  background-color: var(--app-primary);
-  color: var(--app-on-primary);
+.rolecard__icon--r {
+  background: var(--a-50);
+  color: var(--a-700);
 }
 
-/* Галочка — второй, не цветовой признак выбора: по одному лишь цвету
-   рамки состояние читалось бы плохо при дальтонизме. */
-.role-option__check {
-  margin-left: auto;
-  color: var(--app-primary);
-  opacity: 0;
-  transition: opacity var(--app-transition);
+.rolecard__icon--c {
+  background: var(--ok-bg);
+  color: var(--ok-fg);
 }
 
-.role-option__input:checked + .role-option__label .role-option__check {
-  opacity: 1;
+.rolecard__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.rolecard__title {
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+
+.rolecard__text {
+  font-size: 12.5px;
+  color: var(--text-2);
+  margin-top: 3px;
+  line-height: 1.5;
+}
+
+.rolecard__go {
+  color: var(--n-400);
+  flex: none;
+  margin-top: 10px;
+  transition: color var(--t-fast);
+}
+
+.rolecard:hover .rolecard__go {
+  color: var(--text-1);
+}
+
+/* --- Переключатель «Вход / Регистрация» -------------------------------- */
+.authtabs {
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+  background: var(--n-100);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+}
+
+.authtabs__btn {
+  flex: 1;
+  height: 30px;
+  border: 0;
+  background: transparent;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  transition: background var(--t-fast), color var(--t-fast), box-shadow var(--t-fast);
+}
+
+.authtabs__btn:hover {
+  color: var(--text-1);
+}
+
+.authtabs__btn.is-on {
+  background: var(--bg-surface);
+  color: var(--text-1);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(9, 9, 11, 0.06);
+}
+
+/* --- Плашка выбранной роли ---------------------------------------------- */
+.rolepill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 5px 5px 5px 10px;
+  border-radius: var(--r-full);
+  border: 1px solid var(--line);
+  background: var(--n-50);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.rolepill__change {
+  background: var(--bg-surface);
+  cursor: pointer;
+  border-radius: var(--r-full);
+  padding: 2px 8px;
+  font-size: 11.5px;
+  color: var(--text-2);
+  border: 1px solid var(--line);
+}
+
+.rolepill__change:hover {
+  color: var(--text-1);
+  border-color: var(--line-strong);
+}
+
+/* --- Кнопка входа через провайдера -------------------------------------- */
+.ssobtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  height: 40px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg-surface);
+  color: var(--text-1);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+
+.ssobtn:hover:not(:disabled) {
+  background: var(--n-50);
+  border-color: var(--line-strong);
+}
+
+.ssobtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* --- Строка «запомнить / забыли пароль» --------------------------------- */
+.authrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.checkline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: 13px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.checkline input {
+  accent-color: var(--n-900);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+.linkbtn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-1);
+  font-weight: 500;
+}
+
+.linkbtn:hover {
+  text-decoration: underline;
+}
+
+/* --- Уведомления --------------------------------------------------------- */
+.notice {
+  display: flex;
+  gap: var(--s2);
+  align-items: flex-start;
+  padding: 10px var(--s3);
+  border-radius: var(--r-md);
+  border: 1px solid;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.notice svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.notice--error {
+  background: var(--err-bg);
+  border-color: var(--err-br);
+  color: var(--err-fg);
+}
+
+.notice--ok {
+  background: var(--ok-bg);
+  border-color: var(--ok-br);
+  color: var(--ok-fg);
+}
+
+/* --- Утилиты раскладки --------------------------------------------------- */
+.col {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+}
+
+.row--between {
+  justify-content: space-between;
+}
+
+.g2 {
+  gap: var(--s2);
+}
+
+.g3 {
+  gap: var(--s3);
+}
+
+.g4 {
+  gap: var(--s4);
+}
+
+.mt3 {
+  margin-top: var(--s3);
+}
+
+.mt4 {
+  margin-top: var(--s4);
+}
+
+.mt5 {
+  margin-top: var(--s5);
+}
+
+.mt6 {
+  margin-top: var(--s6);
+}
+
+/* --- Адаптивность -------------------------------------------------------- */
+@media (max-width: 980px) {
+  .auth__pane {
+    padding: var(--s6) var(--s5);
+  }
+}
+
+@media (max-width: 480px) {
+  .auth__pane {
+    padding: var(--s5) var(--s4);
+  }
+
+  .rolecard {
+    padding: var(--s3);
+    gap: var(--s3);
+  }
+}
+
+/* На тач-устройствах поднимаем цели касания до 44px: макет рассчитан на
+   мышь, а пальцем в 36px попадать неудобно. */
+@media (pointer: coarse) {
+  .input,
+  .btn,
+  .field__reveal {
+    min-height: 44px;
+  }
+
+  .btn--lg {
+    height: 46px;
+  }
+
+  .authtabs__btn {
+    height: 38px;
+  }
+
+  .linkbtn,
+  .auth__back,
+  .rolepill__change {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -75,6 +75,19 @@ services:
       - key: OAUTH_GITHUB_SECRET
         sync: false
 
+      # --- Почта ---
+      # Письма с подтверждением регистрации. sync: false — строку с логином
+      # и паролем SMTP вводим в дашборде, в репозиторий она не попадает.
+      # Пример значения: smtp://user:app-password@smtp.gmail.com:587
+      - key: MAILER_DSN
+        sync: false
+
+      - key: MAILER_FROM_ADDRESS
+        sync: false
+
+      - key: MAILER_FROM_NAME
+        value: CVMatch
+
       # FRONTEND_URL не задаём: фронтенд обслуживается тем же сервисом,
       # и entrypoint подставляет в него RENDER_EXTERNAL_URL, который
       # платформа передаёт в контейнер сама.

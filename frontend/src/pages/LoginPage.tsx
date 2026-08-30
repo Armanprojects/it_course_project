@@ -1,17 +1,16 @@
-import {
-  ArrowLeftIcon,
-  GithubLogoIcon,
-  GoogleLogoIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react'
+import { CaretLeftIcon, GithubLogoIcon, WarningCircleIcon } from '@phosphor-icons/react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { authApi, RequestError, tokenStorage } from '../api/client'
 import { UserRole, type SelectableRole } from '../api/types'
 import { FormField } from '../components/FormField'
+import { GoogleMark } from '../components/GoogleMark'
 import { RoleSelector } from '../components/RoleSelector'
 import { VerificationNotice } from '../components/VerificationNotice'
+import { MIN_PASSWORD_LENGTH } from '../lib/passwordStrength'
+import { ROLE_ICON, ROLE_PILL } from '../lib/roles'
 
-type Mode = 'login' | 'register'
+type Step = 'pick' | 'form' | 'sent'
+type Mode = 'login' | 'signup'
 
 interface FieldErrors {
   email?: string
@@ -19,17 +18,10 @@ interface FieldErrors {
   passwordConfirmation?: string
 }
 
-const ROLE_LABEL: Record<SelectableRole, string> = {
-  [UserRole.Candidate]: 'Я ищу работу',
-  [UserRole.Recruiter]: 'Я ищу сотрудников',
-}
-
 export function LoginPage() {
-  // Шаг 1 — выбор роли и способа входа, шаг 2 — учётные данные.
-  // Разделение убирает форму с первого экрана: пользователь сначала
-  // отвечает на один вопрос, а не смотрит сразу на всё сразу.
-  // Шаг 3 — экран «проверьте почту» после успешной регистрации.
-  const [step, setStep] = useState<1 | 2 | 3>(1)
+  // Шаг 1 — выбор роли, шаг 2 — форма, шаг 3 — «проверьте почту».
+  // Роль спрашиваем первой: от неё зависит, что человек увидит после входа.
+  const [step, setStep] = useState<Step>('pick')
   const [mode, setMode] = useState<Mode>('login')
   const [role, setRole] = useState<SelectableRole>(UserRole.Candidate)
   const [email, setEmail] = useState('')
@@ -38,27 +30,28 @@ export function LoginPage() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  // Почему показан экран подтверждения: после регистрации или после
+  // попытки входа в неподтверждённый аккаунт — тексты там разные.
+  const [sentReason, setSentReason] = useState<'sent' | 'blocked'>('sent')
 
-  // После неудачной отправки фокус уходит на сводку ошибок: иначе
-  // пользователь со скринридером не узнает, что submit провалился.
   const summaryRef = useRef<HTMLDivElement>(null)
-  const stepTitleRef = useRef<HTMLHeadingElement>(null)
+  const headingRef = useRef<HTMLHeadingElement>(null)
   // Счётчик, а не флаг: две неудачные отправки подряд должны снова увести
   // фокус на сводку, даже если её текст не изменился.
   const [failedSubmits, setFailedSubmits] = useState(0)
 
-  // Смена шага — это смена содержимого экрана: фокус переносим на его
-  // заголовок, иначе после нажатия кнопки он остался бы на исчезнувшем
-  // элементе и скринридер не сообщил бы, что произошёл переход.
+  const isSignup = mode === 'signup'
+
+  // Смена шага — это смена содержимого экрана: фокус переносим на заголовок,
+  // иначе он остался бы на исчезнувшей кнопке и скринридер промолчал бы.
   useEffect(() => {
-    // Шаг 3 уводит фокус сам — заголовок там внутри VerificationNotice.
-    if (step === 2) {
-      stepTitleRef.current?.focus()
+    if (step === 'form') {
+      headingRef.current?.focus()
     }
   }, [step])
 
-  // Фокус переносим в эффекте, а не сразу в обработчике: в момент вызова
-  // блок сводки ещё не отрисован и ref пустой.
+  // Фокус переносим в эффекте, а не в обработчике: в момент вызова блок
+  // сводки ещё не отрисован и ref пустой.
   useEffect(() => {
     if (failedSubmits > 0) {
       summaryRef.current?.focus()
@@ -69,18 +62,18 @@ export function LoginPage() {
     const errors: FieldErrors = {}
 
     if (!email.trim()) {
-      errors.email = 'Укажите email.'
+      errors.email = 'Укажите почту.'
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.email = 'Введите корректный email, например name@example.com.'
+      errors.email = 'Проверьте адрес — похоже, в нём опечатка.'
     }
 
     if (!password) {
       errors.password = 'Укажите пароль.'
-    } else if (mode === 'register' && password.length < 8) {
-      errors.password = 'Пароль должен быть не короче 8 символов.'
+    } else if (isSignup && password.length < MIN_PASSWORD_LENGTH) {
+      errors.password = `Пароль должен быть не короче ${MIN_PASSWORD_LENGTH} символов.`
     }
 
-    if (mode === 'register') {
+    if (isSignup) {
       if (!passwordConfirmation) {
         errors.passwordConfirmation = 'Повторите пароль.'
       } else if (passwordConfirmation !== password) {
@@ -91,27 +84,29 @@ export function LoginPage() {
     return errors
   }
 
-  const goToCredentials = (next: Mode) => {
+  const pickRole = (next: SelectableRole) => {
+    setRole(next)
+    setStep('form')
+  }
+
+  const switchMode = (next: Mode) => {
+    if (next === mode) {
+      return
+    }
+
     setMode(next)
     setFieldErrors({})
     setFormError(null)
-    // Повтор пароля не переносим между режимами: при переходе к входу поле
-    // исчезает, и оставшееся значение всплыло бы при возврате к регистрации.
+    // Повтор пароля не переносим между режимами: при входе поле исчезает,
+    // и оставшееся значение всплыло бы при возврате к регистрации.
     setPasswordConfirmation('')
-    setStep(2)
-  }
-
-  const goBack = () => {
-    setStep(1)
-    setFieldErrors({})
-    setFormError(null)
   }
 
   /**
    * Ошибка снимается сразу, как только пользователь правит поле, а новая
    * показывается только на blur: иначе «Укажите пароль» висит поверх уже
-   * исправленного ввода, а валидация на каждый символ ругается на
-   * недописанный email.
+   * исправленного ввода, а проверка на каждый символ ругается на
+   * недописанный адрес.
    */
   const editField =
     (field: keyof FieldErrors, setValue: (v: string) => void) => (value: string) => {
@@ -140,9 +135,10 @@ export function LoginPage() {
     setSubmitting(true)
 
     try {
-      if (mode === 'register') {
+      if (isSignup) {
         await authApi.register(email, password, passwordConfirmation, role)
-        setStep(3)
+        setSentReason('sent')
+        setStep('sent')
 
         return
       }
@@ -153,6 +149,16 @@ export function LoginPage() {
       window.location.href = '/'
     } catch (error) {
       if (error instanceof RequestError) {
+        // Пароль верен, но адрес не подтверждён — это не ошибка ввода, а
+        // незавершённая регистрация. Ведём на экран с повторной отправкой,
+        // иначе человек упирается в сообщение без единого действия.
+        if ('email_not_verified' === error.code) {
+          setSentReason('blocked')
+          setStep('sent')
+
+          return
+        }
+
         // violations приходят с бэкенда — раскладываем их по полям, чтобы
         // ошибка была видна рядом с проблемным вводом, а не только сверху.
         setFieldErrors({
@@ -171,210 +177,189 @@ export function LoginPage() {
     }
   }
 
-  const isRegister = mode === 'register'
+  const RoleIcon = ROLE_ICON[role]
 
   return (
-    <main className="min-vh-100 d-flex align-items-center py-4 py-md-5">
-      <div className="container">
-        <div className="row justify-content-center">
-          <div className="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4">
-            <div className="text-center mb-4">
-              <h1 className="h4 mb-1">CVMatch</h1>
-              <p className="text-body-secondary mb-0">
-                {step === 3
-                  ? 'Остался один шаг'
-                  : step === 1
-                    ? 'Выберите, зачем вы здесь'
-                    : isRegister
-                      ? 'Создайте аккаунт, чтобы начать'
-                      : 'Введите данные для входа'}
-              </p>
-            </div>
-
-            <div className="app-surface p-4">
-              {step === 3 ? (
-                <VerificationNotice
-                  email={email}
-                  onBack={() => {
-                    setStep(1)
-                    setPassword('')
-                    setPasswordConfirmation('')
-                  }}
-                />
-              ) : step === 1 ? (
-                <>
-                  <RoleSelector value={role} onChange={setRole} />
-
-                  <div className="d-flex flex-column gap-2 mt-4">
-                    <button
-                      type="button"
-                      className="btn btn-primary btn-lg w-100"
-                      onClick={() => goToCredentials('login')}
-                    >
-                      Войти
-                    </button>
-
-                    <button
-                      type="button"
-                      className="btn btn-outline-primary btn-lg w-100"
-                      onClick={() => goToCredentials('register')}
-                    >
-                      Зарегистрироваться
-                    </button>
-                  </div>
-
-                  <div className="d-flex align-items-center gap-3 my-4">
-                    <hr className="flex-grow-1 m-0" />
-                    <span className="small text-body-secondary">или</span>
-                    <hr className="flex-grow-1 m-0" />
-                  </div>
-
-                  <div className="d-flex flex-column gap-2">
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary btn-lg d-flex align-items-center justify-content-center gap-2"
-                      onClick={() => authApi.startOAuth('google', role)}
-                    >
-                      <GoogleLogoIcon size={20} weight="bold" aria-hidden="true" />
-                      Продолжить с Google
-                    </button>
-
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary btn-lg d-flex align-items-center justify-content-center gap-2"
-                      onClick={() => authApi.startOAuth('github', role)}
-                    >
-                      <GithubLogoIcon size={20} weight="fill" aria-hidden="true" />
-                      Продолжить с GitHub
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="d-flex align-items-center gap-2 mb-3">
-                    <button
-                      type="button"
-                      className="btn btn-link app-icon-action p-0 text-body-secondary"
-                      onClick={goBack}
-                      disabled={submitting}
-                      aria-label="Назад к выбору роли"
-                    >
-                      <ArrowLeftIcon size={22} aria-hidden="true" />
-                    </button>
-
-                    <h2 ref={stepTitleRef} tabIndex={-1} className="h6 fw-semibold mb-0 app-step-title">
-                      {isRegister ? 'Регистрация' : 'Вход'}
-                    </h2>
-                  </div>
-
-                  {/* Выбранная роль остаётся видимой: иначе на втором шаге
-                      пользователь теряет из виду, что он вообще выбрал. */}
-                  <p className="small text-body-secondary border-start border-3 border-primary ps-2 mb-3">
-                    {ROLE_LABEL[role]}
-                  </p>
-
-                  <form onSubmit={handleSubmit} noValidate>
-                    {/* Сводка ошибок: role=alert объявляется сразу, tabIndex={-1}
-                        позволяет увести на неё фокус после неудачной отправки. */}
-                    {formError && (
-                      <div
-                        ref={summaryRef}
-                        tabIndex={-1}
-                        role="alert"
-                        className="alert alert-danger d-flex gap-2 align-items-start py-2 px-3"
-                      >
-                        <WarningCircleIcon
-                          size={20}
-                          weight="fill"
-                          aria-hidden="true"
-                          className="flex-shrink-0 mt-1"
-                        />
-                        <span className="small">{formError}</span>
-                      </div>
-                    )}
-
-                    <FormField
-                      label="Email"
-                      type="email"
-                      value={email}
-                      onChange={editField('email', setEmail)}
-                      onBlur={() =>
-                        setFieldErrors((prev) => ({ ...prev, email: validate().email }))
-                      }
-                      error={fieldErrors.email}
-                      autoComplete="email"
-                      placeholder="name@example.com"
-                      disabled={submitting}
-                    />
-
-                    <FormField
-                      label="Пароль"
-                      type="password"
-                      value={password}
-                      onChange={editField('password', setPassword)}
-                      onBlur={() =>
-                        setFieldErrors((prev) => ({ ...prev, password: validate().password }))
-                      }
-                      error={fieldErrors.password}
-                      autoComplete={isRegister ? 'new-password' : 'current-password'}
-                      placeholder={isRegister ? 'Минимум 8 символов' : '••••••••'}
-                      disabled={submitting}
-                    />
-
-                    {isRegister && (
-                      <FormField
-                        label="Повторите пароль"
-                        type="password"
-                        value={passwordConfirmation}
-                        onChange={editField('passwordConfirmation', setPasswordConfirmation)}
-                        onBlur={() =>
-                          setFieldErrors((prev) => ({
-                            ...prev,
-                            passwordConfirmation: validate().passwordConfirmation,
-                          }))
-                        }
-                        error={fieldErrors.passwordConfirmation}
-                        autoComplete="new-password"
-                        placeholder="Ещё раз тот же пароль"
-                        disabled={submitting}
-                      />
-                    )}
-
-                    <button
-                      type="submit"
-                      className="btn btn-primary btn-lg w-100 mt-2"
-                      disabled={submitting}
-                    >
-                      {submitting ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />
-                          {isRegister ? 'Создаём аккаунт…' : 'Входим…'}
-                        </>
-                      ) : isRegister ? (
-                        'Зарегистрироваться'
-                      ) : (
-                        'Войти'
-                      )}
-                    </button>
-
-                    <p className="text-center small text-body-secondary mt-2 mb-0 d-flex align-items-center justify-content-center gap-1 flex-wrap">
-                      {isRegister ? 'Уже есть аккаунт?' : 'Нет аккаунта?'}
-                      <button
-                        type="button"
-                        className="btn btn-link app-inline-action p-0 fw-semibold"
-                        onClick={() => goToCredentials(isRegister ? 'login' : 'register')}
-                        disabled={submitting}
-                      >
-                        {isRegister ? 'Войти' : 'Зарегистрироваться'}
-                      </button>
-                    </p>
-                  </form>
-                </>
-              )}
-            </div>
-          </div>
+    <div className="auth">
+      <div className="auth__pane">
+        <div className="auth__brand">
+          <span className="auth__logo" aria-hidden="true">
+            C
+          </span>
+          <span>CVMatch</span>
         </div>
+
+        <div className="auth__box">
+          {step === 'pick' && (
+            <>
+              <h1 className="h1">Добро пожаловать в CVMatch</h1>
+              <p className="muted mt3" style={{ margin: 0 }}>
+                Выберите, как вы будете пользоваться платформой. Это можно поменять позже в
+                настройках.
+              </p>
+
+              <RoleSelector onPick={pickRole} />
+
+              <p className="t-sm muted-3 mt6" style={{ margin: 0 }}>
+                Продолжая, вы соглашаетесь с условиями использования и политикой
+                конфиденциальности.
+              </p>
+            </>
+          )}
+
+          {step === 'form' && (
+            <>
+              <button type="button" className="auth__back" onClick={() => setStep('pick')}>
+                <CaretLeftIcon size={14} aria-hidden="true" />
+                Другая роль
+              </button>
+
+              <div className="row row--between g3">
+                <h1 ref={headingRef} tabIndex={-1} className="h2 app-step-title">
+                  {isSignup ? 'Создание аккаунта' : 'Вход в аккаунт'}
+                </h1>
+
+                <span className="rolepill">
+                  <RoleIcon size={13} aria-hidden="true" />
+                  {ROLE_PILL[role]}
+                  <button type="button" className="rolepill__change" onClick={() => setStep('pick')}>
+                    Сменить
+                  </button>
+                </span>
+              </div>
+
+              <div className="authtabs mt5" role="group" aria-label="Вход или регистрация">
+                <button
+                  type="button"
+                  className={`authtabs__btn${!isSignup ? ' is-on' : ''}`}
+                  aria-pressed={!isSignup}
+                  onClick={() => switchMode('login')}
+                >
+                  Войти
+                </button>
+                <button
+                  type="button"
+                  className={`authtabs__btn${isSignup ? ' is-on' : ''}`}
+                  aria-pressed={isSignup}
+                  onClick={() => switchMode('signup')}
+                >
+                  Зарегистрироваться
+                </button>
+              </div>
+
+              <form className="col g4 mt5" onSubmit={handleSubmit} noValidate>
+                {formError && (
+                  <div ref={summaryRef} tabIndex={-1} role="alert" className="notice notice--error">
+                    <WarningCircleIcon size={16} weight="fill" aria-hidden="true" />
+                    <span>{formError}</span>
+                  </div>
+                )}
+
+                <FormField
+                  label="Рабочая почта"
+                  type="email"
+                  value={email}
+                  onChange={editField('email', setEmail)}
+                  onBlur={() => setFieldErrors((prev) => ({ ...prev, email: validate().email }))}
+                  error={fieldErrors.email}
+                  autoComplete="email"
+                  placeholder="name@example.kz"
+                  disabled={submitting}
+                />
+
+                <FormField
+                  label="Пароль"
+                  type="password"
+                  value={password}
+                  onChange={editField('password', setPassword)}
+                  onBlur={() =>
+                    setFieldErrors((prev) => ({ ...prev, password: validate().password }))
+                  }
+                  error={fieldErrors.password}
+                  autoComplete={isSignup ? 'new-password' : 'current-password'}
+                  placeholder="••••••••"
+                  disabled={submitting}
+                  showStrength={isSignup}
+                />
+
+                {isSignup && (
+                  <FormField
+                    label="Повторите пароль"
+                    type="password"
+                    value={passwordConfirmation}
+                    onChange={editField('passwordConfirmation', setPasswordConfirmation)}
+                    onBlur={() =>
+                      setFieldErrors((prev) => ({
+                        ...prev,
+                        passwordConfirmation: validate().passwordConfirmation,
+                      }))
+                    }
+                    error={fieldErrors.passwordConfirmation}
+                    autoComplete="new-password"
+                    placeholder="Ещё раз тот же пароль"
+                    disabled={submitting}
+                  />
+                )}
+
+                <button
+                  type="submit"
+                  className="btn btn--primary btn--lg btn--block"
+                  disabled={submitting}
+                >
+                  {submitting
+                    ? isSignup
+                      ? 'Создаём аккаунт…'
+                      : 'Входим…'
+                    : isSignup
+                      ? 'Создать аккаунт'
+                      : 'Войти'}
+                </button>
+              </form>
+
+              <div className="auth__or mt5">или</div>
+
+              <div className="col g2 mt5">
+                <button
+                  type="button"
+                  className="ssobtn"
+                  onClick={() => authApi.startOAuth('google', role)}
+                  disabled={submitting}
+                >
+                  <GoogleMark />
+                  Продолжить с Google
+                </button>
+
+                <button
+                  type="button"
+                  className="ssobtn"
+                  onClick={() => authApi.startOAuth('github', role)}
+                  disabled={submitting}
+                >
+                  <GithubLogoIcon size={17} weight="fill" aria-hidden="true" />
+                  Продолжить с GitHub
+                </button>
+              </div>
+            </>
+          )}
+
+          {step === 'sent' && (
+            <VerificationNotice
+              email={email}
+              reason={sentReason}
+              onBack={() => {
+                setStep('form')
+                setMode('login')
+                setPassword('')
+                setPasswordConfirmation('')
+              }}
+            />
+          )}
+        </div>
+
+        <p className="auth__foot" style={{ margin: 0 }}>
+          © {new Date().getFullYear()} CVMatch
+        </p>
       </div>
-    </main>
+    </div>
   )
 }

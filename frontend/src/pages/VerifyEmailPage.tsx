@@ -87,63 +87,74 @@ export function VerifyEmailPage() {
   }, [state.kind])
 
   return (
-    <main className="min-vh-100 d-flex align-items-center py-5">
-      <div className="container">
-        <div className="row justify-content-center">
-          <div className="col-12 col-sm-10 col-md-7 col-lg-5">
-            <div className="app-surface p-4 text-center">
-              {state.kind === 'verifying' && (
-                <>
-                  <span
-                    className="spinner-border text-primary mb-3"
-                    role="status"
-                    aria-hidden="true"
-                  />
-                  <p className="text-body-secondary mb-0">Подтверждаем адрес…</p>
-                </>
-              )}
-
-              {state.kind === 'done' && (
-                <>
-                  <CheckCircleIcon
-                    size={44}
-                    weight="fill"
-                    aria-hidden="true"
-                    className="text-success mb-3"
-                  />
-                  <h1 ref={headingRef} tabIndex={-1} className="h5 mb-2 app-step-title">
-                    Адрес подтверждён
-                  </h1>
-                  <p className="text-body-secondary small mb-0">Открываем приложение…</p>
-                </>
-              )}
-
-              {state.kind === 'failed' && (
-                <>
-                  <WarningCircleIcon
-                    size={44}
-                    weight="fill"
-                    aria-hidden="true"
-                    className="text-danger mb-3"
-                  />
-                  <h1 ref={headingRef} tabIndex={-1} className="h5 mb-2 app-step-title">
-                    Не удалось подтвердить
-                  </h1>
-                  <p className="text-body-secondary small mb-4">{state.message}</p>
-
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={() => navigate('/login', { replace: true })}
-                  >
-                    Перейти ко входу
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
+    <div className="auth">
+      <div className="auth__pane">
+        <div className="auth__brand">
+          <span className="auth__logo" aria-hidden="true">
+            C
+          </span>
+          <span>CVMatch</span>
         </div>
+
+        <div className="auth__box">
+          {state.kind === 'verifying' && (
+            <p className="muted" style={{ margin: 0 }} role="status">
+              Подтверждаем адрес…
+            </p>
+          )}
+
+          {state.kind === 'done' && (
+            <div className="col g4">
+              <CheckCircleIcon
+                size={40}
+                weight="fill"
+                aria-hidden="true"
+                style={{ color: 'var(--ok-fg)' }}
+              />
+              <div>
+                <h1 ref={headingRef} tabIndex={-1} className="h2 app-step-title">
+                  Адрес подтверждён
+                </h1>
+                <p className="muted mt3" style={{ margin: 0 }}>
+                  Открываем приложение…
+                </p>
+              </div>
+            </div>
+          )}
+
+          {state.kind === 'failed' && (
+            <div className="col g4">
+              <WarningCircleIcon
+                size={40}
+                weight="fill"
+                aria-hidden="true"
+                style={{ color: 'var(--err-fg)' }}
+              />
+              <div>
+                <h1 ref={headingRef} tabIndex={-1} className="h2 app-step-title">
+                  Не удалось подтвердить
+                </h1>
+                <p className="muted mt3" style={{ margin: 0 }}>
+                  {state.message}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="btn btn--primary btn--lg"
+                style={{ alignSelf: 'flex-start' }}
+                onClick={() => navigate('/login', { replace: true })}
+              >
+                Перейти ко входу
+              </button>
+            </div>
+          )}
+        </div>
+
+        <p className="auth__foot" style={{ margin: 0 }}>
+          © {new Date().getFullYear()} CVMatch
+        </p>
       </div>
-    </main>
+    </div>
   )
 }
