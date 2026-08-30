@@ -72,6 +72,36 @@ RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
 # контейнере обращается к нему по 127.0.0.1:9000.
 RUN echo 'listen = 127.0.0.1:9000' > /usr/local/etc/php-fpm.d/zz-listen.conf
 
+# Логи приложения должны попадать в поток логов хостинга.
+# Monolog в prod пишет в php://stderr, но php-fpm по умолчанию перехватывает
+# вывод воркеров и глотает его. catch_workers_output = yes передаёт его
+# в основной процесс, decorate_workers_output = no убирает приписку
+# "NOTICE: PHP message:" перед каждой строкой, из-за которой JSON-записи
+# Monolog перестают парситься.
+RUN { \
+        echo '[global]'; \
+        echo 'error_log = /dev/stderr'; \
+        echo '[www]'; \
+        echo 'catch_workers_output = yes'; \
+        echo 'decorate_workers_output = no'; \
+    } > /usr/local/etc/php-fpm.d/zz-logging.conf
+
+# Таймауты отправки почты.
+#
+# Отправка идёт синхронно в HTTP-запросе. По умолчанию default_socket_timeout
+# равен 60 c, столько же держит nginx (fastcgi_read_timeout) — то есть при
+# недоступном SMTP nginx обрывает запрос первым и отдаёт свою HTML-страницу
+# 504. Исключение до обработчика не долетает, в лог не пишется ничего,
+# а фронтенд видит ответ без поля message и показывает "Сервер недоступен".
+#
+# 15 c меньше 60 c, поэтому первым срабатывает PHP: Symfony Mailer бросает
+# TransportException, он попадает в лог канала mail с причиной, а клиент
+# получает нормальный JSON с кодом verification_email_failed.
+RUN { \
+        echo 'default_socket_timeout = 15'; \
+        echo 'max_execution_time = 45'; \
+    } > "$PHP_INI_DIR/conf.d/timeouts.ini"
+
 WORKDIR /var/www/backend
 
 # Код бэкенда и установленные зависимости.

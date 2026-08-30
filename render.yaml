@@ -88,6 +88,14 @@ services:
       - key: MAILER_FROM_NAME
         value: CVMatch
 
+      # --- Диагностика ---
+      # Пока переменная пуста, /api/diagnostics/mail отвечает 404.
+      # Чтобы разобраться с почтой в проде, задайте здесь случайную строку
+      # и передайте её в заголовке X-Diagnostics-Token. Endpoint показывает
+      # хост и порт SMTP-сервера, поэтому без токена его открывать нельзя.
+      - key: DIAGNOSTICS_TOKEN
+        sync: false
+
       # FRONTEND_URL не задаём: фронтенд обслуживается тем же сервисом,
       # и entrypoint подставляет в него RENDER_EXTERNAL_URL, который
       # платформа передаёт в контейнер сама.

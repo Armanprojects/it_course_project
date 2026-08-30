@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Exception\AuthException;
 use App\Repository\EmailVerificationTokenRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\MailerInterface;
@@ -26,9 +27,11 @@ final readonly class EmailVerificationService
         private EntityManagerInterface $em,
         private EmailVerificationTokenRepository $tokens,
         private MailerInterface $mailer,
+        private LoggerInterface $mailLogger,
         private string $frontendUrl,
         private string $senderAddress,
         private string $senderName,
+        private string $mailerDsn,
     ) {
     }
 
@@ -115,12 +118,96 @@ final readonly class EmailVerificationService
                 'expiresIn' => '24 часа',
             ]);
 
+        // Отправка синхронная: пользователь ждёт ответа ровно столько,
+        // сколько идёт диалог с SMTP-сервером. Замеряем длительность —
+        // по ней видно, отвалились мы быстро (отказ, неверный пароль)
+        // или висели до таймаута (порт закрыт хостингом).
+        $startedAt = microtime(true);
+
+        $this->mailLogger->info('verification email: sending', [
+            'recipient' => $this->maskEmail($user->getEmail()),
+            'transport' => $this->describeTransport(),
+        ]);
+
         try {
             $this->mailer->send($email);
         } catch (TransportExceptionInterface $e) {
+            $this->mailLogger->error('verification email: failed', [
+                'recipient' => $this->maskEmail($user->getEmail()),
+                'transport' => $this->describeTransport(),
+                'elapsedMs' => $this->elapsedMs($startedAt),
+                'exception' => $e::class,
+                'reason'    => $e->getMessage(),
+                // Настоящая причина (Connection timed out, Connection refused,
+                // 535 authentication failed) лежит не в верхнем исключении
+                // Symfony, а на уровень-два глубже.
+                'causes'    => $this->causeChain($e),
+            ]);
+
             // The account and its token already exist, so the user can ask for
             // another link; surfacing the failure lets the UI say so honestly.
             throw AuthException::verificationEmailFailed($e->getMessage());
         }
+
+        $this->mailLogger->info('verification email: sent', [
+            'recipient' => $this->maskEmail($user->getEmail()),
+            'elapsedMs' => $this->elapsedMs($startedAt),
+        ]);
+    }
+
+    private function elapsedMs(float $startedAt): int
+    {
+        return (int) round((microtime(true) - $startedAt) * 1000);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function causeChain(\Throwable $error): array
+    {
+        $causes   = [];
+        $previous = $error->getPrevious();
+
+        // Ограничение по глубине: цепочка previous теоретически может
+        // замкнуться, а лог должен остаться читаемым.
+        while (null !== $previous && \count($causes) < 5) {
+            $causes[] = $previous::class . ': ' . $previous->getMessage();
+            $previous = $previous->getPrevious();
+        }
+
+        return $causes;
+    }
+
+    /**
+     * Схема, хост и порт транспорта — без логина и пароля, которые в DSN
+     * лежат рядом. Именно эти три поля отвечают на вопрос, куда мы вообще
+     * пытались достучаться, и заданы ли настройки почты в окружении.
+     */
+    private function describeTransport(): string
+    {
+        $parts = parse_url($this->mailerDsn);
+
+        if (false === $parts || !isset($parts['scheme'])) {
+            return 'unparsable-dsn';
+        }
+
+        return sprintf(
+            '%s://%s%s',
+            $parts['scheme'],
+            $parts['host'] ?? '(no-host)',
+            isset($parts['port']) ? ':' . $parts['port'] : ':(default)',
+        );
+    }
+
+    /** user@example.com → u***r@example.com: адрес — персональные данные. */
+    private function maskEmail(string $email): string
+    {
+        [$local, $domain] = array_pad(explode('@', $email, 2), 2, '');
+
+        if ('' === $domain || mb_strlen($local) < 3) {
+            return '***@' . $domain;
+        }
+
+        return mb_substr($local, 0, 1) . '***' . mb_substr($local, -1) . '@' . $domain;
     }
 }

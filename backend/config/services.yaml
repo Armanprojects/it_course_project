@@ -29,6 +29,25 @@ services:
             $frontendUrl: '%env(FRONTEND_URL)%'
             $senderAddress: '%env(MAILER_FROM_ADDRESS)%'
             $senderName: '%env(MAILER_FROM_NAME)%'
+            # Канал mail пишет в stderr сразу, без буфера fingers_crossed,
+            # иначе записи теряются, когда nginx обрывает запрос по таймауту.
+            # Имя аргумента $mailLogger + тег monolog.logger — так бандл
+            # подставляет логгер нужного канала (см. config/packages/monolog.yaml).
+            $mailLogger: '@monolog.logger.mail'
+            # DSN нужен только для лога: из него берутся схема, хост и порт,
+            # чтобы в логе было видно, куда шла отправка. Логин и пароль
+            # в лог не попадают — см. describeTransport().
+            $mailerDsn: '%env(MAILER_DSN)%'
+
+    # Диагностика почты. Отключена, пока в окружении нет DIAGNOSTICS_TOKEN.
+    App\Controller\MailDiagnosticsController:
+        arguments:
+            $mailLogger: '@monolog.logger.mail'
+            $mailerDsn: '%env(MAILER_DSN)%'
+            $senderAddress: '%env(MAILER_FROM_ADDRESS)%'
+            $frontendUrl: '%env(FRONTEND_URL)%'
+            $diagnosticsToken: '%env(DIAGNOSTICS_TOKEN)%'
+        tags: ['controller.service_arguments']
 
     App\EventSubscriber\ApiExceptionSubscriber:
         arguments:
