@@ -7,6 +7,10 @@
 # --- Frontend ---
 /frontend/node_modules/
 /frontend/dist/
+# Локальные ключи Cloudinary. Шаблон .env.example остаётся в репозитории.
+/frontend/.env
+/frontend/.env.local
+/frontend/.env.*.local
 
 # --- IDE / OS ---
 .idea/

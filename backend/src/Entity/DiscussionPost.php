@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\DiscussionPostRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 
@@ -13,7 +14,7 @@ use Doctrine\ORM\Mapping as ORM;
  * Posts are append-only and shown in chronological order, so the id doubles as
  * the ordering key and as the cursor clients poll with ("give me posts after N").
  */
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: DiscussionPostRepository::class)]
 #[ORM\Table(name: 'discussion_post')]
 #[ORM\Index(name: 'idx_post_position_id', columns: ['position_id', 'id'])]
 class DiscussionPost

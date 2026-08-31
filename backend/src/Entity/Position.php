@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\PositionRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: PositionRepository::class)]
 #[ORM\Table(name: '`position`')]
 #[ORM\Index(name: 'idx_position_public', columns: ['is_public'])]
 class Position
@@ -66,6 +67,24 @@ class Position
     #[ORM\Version]
     #[ORM\Column(type: 'integer')]
     private int $version = 1;
+
+    /**
+     * Full-text index over title, company and description.
+     *
+     * A generated column: PostgreSQL recomputes it on every write, so the
+     * search index can never drift out of sync with the row the way an
+     * application-maintained column would. Never written from PHP, hence
+     * insertable/updatable false.
+     */
+    #[ORM\Column(
+        name: 'search_vector',
+        type: 'text',
+        nullable: true,
+        insertable: false,
+        updatable: false,
+        generated: 'ALWAYS',
+    )]
+    private ?string $searchVector = null;
 
     /**
      * Links are soft-deleted, so no orphanRemoval here.

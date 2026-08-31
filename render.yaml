@@ -108,6 +108,23 @@ services:
       - key: DIAGNOSTICS_TOKEN
         sync: false
 
+      # --- Загрузка изображений (Cloudinary) ---
+      # Картинки нельзя хранить у себя, поэтому файл уходит из браузера
+      # прямо в облако. Оба значения публичны: unsigned upload preset на то
+      # и рассчитан, что лежит в коде фронтенда. API Secret сюда не нужен.
+      #
+      # Render передаёт envVars в docker build как build-аргументы, а Vite
+      # подставляет VITE_*-переменные именно на сборке — в рантайме менять
+      # их уже поздно, потребуется передеплой.
+      #
+      # sync: false — значения вводятся в дашборде, а не хранятся в git.
+      # Пока они пусты, поле изображения работает как ввод ссылки вручную.
+      - key: VITE_CLOUDINARY_CLOUD_NAME
+        sync: false
+
+      - key: VITE_CLOUDINARY_UPLOAD_PRESET
+        sync: false
+
       # FRONTEND_URL не задаём: фронтенд обслуживается тем же сервисом,
       # и entrypoint подставляет в него RENDER_EXTERNAL_URL, который
       # платформа передаёт в контейнер сама.

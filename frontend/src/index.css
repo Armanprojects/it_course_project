@@ -708,7 +708,1026 @@ textarea {
   margin-top: var(--s6);
 }
 
+.g5 {
+  gap: var(--s5);
+}
+
+.g6 {
+  gap: var(--s6);
+}
+
+/* --- Шапка приложения ---------------------------------------------------- */
+.apphead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.apphead__inner {
+  display: flex;
+  align-items: center;
+  gap: var(--s5);
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: var(--s3) var(--s5);
+}
+
+.apphead__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  font-weight: 600;
+  color: var(--text-1);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.apphead__logo {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-sm);
+  background: var(--n-900);
+  color: var(--text-inv);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Поиск занимает всё свободное место: он есть на каждой странице и является
+   основным способом навигации по каталогу. */
+.apphead__search {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex: 1;
+  min-width: 0;
+  max-width: 420px;
+  height: 36px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--n-50);
+  color: var(--text-3);
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+
+.apphead__search:focus-within {
+  border-color: var(--a-600);
+  background: var(--bg-surface);
+  box-shadow: 0 0 0 3px var(--a-50);
+}
+
+.apphead__input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-1);
+  font-size: 13.5px;
+}
+
+.apphead__input:focus {
+  outline: none;
+}
+
+.apphead__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-left: auto;
+}
+
+.apphead__nav a {
+  text-decoration: none;
+}
+
+/* --- Каркас страницы ----------------------------------------------------- */
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: var(--s8) var(--s5) var(--s10);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s6);
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  max-width: 640px;
+}
+
+.hero__text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+}
+
+.hero__actions a {
+  text-decoration: none;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  padding: var(--s5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--bg-surface);
+}
+
+.panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s4);
+  flex-wrap: wrap;
+}
+
+.panel__hint {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+}
+
+.panel__head a {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.section__title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.prose {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-2);
+  max-width: 70ch;
+}
+
+.backlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  font-size: 13px;
+  color: var(--text-2);
+  text-decoration: none;
+}
+
+.backlink:hover {
+  color: var(--text-1);
+}
+
+.home__split {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: var(--s6);
+  align-items: start;
+}
+
+/* --- Статистика ---------------------------------------------------------- */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--line);
+  overflow: hidden;
+}
+
+.stats__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--s4) var(--s5);
+  background: var(--bg-surface);
+}
+
+.stats__label {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.stats__value {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Таблица ------------------------------------------------------------- */
+/* Единственное представление каталога: задание запрещает плитки и галереи. */
+.table__scroll {
+  overflow-x: auto;
+  margin: 0 calc(var(--s5) * -1);
+  padding: 0 var(--s5);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.table th {
+  padding: 0 var(--s3) var(--s2);
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-3);
+  white-space: nowrap;
+  border-bottom: 1px solid var(--line);
+}
+
+.table th:first-child,
+.table td:first-child {
+  padding-left: 0;
+}
+
+.table td {
+  padding: var(--s3);
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: top;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* Кнопок в строках нет — за них снимают 20%. Кликается вся строка. */
+.table__row {
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+
+.table__row:hover {
+  background: var(--n-50);
+}
+
+.table__link {
+  font-weight: 500;
+  color: var(--text-1);
+  text-decoration: none;
+}
+
+.table__row:hover .table__link {
+  text-decoration: underline;
+}
+
+.table__sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-3);
+  max-width: 52ch;
+}
+
+.table__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.table__sort:hover {
+  color: var(--text-1);
+}
+
+.table__empty {
+  margin: 0;
+  padding: var(--s5) 0;
+  font-size: 13.5px;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Чипы и облако тегов -------------------------------------------------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  background: var(--n-50);
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.chip--muted {
+  color: var(--text-3);
+}
+
+.cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  align-items: center;
+}
+
+/* Вес тега передаём размером, но число рядом обязательно: кегль сам по себе
+   слишком неточная шкала, чтобы по нему что-то сравнивать. */
+.cloud__tag {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 4px var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  background: var(--bg-surface);
+  color: var(--text-1);
+  cursor: pointer;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+
+.cloud__tag:hover {
+  background: var(--n-50);
+  border-color: var(--line-strong);
+}
+
+.cloud__count {
+  font-size: 11px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Пагинация ------------------------------------------------------------ */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding-top: var(--s2);
+}
+
+/* --- Профиль: атрибуты ---------------------------------------------------- */
+.attrgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--s4);
+}
+
+.attr {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--s3);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  background: var(--bg-surface);
+}
+
+/* Незаполненное поле подсвечиваем: по заданию пустые значения должны быть
+   заметны, и та же логика понадобится при просмотре резюме. */
+.attr--empty {
+  border-color: var(--err-br);
+  background: var(--err-bg);
+}
+
+.attr__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.attr__flag {
+  margin-left: var(--s2);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--err-fg);
+}
+
+.attr__hint {
+  margin: 0;
+  font-size: 12px;
+}
+
+.attr__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  flex: none;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+
+.attr__remove:hover {
+  background: var(--n-100);
+  color: var(--text-1);
+}
+
+.attr__preview {
+  max-height: 160px;
+  width: auto;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  object-fit: cover;
+}
+
+.input--area {
+  height: auto;
+  padding: var(--s2) var(--s3);
+  line-height: 1.5;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.period {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.period .field {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --- Загрузка изображения ------------------------------------------------- */
+.dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  flex-wrap: wrap;
+  padding: var(--s4);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--n-50);
+  color: var(--text-3);
+  text-align: center;
+}
+
+.dropzone.is-over {
+  border-color: var(--a-600);
+  background: var(--a-50);
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Индикатор автосохранения --------------------------------------------- */
+.savebadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px var(--s3);
+  border-radius: var(--r-full);
+  background: var(--n-100);
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.savebadge.is-warn {
+  background: var(--err-bg);
+  color: var(--err-fg);
+}
+
+/* --- Выбор атрибута из библиотеки ------------------------------------------ */
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--n-50);
+}
+
+.picker__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.picker__filters {
+  display: flex;
+  gap: var(--s2);
+  flex-wrap: wrap;
+}
+
+.picker__search {
+  flex: 1;
+  min-width: 180px;
+  max-width: none;
+  background: var(--bg-surface);
+}
+
+.picker__category {
+  width: auto;
+  min-width: 170px;
+}
+
+.picker__list {
+  display: flex;
+  flex-direction: column;
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg-surface);
+}
+
+.picker__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s3);
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+  background: transparent;
+  color: var(--text-1);
+  text-align: left;
+  cursor: pointer;
+}
+
+.picker__item:last-child {
+  border-bottom: 0;
+}
+
+.picker__item:hover {
+  background: var(--n-50);
+}
+
+.picker__name {
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.g1 {
+  gap: var(--s1);
+}
+
+/* --- Ввод тегов ------------------------------------------------------------ */
+.taginput {
+  position: relative;
+}
+
+.taginput__box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 5px var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg-surface);
+}
+
+.taginput__box:focus-within {
+  border-color: var(--a-600);
+  box-shadow: 0 0 0 3px var(--a-50);
+}
+
+.taginput__field {
+  flex: 1;
+  min-width: 120px;
+  border: 0;
+  background: transparent;
+  font-size: 13.5px;
+}
+
+.taginput__field:focus {
+  outline: none;
+}
+
+.chip--tag {
+  background: var(--n-100);
+  padding-right: 4px;
+}
+
+.chip__x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.chip__x:hover {
+  background: var(--n-300);
+  color: var(--text-1);
+}
+
+.chip--ok {
+  background: var(--ok-bg);
+  border-color: var(--ok-br);
+  color: var(--ok-fg);
+}
+
+.taginput__list {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg-surface);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 8%);
+}
+
+.taginput__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--s2) var(--s3);
+  border: 0;
+  background: transparent;
+  color: var(--text-1);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.taginput__option:hover {
+  background: var(--n-50);
+}
+
+/* --- Проекты --------------------------------------------------------------- */
+.project {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s4);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+}
+
+.project--form {
+  background: var(--n-50);
+  border-color: var(--line);
+}
+
+.project__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.project__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Markdown-описание: сбрасываем внешние отступы, иначе первый и последний
+   блок разъезжаются с сеткой карточки. */
+.prose--md > :first-child {
+  margin-top: 0;
+}
+
+.prose--md > :last-child {
+  margin-bottom: 0;
+}
+
+.prose--md ul,
+.prose--md ol {
+  padding-left: var(--s5);
+}
+
+.prose--md code {
+  padding: 1px 4px;
+  border-radius: var(--r-xs);
+  background: var(--n-100);
+  font-size: 12.5px;
+}
+
+.prose--md a {
+  color: var(--a-700);
+}
+
+/* --- Редактор позиции ------------------------------------------------------ */
+.tmplrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  flex-wrap: wrap;
+  padding: var(--s3);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+}
+
+.tmplrow.is-removed {
+  opacity: 0.6;
+  background: var(--n-50);
+}
+
+.tmplrow__confirm {
+  flex-basis: 100%;
+}
+
+.tmplrow .picker__name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+/* Правило доступа: атрибут, оператор, операнд и кнопка удаления. */
+.rulerow {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.4fr) minmax(120px, 1fr) minmax(120px, 1fr) auto;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.rulerow__none {
+  padding-left: var(--s2);
+}
+
+.rulerow__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+/* --- Резюме ---------------------------------------------------------------- */
+.cvsheet__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--s3);
+  margin: 0;
+}
+
+.cvsheet__row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--s2) var(--s3);
+  border-left: 2px solid var(--line);
+}
+
+/* Пустое значение подсвечено красным — прямое требование задания. */
+.cvsheet__row.is-empty {
+  border-left-color: var(--err-fg);
+  background: var(--err-bg);
+}
+
+.cvsheet__value {
+  margin: 0;
+  font-size: 14px;
+}
+
+.cvsheet__blank {
+  color: var(--err-fg);
+  font-size: 13px;
+}
+
+.likebtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  background: var(--bg-surface);
+  color: var(--text-2);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast);
+}
+
+.likebtn:hover:not(:disabled) {
+  border-color: var(--line-strong);
+}
+
+.likebtn.is-on {
+  border-color: var(--err-br);
+  background: var(--err-bg);
+  color: var(--err-fg);
+}
+
+.likecount {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.likecount.is-on {
+  color: var(--err-fg);
+}
+
+/* --- Обсуждение ------------------------------------------------------------ */
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 460px;
+  overflow-y: auto;
+}
+
+.thread__item {
+  padding: var(--s3);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  background: var(--bg-surface);
+}
+
+.thread__item.is-mine {
+  background: var(--n-50);
+  border-color: var(--line);
+}
+
+.thread__meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-bottom: 4px;
+}
+
+.thread__author {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-1);
+}
+
+a.thread__author {
+  color: var(--a-700);
+}
+
+/* --- Панель действий над выделением ---------------------------------------- */
+/* Задание запрещает кнопки в каждой записи: действия живут здесь и работают
+   над тем, что отмечено флажками. */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  flex-wrap: wrap;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--n-50);
+}
+
+.toolbar__confirm {
+  flex-basis: 100%;
+}
+
+/* Подсказка занимает то же место, что и панель: без неё список подпрыгивал
+   бы при первом выделении. */
+.toolbar__hint {
+  margin: 0;
+  padding: var(--s2) var(--s3);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-md);
+}
+
+.table__pick {
+  width: 36px;
+  padding-right: 0;
+}
+
+.table__row[aria-selected='true'] {
+  background: var(--a-50);
+}
+
+.table__row.is-removed {
+  opacity: 0.55;
+}
+
+/* Карточка проекта как выбираемая запись. */
+.project--pick {
+  cursor: pointer;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+
+.project--pick:hover {
+  border-color: var(--line-strong);
+  background: var(--n-50);
+}
+
+.project--pick.is-picked {
+  border-color: var(--a-600);
+  background: var(--a-50);
+}
+
+.project__pick {
+  display: flex;
+  align-items: center;
+  padding-top: 2px;
+  cursor: pointer;
+}
+
 /* --- Адаптивность -------------------------------------------------------- */
+@media (max-width: 640px) {
+  /* Правило доступа в одну колонку: три селекта в ряд на телефоне
+     нечитаемы. */
+  .rulerow {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .rulerow > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 860px) {
+  .home__split {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .apphead__inner {
+    flex-wrap: wrap;
+    gap: var(--s3);
+  }
+
+  .apphead__search {
+    order: 3;
+    max-width: none;
+    flex-basis: 100%;
+  }
+
+  .page {
+    padding: var(--s6) var(--s4) var(--s8);
+  }
+
+  .panel {
+    padding: var(--s4);
+  }
+
+  .table__scroll {
+    margin: 0 calc(var(--s4) * -1);
+    padding: 0 var(--s4);
+  }
+
+  /* Второстепенные колонки скрываем, а не сжимаем: на телефоне важны
+     название, компания и уровень. */
+  .table .is-secondary {
+    display: none;
+  }
+}
+
 @media (max-width: 980px) {
   .auth__pane {
     padding: var(--s6) var(--s5);

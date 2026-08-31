@@ -20,6 +20,10 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Entity'
                 prefix: 'App\Entity'
                 alias: App
+        dql:
+            # PostgreSQL full-text match operator (@@), which DQL has no syntax for.
+            string_functions:
+                TS_MATCH: App\Doctrine\TsMatchFunction
 
 when@dev:
     doctrine:

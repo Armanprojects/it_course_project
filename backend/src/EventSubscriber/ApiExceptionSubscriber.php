@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\EventSubscriber;
 
 use App\Exception\AuthException;
+use App\Exception\ConflictException;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -37,10 +38,24 @@ final readonly class ApiExceptionSubscriber implements EventSubscriberInterface
         $exception = $event->getThrowable();
 
         $event->setResponse(match (true) {
+            $exception instanceof ConflictException   => $this->conflictResponse($exception),
             $exception instanceof AuthException      => $this->authResponse($exception),
             $exception instanceof HttpExceptionInterface => $this->httpResponse($exception),
             default                                  => $this->serverErrorResponse($exception),
         });
+    }
+
+    /**
+     * The version travels with the error: without it the client can only tell
+     * the user "reload", instead of merging against what the server now holds.
+     */
+    private function conflictResponse(ConflictException $exception): JsonResponse
+    {
+        return new JsonResponse([
+            'error'          => $exception->getErrorCode(),
+            'message'        => $exception->getMessage(),
+            'currentVersion' => $exception->getCurrentVersion(),
+        ], $exception->getStatusCode());
     }
 
     private function authResponse(AuthException $exception): JsonResponse

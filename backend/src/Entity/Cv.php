@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\CvStatus;
+use App\Repository\CvRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -16,7 +17,7 @@ use Doctrine\ORM\Mapping as ORM;
  * Attribute values are deliberately NOT stored here: the profile holds the only
  * master value, editing an attribute in a CV updates the profile itself.
  */
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: CvRepository::class)]
 #[ORM\Table(name: 'cv')]
 #[ORM\UniqueConstraint(name: 'uniq_cv_profile_position', columns: ['profile_id', 'position_id'])]
 #[ORM\Index(name: 'idx_cv_position_status', columns: ['position_id', 'status'])]

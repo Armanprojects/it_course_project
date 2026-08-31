@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\TagRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 
@@ -14,7 +15,7 @@ use Doctrine\ORM\Mapping as ORM;
  * ("LIKE 're%'") and the tag cloud ("ORDER BY usage_count") run on an index
  * instead of scanning every project.
  */
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: TagRepository::class)]
 #[ORM\Table(name: 'tag')]
 #[ORM\UniqueConstraint(name: 'uniq_tag_name_normalized', columns: ['name_normalized'])]
 #[ORM\Index(name: 'idx_tag_usage', columns: ['usage_count'])]

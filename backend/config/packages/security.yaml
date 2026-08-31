@@ -37,6 +37,17 @@ security:
     access_control:
         - { path: ^/api/health, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/(login|register|verify|oauth), roles: PUBLIC_ACCESS }
+        # Browsing the catalogue and the public counters needs no account.
+        # These stay inside the api firewall rather than getting their own:
+        # a signed-in visitor must still be recognised here, so that the page
+        # can greet them instead of offering to log in.
+        - { path: ^/api/home$, roles: PUBLIC_ACCESS }
+        # Only the catalogue itself is public. Anything nested under a position
+        # — its CVs, its discussion, its editable shape — is matched first by
+        # the rules above it and stays behind a role.
+        - { path: '^/api/positions/\d+/(cvs|discussion|edit)', roles: ROLE_USER, methods: [GET] }
+        - { path: ^/api/positions$, roles: PUBLIC_ACCESS, methods: [GET] }
+        - { path: '^/api/positions/\d+$', roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/api/admin, roles: ROLE_ADMIN }
         - { path: ^/api/auth, roles: IS_AUTHENTICATED_FULLY }
 

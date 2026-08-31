@@ -39,4 +39,44 @@ class ProfileRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    /**
+     * The whole profile page in a fixed number of queries.
+     *
+     * Deliberately three separate fetches rather than one big join: collecting
+     * values, projects and CVs in a single query would multiply the rows by
+     * each collection's size. Doctrine stitches them onto the same managed
+     * entity, so the later calls only fill in what the first one left lazy.
+     */
+    public function findForPage(int $id): ?Profile
+    {
+        $profile = $this->findWithValues($id);
+
+        if (null === $profile) {
+            return null;
+        }
+
+        // Tags come along: the project list renders them, and without this
+        // each project would fetch its own tag collection.
+        $this->createQueryBuilder('p')
+            ->addSelect('project', 'tag')
+            ->leftJoin('p.projects', 'project')
+            ->leftJoin('project.tags', 'tag')
+            ->andWhere('p.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getResult();
+
+        // Same for the CV rows, which each name their position.
+        $this->createQueryBuilder('p')
+            ->addSelect('cv', 'position')
+            ->leftJoin('p.cvs', 'cv')
+            ->leftJoin('cv.position', 'position')
+            ->andWhere('p.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getResult();
+
+        return $profile;
+    }
 }

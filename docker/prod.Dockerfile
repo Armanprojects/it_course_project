@@ -17,6 +17,18 @@ COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 
 COPY frontend/ ./
+
+# Vite подставляет VITE_*-переменные в момент сборки, а не в рантайме:
+# на Render фронтенд собирается здесь, внутри образа, поэтому ключи
+# Cloudinary должны прийти сюда build-аргументами. Без них загрузка
+# картинок молча выключится в проде, продолжая работать локально.
+#
+# Оба значения публичны — unsigned upload preset на то и рассчитан.
+ARG VITE_CLOUDINARY_CLOUD_NAME=""
+ARG VITE_CLOUDINARY_UPLOAD_PRESET=""
+ENV VITE_CLOUDINARY_CLOUD_NAME=$VITE_CLOUDINARY_CLOUD_NAME \
+    VITE_CLOUDINARY_UPLOAD_PRESET=$VITE_CLOUDINARY_UPLOAD_PRESET
+
 RUN npm run build
 
 # ---------------------------------------------------------------------

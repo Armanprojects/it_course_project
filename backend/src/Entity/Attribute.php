@@ -6,10 +6,11 @@ namespace App\Entity;
 
 use App\Enum\AttributeCategory;
 use App\Enum\AttributeType;
+use App\Repository\AttributeRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: AttributeRepository::class)]
 #[ORM\Table(name: 'attribute')]
 #[ORM\UniqueConstraint(name: 'uniq_attribute_name_normalized', columns: ['name_normalized'])]
 #[ORM\Index(name: 'idx_attribute_category', columns: ['category'])]
