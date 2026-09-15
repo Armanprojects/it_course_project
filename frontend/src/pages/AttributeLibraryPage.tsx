@@ -24,7 +24,7 @@ const BLANK: AttributeInput = {
  * просто перестаёт предлагаться. Поэтому здесь же можно и восстановить.
  */
 export function AttributeLibraryPage() {
-  if (!tokenStorage.get()) {
+  if (!tokenStorage.isValid()) {
     return <Navigate to="/login" replace />
   }
 

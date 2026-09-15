@@ -1,7 +1,7 @@
 import { CheckCircleIcon, CloudArrowUpIcon, PlusIcon, WarningCircleIcon } from '@phosphor-icons/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
-import { profileApi, RequestError, tokenStorage } from '../api/client'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { profileApi, RequestError, tokenStorage, type ProfileTarget } from '../api/client'
 import type { AttributeValue, ProfileAttribute, ProfileData } from '../api/types'
 import { AppHeader } from '../components/AppHeader'
 import { AttributeField } from '../components/AttributeField'
@@ -27,7 +27,7 @@ const isDraftEmpty = (draft: Draft) => Object.keys(draft).length === 0
 export function ProfilePage() {
   // Без токена на страницу заходить незачем — уводим на вход, не дожидаясь
   // 401 от сервера. Проверка при рендере: она не зависит от загрузки данных.
-  if (!tokenStorage.get()) {
+  if (!tokenStorage.isValid()) {
     return <Navigate to="/login" replace />
   }
 
@@ -35,6 +35,11 @@ export function ProfilePage() {
 }
 
 function ProfileView() {
+  // /profile — свой профиль, /profiles/:id — чужой. Второй маршрут сервер
+  // отдаёт только администратору, поэтому здесь роль не проверяется: чужой
+  // id у обычного пользователя упрётся в 403 при загрузке.
+  const { id } = useParams<{ id: string }>()
+  const target: ProfileTarget = id === undefined ? 'me' : Number(id)
   const t = useTranslation()
   const errorText = useErrorText()
   const navigate = useNavigate()
@@ -52,7 +57,7 @@ function ProfileView() {
 
   const load = useCallback(async () => {
     try {
-      const data = await profileApi.me()
+      const data = target === 'me' ? await profileApi.me() : await profileApi.byId(target)
       versionRef.current = data.version
       setProfile(data)
       setError(null)
@@ -77,7 +82,7 @@ function ProfileView() {
   }, [load])
 
   const onSave = useCallback(async (changes: Draft) => {
-    const data = await profileApi.save(versionRef.current, changes)
+    const data = await profileApi.save(versionRef.current, changes, target)
     versionRef.current = data.version
     setProfile(data)
     // Правки уехали на сервер и вернулись в его ответе — локальную копию
@@ -193,7 +198,9 @@ function ProfileView() {
       <main className="page">
         <div className="panel__head">
           <div className="col g1">
-            <h1 className="h1">{t('profile.title')}</h1>
+            {/* Заголовок честно называет, чья это страница: админ правит
+                чужой профиль тем же экраном, что и свой. */}
+            <h1 className="h1">{t(target === 'me' ? 'profile.title' : 'profile.titleOther')}</h1>
             <p className="muted" style={{ margin: 0 }}>
               {profile.user.email}
             </p>
@@ -252,7 +259,7 @@ function ProfileView() {
               onPick={(attribute) => {
                 setPicking(false)
                 void mutateAttributes((version) =>
-                  profileApi.addAttribute(attribute.id, version),
+                  profileApi.addAttribute(attribute.id, version, target),
                 )
               }}
             />
@@ -272,7 +279,7 @@ function ProfileView() {
                   onChange={(value) => change(attribute.attributeId, value)}
                   onRemove={() =>
                     void mutateAttributes((version) =>
-                      profileApi.removeAttribute(attribute.attributeId, version),
+                      profileApi.removeAttribute(attribute.attributeId, version, target),
                     )
                   }
                 />
@@ -281,7 +288,7 @@ function ProfileView() {
           )}
         </section>
 
-        <ProjectsSection projects={profile.projects} onChanged={() => void load()} />
+        <ProjectsSection projects={profile.projects} onChanged={() => void load()} target={target} />
 
         <CvSection cvs={profile.cvs} />
       </main>
@@ -362,7 +369,10 @@ function CvSection({ cvs }: { cvs: ProfileData['cvs'] }) {
               {cvs.map((cv) => (
                 <tr key={cv.id}>
                   <td>
-                    <Link className="table__link" to={`/positions/${cv.position.id}`}>
+                    {/* Ведём в само резюме, а не в позицию: со своей страницы
+                        кандидат правит поля и публикует, тогда как ссылка на
+                        позицию не давала открыть уже поданное резюме вовсе. */}
+                    <Link className="table__link" to={`/cvs/${cv.id}`}>
                       {cv.position.title}
                     </Link>
                   </td>

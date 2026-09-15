@@ -22,9 +22,9 @@ use Symfony\Component\Routing\Attribute\Route;
  * фронтенд показывает «Сервер недоступен» (см. toRequestError в
  * frontend/src/api/client.ts).
  *
- * Решение — Mailgun через HTTP API (mailgun+api://): он ходит по 443,
+ * Решение — Brevo через HTTP API (brevo+api://): он ходит по 443,
  * который открыт. Endpoint это и проверяет: для API-транспортов пробует
- * HTTPS до Mailgun, для SMTP — TCP до почтового хоста. Таймаут короткий,
+ * HTTPS до провайдера, для SMTP — TCP до почтового хоста. Таймаут короткий,
  * так что сам endpoint 504 не вызывает и отвечает за считанные секунды.
  *
  * Доступ закрыт токеном: endpoint раскрывает адрес и порт почтового
@@ -91,9 +91,9 @@ final class MailDiagnosticsController extends AbstractController
     /**
      * Проверяет связность до почтового провайдера.
      *
-     * Куда стучаться, зависит от транспорта: у mailgun+api хост в DSN —
-     * это заглушка "default", а реальный адрес api.mailgun.net, поэтому
-     * такие DSN проверяются отдельно (см. probeMailgunApi).
+     * Куда стучаться, зависит от транспорта: у brevo+api хост в DSN —
+     * это заглушка "default", а реальный адрес api.brevo.com, поэтому
+     * такие DSN проверяются отдельно (см. probeHttpApi).
      *
      * Как читать результат:
      *   ok            — канал открыт; если письма всё равно не уходят, дело
@@ -109,10 +109,10 @@ final class MailDiagnosticsController extends AbstractController
             return ['checked' => false, 'reason' => 'unparsable MAILER_DSN'];
         }
 
-        // Транспорты вида mailgun+api / mailgun+https ходят по HTTPS,
+        // Транспорты вида brevo+api / resend+api ходят по HTTPS,
         // и хост "default" в DSN проверять бессмысленно.
         if (str_contains($parts['scheme'], '+api') || str_contains($parts['scheme'], '+https')) {
-            return $this->probeMailgunApi($parts);
+            return $this->probeHttpApi($parts);
         }
 
         if (!isset($parts['host'])) {
@@ -146,18 +146,22 @@ final class MailDiagnosticsController extends AbstractController
     }
 
     /**
-     * Проверяет доступность HTTPS-эндпоинта Mailgun.
+     * Проверяет доступность HTTPS-эндпоинта почтового провайдера.
      *
      * Открытый 443 — и есть весь смысл перехода с SMTP: по нему работает
      * сам сайт, значит блокировки исходящих портов здесь нет. Проверяется
      * только связность, ключ не используется — валидность ключа видна
-     * по ответу Mailgun в логах канала mail при реальной отправке.
+     * по ответу провайдера в логах канала mail при реальной отправке.
      */
-    private function probeMailgunApi(array $parts): array
+    private function probeHttpApi(array $parts): array
     {
-        // region=eu в DSN означает европейский дата-центр с отдельным хостом.
-        parse_str($parts['query'] ?? '', $query);
-        $host = 'eu' === ($query['region'] ?? 'us') ? 'api.eu.mailgun.net' : 'api.mailgun.net';
+        // Хост берём по схеме DSN: в самом DSN стоит заглушка "default",
+        // а реальный адрес у каждого провайдера свой. У обоих один эндпоинт
+        // на все регионы, поэтому query (как region=eu у Mailgun) не нужен.
+        $host = match (true) {
+            str_starts_with($parts['scheme'] ?? '', 'brevo') => 'api.brevo.com',
+            default                                          => 'api.resend.com',
+        };
 
         $startedAt = microtime(true);
         $socket    = @fsockopen('ssl://' . $host, 443, $errno, $errstr, self::PROBE_TIMEOUT_SECONDS);

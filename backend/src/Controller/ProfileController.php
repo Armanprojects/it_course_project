@@ -63,24 +63,26 @@ final class ProfileController extends AbstractController
      * The autosave endpoint. Returns the whole profile so the client can
      * reconcile against the version the server now holds.
      */
-    #[Route('/me', name: 'api_profile_save', methods: ['PATCH'])]
+    #[Route('/{target}', name: 'api_profile_save', requirements: ['target' => 'me|\d+'], methods: ['PATCH'])]
     public function save(
+        string $target,
         #[CurrentUser] User $user,
         #[MapRequestPayload] SaveProfileRequest $payload,
     ): JsonResponse {
-        $profile = $this->service->save($this->ownProfile($user), $payload);
+        $profile = $this->service->save($this->writableProfile($target, $user), $payload);
 
         return $this->json($this->present($profile));
     }
 
-    #[Route('/me/attributes/{attributeId<\d+>}', name: 'api_profile_attribute_add', methods: ['POST'])]
+    #[Route('/{target}/attributes/{attributeId<\d+>}', name: 'api_profile_attribute_add', requirements: ['target' => 'me|\d+'], methods: ['POST'])]
     public function addAttribute(
+        string $target,
         int $attributeId,
         Request $request,
         #[CurrentUser] User $user,
     ): JsonResponse {
         $profile = $this->service->addAttribute(
-            $this->ownProfile($user),
+            $this->writableProfile($target, $user),
             $attributeId,
             $this->versionFrom($request),
         );
@@ -88,14 +90,15 @@ final class ProfileController extends AbstractController
         return $this->json($this->present($profile));
     }
 
-    #[Route('/me/attributes/{attributeId<\d+>}', name: 'api_profile_attribute_remove', methods: ['DELETE'])]
+    #[Route('/{target}/attributes/{attributeId<\d+>}', name: 'api_profile_attribute_remove', requirements: ['target' => 'me|\d+'], methods: ['DELETE'])]
     public function removeAttribute(
+        string $target,
         int $attributeId,
         Request $request,
         #[CurrentUser] User $user,
     ): JsonResponse {
         $profile = $this->service->removeAttribute(
-            $this->ownProfile($user),
+            $this->writableProfile($target, $user),
             $attributeId,
             $this->versionFrom($request),
         );
@@ -103,31 +106,33 @@ final class ProfileController extends AbstractController
         return $this->json($this->present($profile));
     }
 
-    #[Route('/me/projects', name: 'api_profile_project_create', methods: ['POST'])]
+    #[Route('/{target}/projects', name: 'api_profile_project_create', requirements: ['target' => 'me|\d+'], methods: ['POST'])]
     public function createProject(
+        string $target,
         #[CurrentUser] User $user,
         #[MapRequestPayload] SaveProjectRequest $payload,
     ): JsonResponse {
-        $project = $this->service->createProject($this->ownProfile($user), $payload);
+        $project = $this->service->createProject($this->writableProfile($target, $user), $payload);
 
         return $this->json($this->serializer->serializeProject($project), Response::HTTP_CREATED);
     }
 
-    #[Route('/me/projects/{id<\d+>}', name: 'api_profile_project_update', methods: ['PUT'])]
+    #[Route('/{target}/projects/{id<\d+>}', name: 'api_profile_project_update', requirements: ['target' => 'me|\d+'], methods: ['PUT'])]
     public function updateProject(
+        string $target,
         int $id,
         #[CurrentUser] User $user,
         #[MapRequestPayload] SaveProjectRequest $payload,
     ): JsonResponse {
-        $project = $this->service->updateProject($this->ownProject($id, $user), $payload);
+        $project = $this->service->updateProject($this->writableProject($target, $id, $user), $payload);
 
         return $this->json($this->serializer->serializeProject($project));
     }
 
-    #[Route('/me/projects/{id<\d+>}', name: 'api_profile_project_delete', methods: ['DELETE'])]
-    public function deleteProject(int $id, #[CurrentUser] User $user): JsonResponse
+    #[Route('/{target}/projects/{id<\d+>}', name: 'api_profile_project_delete', requirements: ['target' => 'me|\d+'], methods: ['DELETE'])]
+    public function deleteProject(string $target, int $id, #[CurrentUser] User $user): JsonResponse
     {
-        $this->service->deleteProject($this->ownProject($id, $user));
+        $this->service->deleteProject($this->writableProject($target, $id, $user));
 
         return $this->json(null, Response::HTTP_NO_CONTENT);
     }
@@ -172,10 +177,36 @@ final class ProfileController extends AbstractController
         return $profile;
     }
 
-    private function ownProject(int $id, User $user): Project
+    /**
+     * The profile a write targets: "me" for one's own, a numeric id for
+     * someone else's — administrators only, since the brief lets them edit any
+     * candidate's profile. Routed through one helper so every write endpoint
+     * enforces the same rule instead of each repeating it.
+     */
+    private function writableProfile(string $target, User $user): Profile
     {
-        $profile = $this->ownProfile($user);
+        if ('me' === $target) {
+            return $this->ownProfile($user);
+        }
 
+        $profile = $this->accessibleProfile((int) $target, $user);
+
+        // accessibleProfile() already allows the owner, so an id that happens
+        // to be one's own profile behaves exactly like "me".
+        if ($profile->getUser() !== $user && !$user->hasRole(UserRole::Admin)) {
+            throw $this->createAccessDeniedException('Редактировать профиль может только владелец или администратор.');
+        }
+
+        return $profile;
+    }
+
+    private function writableProject(string $target, int $id, User $user): Project
+    {
+        return $this->projectOf($this->writableProfile($target, $user), $id);
+    }
+
+    private function projectOf(Profile $profile, int $id): Project
+    {
         foreach ($profile->getProjects() as $project) {
             if ($project->getId() === $id) {
                 return $project;

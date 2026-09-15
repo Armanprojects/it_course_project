@@ -7,6 +7,7 @@ namespace App\Repository;
 use App\Entity\User;
 use App\Enum\OAuthProvider;
 use App\Enum\UserRole;
+use App\Enum\UserStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
@@ -96,6 +97,78 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
                 'SELECT COUNT(*) FROM "user" WHERE roles::jsonb @> :role::jsonb',
                 ['role' => json_encode([$role->value])],
             );
+    }
+
+    /**
+     * The admin user list: search by email, optional role and status filters,
+     * newest first. Paged, because this is the one screen that grows with the
+     * whole user base rather than with one person's data.
+     *
+     * @return array{items: list<User>, total: int}
+     */
+    public function searchForAdmin(
+        ?string $query = null,
+        ?UserRole $role = null,
+        ?UserStatus $status = null,
+        int $page = 1,
+        int $perPage = 25,
+    ): array {
+        $qb = $this->createQueryBuilder('u')
+            ->orderBy('u.createdAt', 'DESC')
+            ->addOrderBy('u.id', 'DESC');
+
+        $query = trim((string) $query);
+
+        if ('' !== $query) {
+            // Substring, not prefix: an admin looking for a person usually has
+            // a fragment of the address, not its beginning.
+            $qb->andWhere('LOWER(u.email) LIKE :query')
+                ->setParameter('query', '%' . $this->escapeLike(mb_strtolower($query)) . '%');
+        }
+
+        if (null !== $status) {
+            $qb->andWhere('u.status = :status')->setParameter('status', $status);
+        }
+
+        if (null !== $role) {
+            // Same reason as findByRole(): roles are a json column, so the
+            // filter is resolved in SQL and fed back here as ids.
+            $ids = $this->getEntityManager()
+                ->getConnection()
+                ->fetchFirstColumn(
+                    'SELECT id FROM "user" WHERE roles::jsonb @> :role::jsonb',
+                    ['role' => json_encode([$role->value])],
+                );
+
+            if ([] === $ids) {
+                return ['items' => [], 'total' => 0];
+            }
+
+            $qb->andWhere('u.id IN (:ids)')->setParameter('ids', $ids);
+        }
+
+        $total = (int) (clone $qb)
+            ->select('COUNT(u.id)')
+            ->resetDQLPart('orderBy')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $items = $qb
+            ->setFirstResult(($page - 1) * $perPage)
+            ->setMaxResults($perPage)
+            ->getQuery()
+            ->getResult();
+
+        return ['items' => $items, 'total' => $total];
+    }
+
+    /**
+     * Underscore and percent are wildcards in LIKE; an address containing one
+     * would otherwise match far more than the admin typed.
+     */
+    private function escapeLike(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
     }
 
     public function upgradePassword(PasswordAuthenticatedUserInterface $user, string $newHashedPassword): void

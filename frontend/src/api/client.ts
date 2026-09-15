@@ -6,6 +6,7 @@ import type {
   AttributeLibraryAdmin,
   AttributeType,
   AttributeValue,
+  AdminUserPage,
   AuthResponse,
   CvDetail,
   CvRow,
@@ -34,10 +35,56 @@ const api = axios.create({ baseURL: '/api' })
 
 const TOKEN_KEY = 'cv_token'
 
+/**
+ * Срок действия JWT из его полезной нагрузки, в миллисекундах эпохи.
+ *
+ * Подпись здесь не проверяется и проверяться не может — это делает сервер.
+ * Нас интересует только `exp`, чтобы не гнать заведомо мёртвый токен на
+ * бэкенд и не пускать по нему на защищённые экраны.
+ */
+function expiryOf(token: string): number | null {
+  const payload = token.split('.')[1]
+
+  if (!payload) {
+    return null
+  }
+
+  try {
+    // base64url -> base64: JWT заменяет + и / на - и _, а хвостовые = убирает.
+    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+    const exp = (JSON.parse(json) as { exp?: number }).exp
+
+    return typeof exp === 'number' ? exp * 1000 : null
+  } catch {
+    // Испорченный токен нельзя считать бессрочным — пусть его вычистят.
+    return null
+  }
+}
+
 export const tokenStorage = {
   get: (): string | null => localStorage.getItem(TOKEN_KEY),
   set: (token: string) => localStorage.setItem(TOKEN_KEY, token),
   clear: () => localStorage.removeItem(TOKEN_KEY),
+
+  /**
+   * Есть ли токен, который ещё имеет смысл отправлять.
+   *
+   * Экраны раньше смотрели только на наличие строки в localStorage, поэтому
+   * с истёкшим токеном пускали внутрь, а страница входа, наоборот, считала
+   * человека вошедшим. Токен без разбираемого `exp` считаем негодным:
+   * бессрочных мы не выдаём.
+   */
+  isValid(): boolean {
+    const token = this.get()
+
+    if (token === null) {
+      return false
+    }
+
+    const expiresAt = expiryOf(token)
+
+    return expiresAt !== null && expiresAt > Date.now()
+  },
 }
 
 api.interceptors.request.use((config) => {
@@ -49,6 +96,36 @@ api.interceptors.request.use((config) => {
 
   return config
 })
+
+/**
+ * Протухший JWT: срок жизни вышел, но токен всё ещё лежит в localStorage.
+ * Страницы пускают по факту его наличия, поэтому без этой чистки человек
+ * попадал на защищённый экран, который тут же падал в ошибку загрузки.
+ *
+ * Сервер на истёкший и на подделанный токен отвечает одинаково — 401, но
+ * телом отдаёт {"code":401,...} без строкового error, поэтому опираемся на
+ * статус, а не на тело. Переход делаем через location, а не через роутер:
+ * перехватчик живёт вне React и навигацию из него не вызвать.
+ */
+api.interceptors.response.use(
+  (response) => response,
+  (error: unknown) => {
+    const status = error instanceof AxiosError ? error.response?.status : undefined
+
+    if (status === 401 && tokenStorage.get() !== null) {
+      tokenStorage.clear()
+
+      // /login сам по себе 401 не порождает, но неверный пароль на нём —
+      // да: без этой проверки страница перезагружалась бы вместо показа
+      // ошибки, стирая введённое.
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login'
+      }
+    }
+
+    return Promise.reject(error instanceof Error ? error : new Error(String(error)))
+  },
+)
 
 /**
  * Ошибка с полями, понятными форме: код для логики, message для человека,
@@ -182,6 +259,13 @@ export const catalogApi = {
  * Профиль: всё закрыто входом, читать и править может только владелец
  * (и администратор — чужой профиль по id).
  */
+/**
+ * Чей профиль правим: свой ('me') или конкретный — последнее доступно только
+ * администратору, которому по заданию можно редактировать любой профиль.
+ * Параметр необязателен, поэтому обычные вызовы остаются как были.
+ */
+export type ProfileTarget = 'me' | number
+
 export const profileApi = {
   me: () => request<ProfileData>(() => api.get('/profile/me')),
 
@@ -191,25 +275,51 @@ export const profileApi = {
    * Тик автосохранения: уходит версия, которую клиент видел последней, и все
    * значения раздела. Ответ — профиль целиком с новой версией.
    */
-  save: (version: number, values: Record<number, AttributeValue>) =>
-    request<ProfileData>(() => api.patch('/profile/me', { version, values })),
+  save: (version: number, values: Record<number, AttributeValue>, target: ProfileTarget = 'me') =>
+    request<ProfileData>(() => api.patch(`/profile/${target}`, { version, values })),
 
-  addAttribute: (attributeId: number, version: number) =>
-    request<ProfileData>(() => api.post(`/profile/me/attributes/${attributeId}`, { version })),
-
-  removeAttribute: (attributeId: number, version: number) =>
+  addAttribute: (attributeId: number, version: number, target: ProfileTarget = 'me') =>
     request<ProfileData>(() =>
-      api.delete(`/profile/me/attributes/${attributeId}`, { params: { version } }),
+      api.post(`/profile/${target}/attributes/${attributeId}`, { version }),
     ),
 
-  createProject: (input: ProjectInput) =>
-    request<ProfileProject>(() => api.post('/profile/me/projects', input)),
+  removeAttribute: (attributeId: number, version: number, target: ProfileTarget = 'me') =>
+    request<ProfileData>(() =>
+      api.delete(`/profile/${target}/attributes/${attributeId}`, { params: { version } }),
+    ),
 
-  updateProject: (id: number, input: ProjectInput) =>
-    request<ProfileProject>(() => api.put(`/profile/me/projects/${id}`, input)),
+  createProject: (input: ProjectInput, target: ProfileTarget = 'me') =>
+    request<ProfileProject>(() => api.post(`/profile/${target}/projects`, input)),
 
-  deleteProject: (id: number) =>
-    request<void>(() => api.delete(`/profile/me/projects/${id}`)),
+  updateProject: (id: number, input: ProjectInput, target: ProfileTarget = 'me') =>
+    request<ProfileProject>(() => api.put(`/profile/${target}/projects/${id}`, input)),
+
+  deleteProject: (id: number, target: ProfileTarget = 'me') =>
+    request<void>(() => api.delete(`/profile/${target}/projects/${id}`)),
+}
+
+/**
+ * Управление пользователями — единственная часть админки без аналога для
+ * обычных ролей. Остальные права администратора реализованы как послабления
+ * внутри обычных endpoint'ов, отдельного API им не нужно.
+ */
+export const adminApi = {
+  users: (params: { search?: string; role?: string; status?: string; page?: number } = {}) =>
+    request<AdminUserPage>(() => api.get('/admin/users', { params })),
+
+  block: (id: number) => request<User>(() => api.post(`/admin/users/${id}/block`)),
+
+  unblock: (id: number) => request<User>(() => api.delete(`/admin/users/${id}/block`)),
+
+  grantRole: (id: number, role: string) =>
+    request<User>(() => api.post(`/admin/users/${id}/roles`, { role })),
+
+  // DELETE с телом: роль здесь — значение для проверки по enum, а не сегмент
+  // пути, поэтому она едет в body так же, как при выдаче.
+  revokeRole: (id: number, role: string) =>
+    request<User>(() => api.delete(`/admin/users/${id}/roles`, { data: { role } })),
+
+  deleteUser: (id: number) => request<void>(() => api.delete(`/admin/users/${id}`)),
 }
 
 /** Библиотека атрибутов и теги — для выбора в профиле. */

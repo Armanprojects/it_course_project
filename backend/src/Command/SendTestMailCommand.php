@@ -22,14 +22,15 @@ use Symfony\Component\Mime\Email;
  * подтверждения уходят внутри HTTP-запроса, и ошибка транспорта там видна
  * только в логах канала mail. Здесь исключение печатается прямо в консоль.
  *
- * Локально Mailgun проверяется так (порт 443 открыт и на домашней сети,
+ * Локально Brevo проверяется так (порт 443 открыт и на домашней сети,
  * поэтому результат совпадёт с продом на Render):
  *
- *   MAILER_DSN="mailgun+api://KEY:DOMAIN@default?region=us" \
+ *   MAILER_DSN="brevo+api://xkeysib-KEY@default" \
  *       php bin/console app:mail:test you@example.com
  *
- * У sandbox-домена получатель обязан быть в Authorized Recipients,
- * иначе Mailgun ответит 403 — письмо не уйдёт даже с верным ключом.
+ * Отправитель (MAILER_FROM_ADDRESS) обязан быть подтверждён в Brevo
+ * (Senders), иначе API ответит отказом даже с верным ключом. Получатель
+ * при этом может быть любым — в отличие от Resend без своего домена.
  */
 #[AsCommand(
     name: 'app:mail:test',
@@ -78,8 +79,9 @@ final class SendTestMailCommand extends Command
         try {
             $this->mailer->send($email);
         } catch (TransportExceptionInterface $e) {
-            // Ответ провайдера (например, 403 от Mailgun про sandbox) лежит
-            // в исходном сообщении — без него ошибка выглядит безымянной.
+            // Ответ провайдера (например, отказ Brevo про неподтверждённого
+            // отправителя) лежит в исходном сообщении — без него ошибка
+            // выглядит безымянной.
             $io->error($e->getMessage());
 
             return Command::FAILURE;

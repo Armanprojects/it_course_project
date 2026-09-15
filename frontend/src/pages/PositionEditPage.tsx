@@ -44,7 +44,7 @@ const BLANK: PositionInput = {
  * здесь нет проверки автора, только роль.
  */
 export function PositionEditPage() {
-  if (!tokenStorage.get()) {
+  if (!tokenStorage.isValid()) {
     return <Navigate to="/login" replace />
   }
 

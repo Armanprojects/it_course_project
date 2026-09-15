@@ -24,10 +24,10 @@ export function AppHeader() {
 function HeaderBar({ initialQuery }: { initialQuery: string }) {
   const navigate = useNavigate()
   const [query, setQuery] = useState(initialQuery)
-  const { isRecruiter } = useCurrentUser()
+  const { isRecruiter, isAdmin } = useCurrentUser()
   const { t, locale, setLocale, theme, setTheme } = useSettings()
 
-  const authenticated = tokenStorage.get() !== null
+  const authenticated = tokenStorage.isValid()
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -82,6 +82,13 @@ function HeaderBar({ initialQuery }: { initialQuery: string }) {
                     {t('header.attributes')}
                   </Link>
                 </>
+              )}
+
+              {/* Управление пользователями — только администратору. */}
+              {isAdmin && (
+                <Link to="/admin/users" className="btn btn--ghost">
+                  {t('header.users')}
+                </Link>
               )}
 
               <Link to="/profile" className="btn btn--ghost">

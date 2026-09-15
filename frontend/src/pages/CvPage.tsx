@@ -23,7 +23,7 @@ type Translate = (key: MessageKey, params?: Record<string, string | number>) => 
  * публиковать и снимать с публикации.
  */
 export function CvPage() {
-  if (!tokenStorage.get()) {
+  if (!tokenStorage.isValid()) {
     return <Navigate to="/login" replace />
   }
 
@@ -86,12 +86,21 @@ function CvView() {
    * эталонное значение, — а в ответ приходит пересобранное резюме: обновляется
    * и подсветка пустых полей, и признак complete, от которого зависит кнопка
    * публикации.
+   *
+   * Введённое значение показываем сразу, не дожидаясь ответа. Иначе поле
+   * закрывалось со старым — то есть пустым — значением и несколько сотен
+   * миллисекунд горело красным «Не заполнено», хотя пользователь только что
+   * его заполнил. Ответ сервера всё равно перетирает эту догадку целиком,
+   * а при ошибке мы возвращаем прежний снимок.
    */
   const saveAttribute = async (attributeId: number, value: AttributeValue) => {
     if (cv === null) {
       return
     }
 
+    const previous = cv
+
+    setCv(applyAttribute(cv, attributeId, value))
     setBusy(true)
     setError(null)
 
@@ -107,6 +116,9 @@ function CvView() {
         setError(
           errorText(requestError, 'cv.saveFailed'),
         )
+        // Сохранить не удалось — оптимистичная правка больше не отражает
+        // ничего реального, возвращаем то, что подтверждено сервером.
+        setCv(previous)
       }
     } finally {
       setBusy(false)
@@ -217,14 +229,18 @@ function CvView() {
             </div>
           )}
 
-          {cv.sections.map((section) => (
-            <div key={section.section} className="col g2">
-              <h2 className="section__title">
-                {categoryLabel(section.section)}
-              </h2>
+          {cv.sections.map((section) => {
+            // Фото выносим в колонку слева: в общей сетке оно занимало
+            // ячейку наравне с текстовым полем и ломало ряд по высоте.
+            // Остальные поля продолжают раскладываться сами.
+            const photo = section.attributes.find((attribute) => attribute.type === 'image')
+            const rest = photo
+              ? section.attributes.filter((attribute) => attribute !== photo)
+              : section.attributes
 
+            const fields = (
               <dl className="cvsheet__grid">
-                {section.attributes.map((attribute) => (
+                {rest.map((attribute) => (
                   <CvValue
                     key={attribute.attributeId}
                     attribute={attribute}
@@ -234,8 +250,33 @@ function CvView() {
                   />
                 ))}
               </dl>
-            </div>
-          ))}
+            )
+
+            return (
+              <div key={section.section} className="col g2">
+                <h2 className="section__title">
+                  {categoryLabel(section.section)}
+                </h2>
+
+                {photo ? (
+                  <div className="cvsheet__withphoto">
+                    <dl className="cvsheet__photo">
+                      <CvValue
+                        attribute={photo}
+                        editable={cv.canEdit}
+                        busy={busy}
+                        onSave={(value) => saveAttribute(photo.attributeId, value)}
+                      />
+                    </dl>
+
+                    {fields}
+                  </div>
+                ) : (
+                  fields
+                )}
+              </div>
+            )
+          })}
 
           {cv.projects.length > 0 && (
             <div className="col g3">
@@ -305,6 +346,55 @@ function CvView() {
 }
 
 /**
+ * Пусто ли значение — теми же правилами, что и AttributeValue::isEmpty() на
+ * сервере: у периода достаточно одной из двух дат, а false у флага — это
+ * заполненное значение, а не отсутствующее.
+ */
+function isValueEmpty(value: AttributeValue): boolean {
+  if (value === null || value === undefined || value === '') {
+    return true
+  }
+
+  if (typeof value === 'object') {
+    const period = value as { from: string | null; to: string | null }
+
+    return !period.from && !period.to
+  }
+
+  return false
+}
+
+/**
+ * Снимок резюме с уже применённой правкой одного атрибута — чтобы показать
+ * введённое значение, не дожидаясь ответа сервера. Признак complete тоже
+ * пересчитываем: от него зависит доступность кнопки публикации.
+ */
+function applyAttribute(cv: CvDetail, attributeId: number, value: AttributeValue): CvDetail {
+  let name: string | null = null
+
+  const sections = cv.sections.map((section) => ({
+    ...section,
+    attributes: section.attributes.map((attribute) => {
+      if (attribute.attributeId !== attributeId) {
+        return attribute
+      }
+
+      name = attribute.name
+
+      return { ...attribute, value, empty: isValueEmpty(value) }
+    }),
+  }))
+
+  // Список незаполненных обязательных полей ведём сами: сервер пришлёт свой,
+  // но до ответа шапка не должна противоречить тому, что видно в таблице.
+  const missing = isValueEmpty(value)
+    ? cv.missing
+    : cv.missing.filter((item) => item !== name)
+
+  return { ...cv, sections, missing, complete: missing.length === 0 }
+}
+
+/**
  * Одно поле резюме. Пустое значение подсвечиваем красным — прямое требование
  * задания, — а владельцу (и админу) поле открывается на правку по клику.
  *
@@ -342,7 +432,9 @@ function CvValue({
 
   if (editing) {
     return (
-      <div className={`cvsheet__row${attribute.empty ? ' is-empty' : ''}`}>
+      // is-editing снимает с фото квадратную рамку: загрузчику нужны своя
+      // высота под зону перетаскивания, поле ссылки и кнопки.
+      <div className={`cvsheet__row is-editing${attribute.empty ? ' is-empty' : ''}`}>
         <dt className="label" id={`cvattr-${attribute.attributeId}-label`}>
           {attribute.name}
         </dt>

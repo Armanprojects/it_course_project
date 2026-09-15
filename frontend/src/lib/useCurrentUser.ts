@@ -37,10 +37,10 @@ export interface CurrentUser {
 
 export function useCurrentUser(): CurrentUser {
   const [user, setUser] = useState<User | null>(cached)
-  const [loading, setLoading] = useState(cached === null && tokenStorage.get() !== null)
+  const [loading, setLoading] = useState(cached === null && tokenStorage.isValid())
 
   useEffect(() => {
-    if (cached !== null || !tokenStorage.get()) {
+    if (cached !== null || !tokenStorage.isValid()) {
       return
     }
 

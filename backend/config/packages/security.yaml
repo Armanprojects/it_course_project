@@ -32,6 +32,9 @@ security:
             stateless: true
             provider: app_users
             jwt: ~
+            # Бан должен действовать сразу, а не после истечения токена:
+            # статус проверяется на каждом запросе (App\Security\UserChecker).
+            user_checker: App\Security\UserChecker
             entry_point: App\Security\JsonAuthenticationEntryPoint
 
     access_control:

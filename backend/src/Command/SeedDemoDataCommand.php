@@ -59,6 +59,13 @@ final class SeedDemoDataCommand extends Command
             InputOption::VALUE_NONE,
             'Удалить существующие данные перед наполнением',
         );
+
+        $this->addOption(
+            'minimal',
+            null,
+            InputOption::VALUE_NONE,
+            'Только библиотека атрибутов и первые позиции, без демо-кандидатов и резюме',
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -75,18 +82,23 @@ final class SeedDemoDataCommand extends Command
 
         $io->title('Наполнение демонстрационными данными');
 
+        // Стартовый набор для боевого стенда: библиотека атрибутов и несколько
+        // позиций, но без выдуманных кандидатов и их резюме — они мешали бы
+        // настоящим пользователям и засоряли бы поиск рекрутёра.
+        $minimal = (bool) $input->getOption('minimal');
+
         $tags       = $this->createTags();
         $attributes = $this->createAttributes();
         $recruiters = $this->createRecruiters();
         $this->em->flush();
 
-        $candidates = $this->createCandidates($attributes, $tags);
+        $candidates = $minimal ? [] : $this->createCandidates($attributes, $tags);
         $this->em->flush();
 
-        $positions = $this->createPositions($attributes, $tags, $recruiters);
+        $positions = $this->createPositions($attributes, $tags, $recruiters, $minimal);
         $this->em->flush();
 
-        $cvCount = $this->createCvs($positions, $candidates);
+        $cvCount = $minimal ? 0 : $this->createCvs($positions, $candidates);
         $this->em->flush();
 
         $io->success(sprintf(
@@ -318,8 +330,12 @@ final class SeedDemoDataCommand extends Command
      *
      * @return list<Position>
      */
-    private function createPositions(array $attributes, array $tags, array $recruiters): array
-    {
+    private function createPositions(
+        array $attributes,
+        array $tags,
+        array $recruiters,
+        bool $minimal = false,
+    ): array {
         $definitions = [
             [
                 'Senior Backend Engineer', 'Nordwind Software', 'Senior',
@@ -415,6 +431,18 @@ final class SeedDemoDataCommand extends Command
                 [['Willing to relocate', FilterOperator::IsSet, null]],
             ],
         ];
+
+        // Минимальный набор — три ПУБЛИЧНЫЕ позиции: каталог открыт гостю, и
+        // закрытая позиция на свежем стенде выглядела бы как пропажа. Берём
+        // разные шаблоны — с правилом доступа и без, с разными наборами полей.
+        if ($minimal) {
+            $public = array_values(array_filter(
+                $definitions,
+                static fn (array $definition): bool => true === $definition[4],
+            ));
+
+            $definitions = \array_slice($public, 0, 3);
+        }
 
         $positions = [];
 

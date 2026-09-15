@@ -41,7 +41,7 @@ function PositionView({ id }: { id: string | undefined }) {
   const [state, setState] = useState<State>(() =>
     valid ? { kind: 'loading' } : { kind: 'error', message: t('position.notFound') },
   )
-  const authenticated = tokenStorage.get() !== null
+  const authenticated = tokenStorage.isValid()
 
   useEffect(() => {
     if (!valid) {
@@ -114,7 +114,7 @@ function PositionBody({
 }) {
   const t = useTranslation()
   const formatDate = useDateFormat()
-  const { categoryLabel, typeLabel } = useAttributeLabels()
+  const { categoryLabel } = useAttributeLabels()
   // Группируем по секции: сгенерированное резюме будет разбито так же,
   // и структура шаблона должна быть видна заранее.
   const sections = new Map<string, PositionAttribute[]>()
@@ -172,9 +172,6 @@ function PositionBody({
         <div className="panel__head">
           <div>
             <h2 className="h2">{t('position.templateTitle')}</h2>
-            <p className="panel__hint muted-3">
-              {t('position.templateHint')}
-            </p>
           </div>
         </div>
 
@@ -186,39 +183,21 @@ function PositionBody({
               <div key={section} className="col g2">
                 <h3 className="section__title">{categoryLabel(section)}</h3>
 
-                <div className="table__scroll">
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th scope="col">{t('position.colField')}</th>
-                        <th scope="col">{t('position.colType')}</th>
-                        <th scope="col" className="is-secondary">
-                          {t('position.colRequired')}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {attributes.map((attribute) => (
-                        <tr key={attribute.id}>
-                          <td>
-                            {attribute.name}
-                            {attribute.options.length > 0 && (
-                              <span className="table__sub">
-                                {attribute.options.join(' · ')}
-                              </span>
-                            )}
-                          </td>
-                          <td className="muted">
-                            {typeLabel(attribute.type)}
-                          </td>
-                          <td className="is-secondary muted">
-                            {attribute.required ? t('common.yes') : '—'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                {/* Тип поля и слово «обязательное» кандидату ничего не
+                    говорят: он видит готовую анкету, а не её схему. Остаётся
+                    название, а обязательность — привычной звёздочкой. */}
+                <ul className="fieldlist">
+                  {attributes.map((attribute) => (
+                    <li key={attribute.id} className="fieldlist__item">
+                      {attribute.name}
+                      {attribute.required && (
+                        <abbr className="fieldlist__req" title={t('position.requiredTitle')}>
+                          *
+                        </abbr>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               </div>
             ))}
           </div>

@@ -67,13 +67,13 @@ export function HomePage() {
           <h1 className="h1">{t('home.title')}</h1>
           <p className="hero__text muted">{t('home.lead')}</p>
 
+          {/* Кнопки «Создать аккаунт» здесь нет: вход и регистрация живут
+              в шапке, а главная ведёт в каталог — по заданию он открыт
+              гостю, и упираться в регистрацию на первом экране незачем. */}
           <div className="hero__actions">
             <Link to="/positions" className="btn btn--primary btn--lg">
               {t('home.browse')}
               <ArrowRightIcon size={16} aria-hidden="true" />
-            </Link>
-            <Link to="/login" className="btn btn--outline btn--lg">
-              {t('home.signup')}
             </Link>
           </div>
         </section>

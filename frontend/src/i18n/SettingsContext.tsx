@@ -40,7 +40,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   // Настройки вошедшего пользователя. Гостя это не касается — у него есть
   // только localStorage.
   useEffect(() => {
-    if (!tokenStorage.get()) {
+    if (!tokenStorage.isValid()) {
       return
     }
 
@@ -80,7 +80,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
     // Сервер — фоновая синхронизация: интерфейс уже переключился, и ждать
     // ответа, чтобы показать новый язык, незачем.
-    if (tokenStorage.get()) {
+    if (tokenStorage.isValid()) {
       void authApi.updateSettings({ locale: next }).catch(() => undefined)
     }
   }, [])
@@ -89,7 +89,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setThemeState(next)
     saveTheme(next)
 
-    if (tokenStorage.get()) {
+    if (tokenStorage.isValid()) {
       void authApi.updateSettings({ theme: next }).catch(() => undefined)
     }
   }, [])

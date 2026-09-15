@@ -25,6 +25,14 @@ export interface User {
   identities: string[]
 }
 
+/** Страница списка пользователей в админке. */
+export interface AdminUserPage {
+  items: User[]
+  total: number
+  page: number
+  perPage: number
+}
+
 export interface AuthResponse {
   token: string
   user: User

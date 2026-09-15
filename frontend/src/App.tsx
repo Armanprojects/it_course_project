@@ -10,6 +10,7 @@ import { PositionDetailPage } from './pages/PositionDetailPage'
 import { PositionEditPage } from './pages/PositionEditPage'
 import { PositionsPage } from './pages/PositionsPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { UsersAdminPage } from './pages/UsersAdminPage'
 import { VerifyEmailPage } from './pages/VerifyEmailPage'
 
 function App() {
@@ -28,6 +29,10 @@ function App() {
 
           {/* Всё ниже закрыто входом; сами страницы уводят на /login без токена. */}
           <Route path="/profile" element={<ProfilePage />} />
+          {/* Чужой профиль: сервер отдаёт его только администратору.
+              Тот же компонент — админ правит страницу как её владелец. */}
+          <Route path="/profiles/:id" element={<ProfilePage />} />
+          <Route path="/admin/users" element={<UsersAdminPage />} />
           <Route path="/cvs/search" element={<CvSearchPage />} />
           <Route path="/cvs/:id" element={<CvPage />} />
           <Route path="/attributes" element={<AttributeLibraryPage />} />

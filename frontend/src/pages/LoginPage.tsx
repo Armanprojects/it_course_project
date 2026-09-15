@@ -1,5 +1,6 @@
 import { CaretLeftIcon, GithubLogoIcon, WarningCircleIcon } from '@phosphor-icons/react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { Navigate } from 'react-router-dom'
 import { authApi, RequestError, tokenStorage } from '../api/client'
 import { UserRole, type SelectableRole } from '../api/types'
 import { FormField } from '../components/FormField'
@@ -20,10 +21,23 @@ interface FieldErrors {
 }
 
 export function LoginPage() {
+  // Вошедшему тут делать нечего: страница входа существует ради получения
+  // токена, а он уже есть. Проверяем срок, а не факт наличия, иначе
+  // протухший токен запер бы человека без возможности войти заново.
+  if (tokenStorage.isValid()) {
+    return <Navigate to="/" replace />
+  }
+
+  return <LoginForm />
+}
+
+function LoginForm() {
   const t = useTranslation()
-  // Шаг 1 — выбор роли, шаг 2 — форма, шаг 3 — «проверьте почту».
-  // Роль спрашиваем первой: от неё зависит, что человек увидит после входа.
-  const [step, setStep] = useState<Step>('pick')
+  // Начинаем с формы входа: вход — то, зачем сюда приходят чаще всего, и
+  // спрашивать роль у того, у кого уже есть аккаунт, незачем — она в нём
+  // записана. Выбор роли ('pick') возникает только по пути к регистрации,
+  // где он действительно нужен, а 'sent' — экран «проверьте почту».
+  const [step, setStep] = useState<Step>('form')
   const [mode, setMode] = useState<Mode>('login')
   const [role, setRole] = useState<SelectableRole>(UserRole.Candidate)
   const [email, setEmail] = useState('')
@@ -88,6 +102,7 @@ export function LoginPage() {
 
   const pickRole = (next: SelectableRole) => {
     setRole(next)
+    setMode('signup')
     setStep('form')
   }
 
@@ -96,12 +111,22 @@ export function LoginPage() {
       return
     }
 
-    setMode(next)
     setFieldErrors({})
     setFormError(null)
     // Повтор пароля не переносим между режимами: при входе поле исчезает,
     // и оставшееся значение всплыло бы при возврате к регистрации.
     setPasswordConfirmation('')
+
+    // К регистрации — только через выбор роли: от неё зависит и что человек
+    // увидит после входа, и какой аккаунт создаст сервер. Режим переключится
+    // в pickRole, когда выбор сделан.
+    if (next === 'signup') {
+      setStep('pick')
+
+      return
+    }
+
+    setMode(next)
   }
 
   /**
@@ -194,7 +219,19 @@ export function LoginPage() {
         <div className="auth__box">
           {step === 'pick' && (
             <>
-              <h1 className="h1">{t('auth.welcome')}</h1>
+              <button
+                type="button"
+                className="auth__back"
+                onClick={() => {
+                  setMode('login')
+                  setStep('form')
+                }}
+              >
+                <CaretLeftIcon size={14} aria-hidden="true" />
+                {t('auth.backToSignin')}
+              </button>
+
+              <h1 className="h1">{t('auth.signupTitle')}</h1>
               <p className="muted mt3" style={{ margin: 0 }}>
                 {t('auth.pickRole')}
               </p>
@@ -209,23 +246,34 @@ export function LoginPage() {
 
           {step === 'form' && (
             <>
-              <button type="button" className="auth__back" onClick={() => setStep('pick')}>
-                <CaretLeftIcon size={14} aria-hidden="true" />
-                {t('auth.otherRole')}
-              </button>
+              {/* Роль относится только к регистрации: при входе её определяет
+                  сам аккаунт, и показывать её здесь значило бы намекать, что
+                  выбор влияет на вход. */}
+              {isSignup && (
+                <button type="button" className="auth__back" onClick={() => setStep('pick')}>
+                  <CaretLeftIcon size={14} aria-hidden="true" />
+                  {t('auth.otherRole')}
+                </button>
+              )}
 
               <div className="row row--between g3">
                 <h1 ref={headingRef} tabIndex={-1} className="h2 app-step-title">
                   {t(isSignup ? 'auth.signupTitle' : 'auth.loginTitle')}
                 </h1>
 
-                <span className="rolepill">
-                  <RoleIcon size={13} aria-hidden="true" />
-                  {t(ROLE_PILL[role])}
-                  <button type="button" className="rolepill__change" onClick={() => setStep('pick')}>
-                    {t('auth.change')}
-                  </button>
-                </span>
+                {isSignup && (
+                  <span className="rolepill">
+                    <RoleIcon size={13} aria-hidden="true" />
+                    {t(ROLE_PILL[role])}
+                    <button
+                      type="button"
+                      className="rolepill__change"
+                      onClick={() => setStep('pick')}
+                    >
+                      {t('auth.change')}
+                    </button>
+                  </span>
+                )}
               </div>
 
               <div className="authtabs mt5" role="group" aria-label={t('auth.tabsLabel')}>

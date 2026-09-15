@@ -1103,6 +1103,34 @@ textarea {
   color: var(--text-3);
 }
 
+/* Состав резюме на странице позиции: кандидату нужен список полей, а не
+   схема таблицы с типами. Обязательность — звёздочкой, как в обычных формах. */
+.fieldlist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fieldlist__item {
+  padding: 4px var(--s3);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--text-1);
+}
+
+.fieldlist__req {
+  margin-left: 3px;
+  color: var(--err-fg);
+  /* Подсказка нужна screen reader'ам и по наведению, но подчёркивание,
+     которое браузер рисует у abbr, делает звёздочку грязной. */
+  text-decoration: none;
+  cursor: help;
+}
+
 .cloud {
   display: flex;
   flex-wrap: wrap;
@@ -1416,6 +1444,20 @@ textarea {
   color: var(--text-1);
 }
 
+/* --- Управление пользователями (админка) --------------------------------- */
+
+/* Селект по ширине содержимого — в ряду фильтров ему незачем тянуться. */
+.input--auto {
+  width: auto;
+  min-width: 150px;
+}
+
+/* Ряд фильтров и панель действий переносятся на узком экране вместо
+   горизонтальной прокрутки. */
+.wrap {
+  flex-wrap: wrap;
+}
+
 .chip--ok {
   background: var(--ok-bg);
   border-color: var(--ok-br);
@@ -1563,6 +1605,89 @@ textarea {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: var(--s3);
   margin: 0;
+}
+
+/* Фото слева, остальные поля своей сеткой справа. auto + 1fr, а не две
+   доли: колонка под фото занимает ровно свою ширину и не растёт вместе с
+   таблицей, а поля забирают всё оставшееся место. */
+.cvsheet__withphoto {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--s3);
+  align-items: start;
+}
+
+.cvsheet__photo {
+  margin: 0;
+  width: 160px;
+}
+
+/* Загрузчику 160px мало: в колонку не влезают ни зона перетаскивания, ни
+   поле для ссылки, ни пара кнопок. На время правки колонку расширяем —
+   соседние поля просто подвинутся, сетка справа резиновая. */
+.cvsheet__photo:has(.is-editing) {
+  width: 260px;
+}
+
+/* Отступы и левая полоса строки нужны текстовому полю, но у фото они
+   отъедали бы от картинки ~26px по ширине и рвали бы квадрат. */
+.cvsheet__photo .cvsheet__row {
+  padding: 0;
+  border-left: none;
+  gap: var(--s2);
+}
+
+/* Квадратная рамка фиксированного размера: портреты приходят с разными
+   пропорциями, и без общей рамки соседняя колонка прыгала бы по высоте
+   вслед за каждым снимком. */
+.cvsheet__photo .cvsheet__value {
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+/* В правке квадрат не нужен: внутри загрузчик со своей высотой. */
+.cvsheet__photo .cvsheet__row.is-editing .cvsheet__value {
+  aspect-ratio: auto;
+}
+
+/* Кнопка правки — обёртка вокруг картинки, поэтому размер тянем и по ней:
+   иначе img заполнит её, а сама она останется по высоте текста. Свои
+   padding/margin она компенсирует друг другом, но здесь они сдвигали бы
+   картинку из квадрата — обнуляем оба. */
+.cvsheet__photo .cvsheet__edit {
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  align-items: stretch;
+}
+
+/* Заполняем контейнер целиком: cover обрезает лишнее по длинной стороне,
+   центр кадра держит лицо в середине, а не у края. */
+.cvsheet__photo .attr__preview {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* Фото вне раздела с личными данными (например, атрибут-картинка из
+   библиотеки) остаётся компактным превью. */
+.cvsheet__value .attr__preview {
+  max-height: 160px;
+  border-radius: var(--r-md);
+}
+
+/* На узком экране колонка с фото уехала бы в ноль — возвращаем строки. */
+@media (max-width: 640px) {
+  .cvsheet__withphoto {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cvsheet__photo {
+    width: 140px;
+  }
 }
 
 .cvsheet__row {

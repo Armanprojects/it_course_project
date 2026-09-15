@@ -7,6 +7,7 @@ namespace App\Service\Cv;
 use App\Entity\Cv;
 use App\Entity\Project;
 use App\Entity\User;
+use App\Enum\AttributeCategory;
 use App\Enum\AttributeType;
 use App\Enum\UserRole;
 
@@ -47,7 +48,20 @@ final readonly class CvSerializer
             ];
         }
 
+        // A CV shows exactly what the position asked for — built-in attributes
+        // included. Photo and the rest of the personal data appear only when
+        // the recruiter put them in the template, so a position that does not
+        // ask for a photo gets a CV without one, and without the block.
+        //
+        // Personal information still opens the CV when it is there: it is who
+        // the candidate is. The remaining sections keep the position's order.
         $rendered = [];
+        $personal = AttributeCategory::PersonalInformation->value;
+
+        if (isset($sections[$personal])) {
+            $rendered[] = ['section' => $personal, 'attributes' => $sections[$personal]];
+            unset($sections[$personal]);
+        }
 
         foreach ($sections as $name => $rows) {
             $rendered[] = ['section' => $name, 'attributes' => $rows];

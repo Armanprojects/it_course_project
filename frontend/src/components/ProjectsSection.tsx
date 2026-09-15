@@ -1,6 +1,6 @@
 import { PencilSimpleIcon, PlusIcon, TrashIcon } from '@phosphor-icons/react'
 import { lazy, Suspense, useState, type FormEvent } from 'react'
-import { profileApi } from '../api/client'
+import { profileApi, type ProfileTarget } from '../api/client'
 import type { ProfileProject, ProjectInput } from '../api/types'
 import { useTranslation } from '../i18n/context'
 import { useDateFormat } from '../i18n/useDateFormat'
@@ -14,6 +14,8 @@ const Markdown = lazy(() => import('react-markdown'))
 interface Props {
   projects: ProfileProject[]
   onChanged: () => void
+  /** Чей профиль правим: свой или чужой (админом). По умолчанию свой. */
+  target?: ProfileTarget
 }
 
 const EMPTY: ProjectInput = {
@@ -46,7 +48,7 @@ function formatPeriod(
  * Проекты сохраняются явно, а не автосохранением: у них своя форма с
  * подтверждением, и удалять проект по таймеру было бы опасно.
  */
-export function ProjectsSection({ projects, onChanged }: Props) {
+export function ProjectsSection({ projects, onChanged, target = 'me' }: Props) {
   const t = useTranslation()
   // null — форма закрыта, число — правим проект, 'new' — создаём.
   const [editing, setEditing] = useState<number | 'new' | null>(null)
@@ -70,7 +72,7 @@ export function ProjectsSection({ projects, onChanged }: Props) {
 
     try {
       for (const id of selected) {
-        await profileApi.deleteProject(id)
+        await profileApi.deleteProject(id, target)
       }
 
       setSelected(new Set())
@@ -105,6 +107,7 @@ export function ProjectsSection({ projects, onChanged }: Props) {
       {editing === 'new' && (
         <ProjectForm
           initial={EMPTY}
+          target={target}
           onCancel={() => setEditing(null)}
           onSaved={() => {
             setEditing(null)
@@ -117,6 +120,7 @@ export function ProjectsSection({ projects, onChanged }: Props) {
         <ProjectForm
           key={editTarget.id}
           projectId={editTarget.id}
+          target={target}
           initial={{
             name: editTarget.name,
             description: editTarget.description ?? '',
@@ -310,11 +314,13 @@ function ProjectForm({
   initial,
   onCancel,
   onSaved,
+  target,
 }: {
   projectId?: number
   initial: ProjectInput
   onCancel: () => void
   onSaved: () => void
+  target: ProfileTarget
 }) {
   const t = useTranslation()
   const errorText = useErrorText()
@@ -334,9 +340,9 @@ function ProjectForm({
 
     try {
       if (projectId === undefined) {
-        await profileApi.createProject(payload)
+        await profileApi.createProject(payload, target)
       } else {
-        await profileApi.updateProject(projectId, payload)
+        await profileApi.updateProject(projectId, payload, target)
       }
 
       onSaved()

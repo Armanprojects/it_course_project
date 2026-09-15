@@ -18,7 +18,7 @@ import { useErrorText } from '../i18n/useErrorText'
  * названию позиции и адресу кандидата.
  */
 export function CvSearchPage() {
-  if (!tokenStorage.get()) {
+  if (!tokenStorage.isValid()) {
     return <Navigate to="/login" replace />
   }
 
