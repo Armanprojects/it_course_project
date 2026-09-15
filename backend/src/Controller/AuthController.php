@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Dto\LoginRequest;
 use App\Dto\RegisterRequest;
 use App\Dto\ResendVerificationRequest;
+use App\Dto\UpdateSettingsRequest;
 use App\Dto\VerifyEmailRequest;
 use App\Entity\User;
 use App\Exception\AuthException;
@@ -20,6 +21,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 #[Route('/api/auth')]
@@ -104,6 +106,36 @@ final class AuthController extends AbstractController
     #[Route('/me', name: 'api_auth_me', methods: ['GET'])]
     public function me(#[CurrentUser] User $user): JsonResponse
     {
+        return $this->json($this->serializer->serialize($user));
+    }
+
+    /**
+     * Language and theme of the interface.
+     *
+     * Kept on the user rather than only in the browser so the choice follows
+     * the account to another device, which is what the brief asks for. The
+     * client applies it optimistically, so the response only has to confirm.
+     */
+    #[Route('/settings', name: 'api_auth_settings', methods: ['PATCH'])]
+    public function updateSettings(
+        #[CurrentUser] User $user,
+        #[MapRequestPayload] UpdateSettingsRequest $payload,
+        EntityManagerInterface $em,
+    ): JsonResponse {
+        $locale = $payload->localeEnum();
+        $theme  = $payload->themeEnum();
+
+        // Absent means "unchanged": the switcher sends one field at a time.
+        if (null !== $locale) {
+            $user->setLocale($locale);
+        }
+
+        if (null !== $theme) {
+            $user->setTheme($theme);
+        }
+
+        $em->flush();
+
         return $this->json($this->serializer->serialize($user));
     }
 

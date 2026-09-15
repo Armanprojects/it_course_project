@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Dto\EditCvAttributeRequest;
 use App\Entity\Cv;
 use App\Entity\User;
 use App\Enum\UserRole;
@@ -15,6 +16,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -91,6 +93,27 @@ final class CvController extends AbstractController
         $this->assertCanView($cv, $user);
 
         return $this->json($this->serializer->serialize($cv, $user));
+    }
+
+    /**
+     * In-place editing of a single attribute from the CV sheet.
+     *
+     * Writes through to the candidate's profile — the CV stores no values of
+     * its own — and is restricted to the owner and administrators, exactly like
+     * publishing. Recruiters read CVs, they never change them.
+     */
+    #[Route('/{id<\d+>}/attributes', name: 'api_cvs_attribute_edit', methods: ['PATCH'])]
+    public function editAttribute(
+        int $id,
+        #[CurrentUser] User $user,
+        #[MapRequestPayload] EditCvAttributeRequest $payload,
+    ): JsonResponse {
+        $cv = $this->find($id);
+        $this->assertCanEdit($cv, $user);
+
+        $this->service->editAttribute($cv, $payload->attributeId, $payload->value, $payload->version);
+
+        return $this->json($this->serializer->serialize($this->reload($cv), $user));
     }
 
     #[Route('/{id<\d+>}/publish', name: 'api_cvs_publish', methods: ['POST'])]

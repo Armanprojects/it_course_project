@@ -2,6 +2,7 @@ import { XIcon } from '@phosphor-icons/react'
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { libraryApi } from '../api/client'
 import type { TagSuggestion } from '../api/types'
+import { useTranslation } from '../i18n/context'
 
 interface Props {
   tags: string[]
@@ -15,6 +16,7 @@ interface Props {
  * должен получить общий React, а не чей-то разовый тег.
  */
 export function TagInput({ tags, onChange }: Props) {
+  const t = useTranslation()
   const [draft, setDraft] = useState('')
   const [suggestions, setSuggestions] = useState<TagSuggestion[]>([])
   const [open, setOpen] = useState(false)
@@ -112,7 +114,7 @@ export function TagInput({ tags, onChange }: Props) {
               type="button"
               className="chip__x"
               onClick={() => onChange(tags.filter((item) => item !== tag))}
-              aria-label={`Убрать тег ${tag}`}
+              aria-label={t('tags.remove', { tag })}
             >
               <XIcon size={10} weight="bold" aria-hidden="true" />
             </button>
@@ -122,8 +124,8 @@ export function TagInput({ tags, onChange }: Props) {
         <input
           type="text"
           className="taginput__field"
-          placeholder={tags.length === 0 ? 'React, Docker…' : ''}
-          aria-label="Добавить тег"
+          placeholder={tags.length === 0 ? t('tags.placeholder') : ''}
+          aria-label={t('tags.add')}
           aria-autocomplete="list"
           aria-controls={listId}
           value={draft}

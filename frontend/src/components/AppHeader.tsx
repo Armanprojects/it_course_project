@@ -1,7 +1,9 @@
-import { MagnifyingGlassIcon } from '@phosphor-icons/react'
+import { MagnifyingGlassIcon, MoonIcon, SunIcon } from '@phosphor-icons/react'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { tokenStorage } from '../api/client'
+import { useSettings } from '../i18n/context'
+import { LOCALES } from '../i18n/settings'
 import { clearUserCache, useCurrentUser } from '../lib/useCurrentUser'
 
 /**
@@ -23,6 +25,7 @@ function HeaderBar({ initialQuery }: { initialQuery: string }) {
   const navigate = useNavigate()
   const [query, setQuery] = useState(initialQuery)
   const { isRecruiter } = useCurrentUser()
+  const { t, locale, setLocale, theme, setTheme } = useSettings()
 
   const authenticated = tokenStorage.get() !== null
 
@@ -46,7 +49,7 @@ function HeaderBar({ initialQuery }: { initialQuery: string }) {
           <span className="apphead__logo" aria-hidden="true">
             CV
           </span>
-          <span>Hiring Platform</span>
+          <span>{t('app.name')}</span>
         </Link>
 
         <form className="apphead__search" role="search" onSubmit={submit}>
@@ -54,8 +57,8 @@ function HeaderBar({ initialQuery }: { initialQuery: string }) {
           <input
             type="search"
             className="apphead__input"
-            placeholder="Поиск позиций…"
-            aria-label="Поиск по позициям"
+            placeholder={t('header.searchPlaceholder')}
+            aria-label={t('header.searchLabel')}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -63,7 +66,7 @@ function HeaderBar({ initialQuery }: { initialQuery: string }) {
 
         <nav className="apphead__nav">
           <Link to="/positions" className="btn btn--ghost">
-            Позиции
+            {t('header.positions')}
           </Link>
 
           {authenticated ? (
@@ -73,26 +76,58 @@ function HeaderBar({ initialQuery }: { initialQuery: string }) {
               {isRecruiter && (
                 <>
                   <Link to="/cvs/search" className="btn btn--ghost">
-                    Резюме
+                    {t('header.cvs')}
                   </Link>
                   <Link to="/attributes" className="btn btn--ghost">
-                    Атрибуты
+                    {t('header.attributes')}
                   </Link>
                 </>
               )}
 
               <Link to="/profile" className="btn btn--ghost">
-                Профиль
+                {t('header.profile')}
               </Link>
               <button type="button" className="btn btn--outline" onClick={logout}>
-                Выйти
+                {t('header.logout')}
               </button>
             </>
           ) : (
             <Link to="/login" className="btn btn--primary">
-              Войти
+              {t('header.login')}
             </Link>
           )}
+
+          {/* Переключатели темы и языка доступны и гостю: выбор хранится
+              в localStorage, а вошедшему ещё и синхронизируется с профилем. */}
+          <div className="apphead__prefs">
+            <button
+              type="button"
+              className="iconbtn"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              aria-label={t(theme === 'dark' ? 'header.themeLight' : 'header.themeDark')}
+              title={t(theme === 'dark' ? 'header.themeLight' : 'header.themeDark')}
+            >
+              {theme === 'dark' ? (
+                <SunIcon size={16} aria-hidden="true" />
+              ) : (
+                <MoonIcon size={16} aria-hidden="true" />
+              )}
+            </button>
+
+            <select
+              className="langpick"
+              value={locale}
+              onChange={(event) => setLocale(event.target.value as typeof locale)}
+              aria-label={t('header.language')}
+              title={t('header.language')}
+            >
+              {LOCALES.map((code) => (
+                <option key={code} value={code}>
+                  {code.toUpperCase()}
+                </option>
+              ))}
+            </select>
+          </div>
         </nav>
       </div>
     </header>

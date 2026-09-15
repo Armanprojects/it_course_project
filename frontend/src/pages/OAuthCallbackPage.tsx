@@ -2,24 +2,29 @@ import { WarningCircleIcon } from '@phosphor-icons/react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { tokenStorage } from '../api/client'
+import { useTranslation } from '../i18n/context'
+import type { MessageKey } from '../i18n/messages'
 
 /** Коды ошибок из App\Exception\AuthException и OAuthController. */
-const ERROR_MESSAGES: Record<string, string> = {
-  access_denied: 'Вы отменили вход через провайдера.',
-  missing_code: 'Провайдер не передал код авторизации. Попробуйте ещё раз.',
-  provider_failed: 'Провайдер отклонил запрос. Попробуйте ещё раз.',
-  provider_email_missing:
-    'Провайдер не передал подтверждённый адрес. Откройте доступ к почте или войдите по паролю.',
-  identity_taken: 'Этот аккаунт уже привязан к другому пользователю.',
-  account_blocked: 'Аккаунт заблокирован. Обратитесь к администратору.',
-  unknown_provider: 'Неизвестный провайдер входа.',
+const ERROR_KEYS: Record<string, MessageKey> = {
+  access_denied: 'oauth.accessDenied',
+  missing_code: 'oauth.missingCode',
+  provider_failed: 'oauth.providerFailed',
+  provider_email_missing: 'oauth.noEmail',
+  identity_taken: 'oauth.identityTaken',
+  account_blocked: 'oauth.blocked',
+  unknown_provider: 'oauth.unknownProvider',
 }
 
 /**
  * Разбирается один раз на модуле, а не в эффекте: фрагмент URL — это входные
  * данные навигации, они известны до первого рендера и не меняются.
  */
-function consumeCallback(): { redirecting: boolean; error: string | null } {
+/**
+ * Возвращает ключ ошибки, а не текст: функция вызывается вне React, языка
+ * ещё не знает — переводит компонент.
+ */
+function consumeCallback(): { redirecting: boolean; error: MessageKey | null } {
   const params = new URLSearchParams(window.location.hash.slice(1))
   const token = params.get('token')
 
@@ -37,7 +42,7 @@ function consumeCallback(): { redirecting: boolean; error: string | null } {
 
   return {
     redirecting: false,
-    error: ERROR_MESSAGES[code] ?? 'Не удалось войти через провайдера.',
+    error: ERROR_KEYS[code] ?? 'oauth.generic',
   }
 }
 
@@ -46,6 +51,7 @@ function consumeCallback(): { redirecting: boolean; error: string | null } {
  * Фрагмент не уходит на сервер — не попадает в логи nginx и в Referer.
  */
 export function OAuthCallbackPage() {
+  const t = useTranslation()
   const [{ error }] = useState(consumeCallback)
 
   return (
@@ -61,7 +67,7 @@ export function OAuthCallbackPage() {
         <div className="auth__box">
           {!error ? (
             <p className="muted" style={{ margin: 0 }} role="status">
-              Завершаем вход…
+              {t('oauth.finishing')}
             </p>
           ) : (
             <div className="col g4">
@@ -72,9 +78,9 @@ export function OAuthCallbackPage() {
                 style={{ color: 'var(--err-fg)' }}
               />
               <div>
-                <h1 className="h2">Вход не выполнен</h1>
+                <h1 className="h2">{t('oauth.failedTitle')}</h1>
                 <p className="muted mt3" style={{ margin: 0 }}>
-                  {error}
+                  {t(error)}
                 </p>
               </div>
 
@@ -83,7 +89,7 @@ export function OAuthCallbackPage() {
                 className="btn btn--primary btn--lg"
                 style={{ alignSelf: 'flex-start' }}
               >
-                Вернуться ко входу
+                {t('verify.backToLogin')}
               </Link>
             </div>
           )}

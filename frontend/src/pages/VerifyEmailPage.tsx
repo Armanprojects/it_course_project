@@ -2,21 +2,24 @@ import { CheckCircleIcon, WarningCircleIcon } from '@phosphor-icons/react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { authApi, RequestError, tokenStorage } from '../api/client'
+import { useTranslation } from '../i18n/context'
+import type { MessageKey } from '../i18n/messages'
 
 type State =
   | { kind: 'verifying' }
   | { kind: 'done' }
-  | { kind: 'failed'; code: string; message: string }
+  | { kind: 'failed'; code: string; message: string | null }
 
-/** Тексты под коды ошибок из App\Exception\AuthException. */
-const MESSAGES: Record<string, string> = {
-  invalid_verification_token: 'Ссылка недействительна. Проверьте, что скопировали её полностью.',
-  verification_token_expired: 'Срок действия ссылки истёк. Запросите новое письмо.',
-  verification_token_used: 'Эта ссылка уже использована. Попробуйте войти.',
-  account_blocked: 'Аккаунт заблокирован. Обратитесь к администратору.',
+/** Ключи под коды ошибок из App\Exception\AuthException. */
+const MESSAGE_KEYS: Record<string, MessageKey> = {
+  invalid_verification_token: 'verify.invalidToken',
+  verification_token_expired: 'verify.expiredToken',
+  verification_token_used: 'verify.usedToken',
+  account_blocked: 'verify.blocked',
 }
 
 export function VerifyEmailPage() {
+  const t = useTranslation()
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const headingRef = useRef<HTMLHeadingElement>(null)
@@ -31,7 +34,8 @@ export function VerifyEmailPage() {
       : {
           kind: 'failed',
           code: 'invalid_verification_token',
-          message: MESSAGES.invalid_verification_token,
+          // Текст берётся из MESSAGE_KEYS при отрисовке — здесь его нет.
+          message: null,
         },
   )
 
@@ -67,9 +71,9 @@ export function VerifyEmailPage() {
         setState({
           kind: 'failed',
           code,
-          message:
-            MESSAGES[code] ??
-            (error instanceof RequestError ? error.message : 'Не удалось подтвердить адрес.'),
+          // Сообщение сервера — запасной вариант: свой перевод есть не под
+          // каждый код, а показать что-то осмысленное надо всегда.
+          message: error instanceof RequestError ? error.message : null,
         })
       })
 
@@ -99,7 +103,7 @@ export function VerifyEmailPage() {
         <div className="auth__box">
           {state.kind === 'verifying' && (
             <p className="muted" style={{ margin: 0 }} role="status">
-              Подтверждаем адрес…
+              {t('verify.verifying')}
             </p>
           )}
 
@@ -113,10 +117,10 @@ export function VerifyEmailPage() {
               />
               <div>
                 <h1 ref={headingRef} tabIndex={-1} className="h2 app-step-title">
-                  Адрес подтверждён
+                  {t('verify.confirmed')}
                 </h1>
                 <p className="muted mt3" style={{ margin: 0 }}>
-                  Открываем приложение…
+                  {t('verify.opening')}
                 </p>
               </div>
             </div>
@@ -132,10 +136,12 @@ export function VerifyEmailPage() {
               />
               <div>
                 <h1 ref={headingRef} tabIndex={-1} className="h2 app-step-title">
-                  Не удалось подтвердить
+                  {t('verify.failedTitle')}
                 </h1>
                 <p className="muted mt3" style={{ margin: 0 }}>
-                  {state.message}
+                  {MESSAGE_KEYS[state.code] !== undefined
+                    ? t(MESSAGE_KEYS[state.code])
+                    : (state.message ?? t('verify.failed'))}
                 </p>
               </div>
 
@@ -145,7 +151,7 @@ export function VerifyEmailPage() {
                 style={{ alignSelf: 'flex-start' }}
                 onClick={() => navigate('/login', { replace: true })}
               >
-                Перейти ко входу
+                {t('verify.goToLogin')}
               </button>
             </div>
           )}

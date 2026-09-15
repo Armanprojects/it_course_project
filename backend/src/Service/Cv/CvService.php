@@ -4,17 +4,22 @@ declare(strict_types=1);
 
 namespace App\Service\Cv;
 
+use App\Entity\Attribute;
 use App\Entity\Cv;
 use App\Entity\Position;
 use App\Entity\Profile;
 use App\Entity\User;
 use App\Enum\UserRole;
+use App\Exception\ConflictException;
 use App\Service\Position\AccessRuleEvaluator;
+use App\Service\Profile\AttributeValueWriter;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\OptimisticLockException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Creating, publishing and liking CVs.
@@ -28,6 +33,7 @@ final readonly class CvService
     public function __construct(
         private EntityManagerInterface $em,
         private AccessRuleEvaluator $access,
+        private AttributeValueWriter $writer,
     ) {
     }
 
@@ -52,6 +58,12 @@ final readonly class CvService
         $cv = $profile->startCv($position);
         $this->em->persist($cv);
 
+        // The template's attributes are attached to the profile right away, so
+        // the candidate can fill a field straight from the CV. Without this the
+        // value has nowhere to be written and the attribute would only be
+        // reachable by hunting it down in the library.
+        $this->attachTemplateAttributes($profile, $position);
+
         try {
             $this->em->flush();
         } catch (UniqueConstraintViolationException) {
@@ -59,6 +71,72 @@ final readonly class CvService
         }
 
         return $cv;
+    }
+
+    /**
+     * Attaches every attribute of the position's template to the profile,
+     * keeping the values already filled in — addAttribute() is a no-op for an
+     * attribute the profile already carries, so nothing is overwritten.
+     */
+    private function attachTemplateAttributes(Profile $profile, Position $position): void
+    {
+        foreach ($position->getAttributes() as $link) {
+            $profile->addAttribute($link->getAttribute());
+        }
+    }
+
+    /**
+     * In-place editing of one attribute from the CV page.
+     *
+     * The value is written to the candidate's profile, not to the CV: the brief
+     * keeps a single master value per attribute, so editing it here is exactly
+     * the same write the profile page performs, and the change shows up in
+     * every other CV of that candidate.
+     *
+     * Goes through the profile's version, sharing the optimistic-locking gate
+     * with autosave — a CV tab and a profile tab editing the same value cannot
+     * silently overwrite one another.
+     */
+    public function editAttribute(Cv $cv, int $attributeId, mixed $value, int $version): Cv
+    {
+        $profile = $cv->getProfile();
+
+        if ($profile->getVersion() !== $version) {
+            throw new ConflictException($profile->getVersion());
+        }
+
+        $attribute = $this->templateAttribute($cv, $attributeId);
+
+        // addAttribute() returns the existing value when there is one, so a
+        // field the candidate never filled is created on first edit.
+        $this->writer->write($profile->addAttribute($attribute), $value);
+        $profile->touch();
+        $cv->touch();
+
+        try {
+            $this->em->flush();
+        } catch (OptimisticLockException) {
+            $this->em->refresh($profile);
+
+            throw new ConflictException($profile->getVersion());
+        }
+
+        return $cv;
+    }
+
+    /**
+     * Only attributes the position actually asks for may be written from a CV:
+     * the page must not become a way to edit arbitrary parts of a profile.
+     */
+    private function templateAttribute(Cv $cv, int $attributeId): Attribute
+    {
+        foreach ($cv->getPosition()->getAttributes() as $link) {
+            if ($link->getAttribute()->getId() === $attributeId) {
+                return $link->getAttribute();
+            }
+        }
+
+        throw new NotFoundHttpException('Этот атрибут не входит в резюме.');
     }
 
     /**

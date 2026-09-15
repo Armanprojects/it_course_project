@@ -8,6 +8,7 @@ import { RoleSelector } from '../components/RoleSelector'
 import { VerificationNotice } from '../components/VerificationNotice'
 import { MIN_PASSWORD_LENGTH } from '../lib/passwordStrength'
 import { ROLE_ICON, ROLE_PILL } from '../lib/roles'
+import { useTranslation } from '../i18n/context'
 
 type Step = 'pick' | 'form' | 'sent'
 type Mode = 'login' | 'signup'
@@ -19,6 +20,7 @@ interface FieldErrors {
 }
 
 export function LoginPage() {
+  const t = useTranslation()
   // Шаг 1 — выбор роли, шаг 2 — форма, шаг 3 — «проверьте почту».
   // Роль спрашиваем первой: от неё зависит, что человек увидит после входа.
   const [step, setStep] = useState<Step>('pick')
@@ -62,22 +64,22 @@ export function LoginPage() {
     const errors: FieldErrors = {}
 
     if (!email.trim()) {
-      errors.email = 'Укажите почту.'
+      errors.email = t('auth.emailRequired')
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.email = 'Проверьте адрес — похоже, в нём опечатка.'
+      errors.email = t('auth.emailInvalid')
     }
 
     if (!password) {
-      errors.password = 'Укажите пароль.'
+      errors.password = t('auth.passwordRequired')
     } else if (isSignup && password.length < MIN_PASSWORD_LENGTH) {
-      errors.password = `Пароль должен быть не короче ${MIN_PASSWORD_LENGTH} символов.`
+      errors.password = t('auth.passwordShort', { min: MIN_PASSWORD_LENGTH })
     }
 
     if (isSignup) {
       if (!passwordConfirmation) {
-        errors.passwordConfirmation = 'Повторите пароль.'
+        errors.passwordConfirmation = t('auth.repeatPassword')
       } else if (passwordConfirmation !== password) {
-        errors.passwordConfirmation = 'Пароли не совпадают.'
+        errors.passwordConfirmation = t('auth.passwordsDiffer')
       }
     }
 
@@ -125,7 +127,7 @@ export function LoginPage() {
     setFieldErrors(errors)
 
     if (Object.keys(errors).length > 0) {
-      setFormError('Проверьте заполнение полей.')
+      setFormError(t('auth.checkFields'))
       setFailedSubmits((n) => n + 1)
 
       return
@@ -168,7 +170,7 @@ export function LoginPage() {
         })
         setFormError(error.message)
       } else {
-        setFormError('Непредвиденная ошибка. Попробуйте ещё раз.')
+        setFormError(t('auth.retry'))
       }
 
       setFailedSubmits((n) => n + 1)
@@ -192,17 +194,15 @@ export function LoginPage() {
         <div className="auth__box">
           {step === 'pick' && (
             <>
-              <h1 className="h1">Добро пожаловать в CVMatch</h1>
+              <h1 className="h1">{t('auth.welcome')}</h1>
               <p className="muted mt3" style={{ margin: 0 }}>
-                Выберите, как вы будете пользоваться платформой. Это можно поменять позже в
-                настройках.
+                {t('auth.pickRole')}
               </p>
 
               <RoleSelector onPick={pickRole} />
 
               <p className="t-sm muted-3 mt6" style={{ margin: 0 }}>
-                Продолжая, вы соглашаетесь с условиями использования и политикой
-                конфиденциальности.
+                {t('auth.terms')}
               </p>
             </>
           )}
@@ -211,31 +211,31 @@ export function LoginPage() {
             <>
               <button type="button" className="auth__back" onClick={() => setStep('pick')}>
                 <CaretLeftIcon size={14} aria-hidden="true" />
-                Другая роль
+                {t('auth.otherRole')}
               </button>
 
               <div className="row row--between g3">
                 <h1 ref={headingRef} tabIndex={-1} className="h2 app-step-title">
-                  {isSignup ? 'Создание аккаунта' : 'Вход в аккаунт'}
+                  {t(isSignup ? 'auth.signupTitle' : 'auth.loginTitle')}
                 </h1>
 
                 <span className="rolepill">
                   <RoleIcon size={13} aria-hidden="true" />
-                  {ROLE_PILL[role]}
+                  {t(ROLE_PILL[role])}
                   <button type="button" className="rolepill__change" onClick={() => setStep('pick')}>
-                    Сменить
+                    {t('auth.change')}
                   </button>
                 </span>
               </div>
 
-              <div className="authtabs mt5" role="group" aria-label="Вход или регистрация">
+              <div className="authtabs mt5" role="group" aria-label={t('auth.tabsLabel')}>
                 <button
                   type="button"
                   className={`authtabs__btn${!isSignup ? ' is-on' : ''}`}
                   aria-pressed={!isSignup}
                   onClick={() => switchMode('login')}
                 >
-                  Войти
+                  {t('auth.signin')}
                 </button>
                 <button
                   type="button"
@@ -243,7 +243,7 @@ export function LoginPage() {
                   aria-pressed={isSignup}
                   onClick={() => switchMode('signup')}
                 >
-                  Зарегистрироваться
+                  {t('auth.signup')}
                 </button>
               </div>
 
@@ -256,7 +256,7 @@ export function LoginPage() {
                 )}
 
                 <FormField
-                  label="Рабочая почта"
+                  label={t('auth.workEmail')}
                   type="email"
                   value={email}
                   onChange={editField('email', setEmail)}
@@ -268,7 +268,7 @@ export function LoginPage() {
                 />
 
                 <FormField
-                  label="Пароль"
+                  label={t('auth.password')}
                   type="password"
                   value={password}
                   onChange={editField('password', setPassword)}
@@ -284,7 +284,7 @@ export function LoginPage() {
 
                 {isSignup && (
                   <FormField
-                    label="Повторите пароль"
+                    label={t('auth.repeatLabel')}
                     type="password"
                     value={passwordConfirmation}
                     onChange={editField('passwordConfirmation', setPasswordConfirmation)}
@@ -296,7 +296,7 @@ export function LoginPage() {
                     }
                     error={fieldErrors.passwordConfirmation}
                     autoComplete="new-password"
-                    placeholder="Ещё раз тот же пароль"
+                    placeholder={t('auth.repeatPlaceholder')}
                     disabled={submitting}
                   />
                 )}
@@ -308,15 +308,15 @@ export function LoginPage() {
                 >
                   {submitting
                     ? isSignup
-                      ? 'Создаём аккаунт…'
-                      : 'Входим…'
+                      ? t('auth.creating')
+                      : t('auth.signingIn')
                     : isSignup
-                      ? 'Создать аккаунт'
-                      : 'Войти'}
+                      ? t('auth.createAccount')
+                      : t('auth.signin')}
                 </button>
               </form>
 
-              <div className="auth__or mt5">или</div>
+              <div className="auth__or mt5">{t('auth.or')}</div>
 
               <div className="col g2 mt5">
                 <button
@@ -326,7 +326,7 @@ export function LoginPage() {
                   disabled={submitting}
                 >
                   <GoogleMark />
-                  Продолжить с Google
+                  {t('auth.withGoogle')}
                 </button>
 
                 <button
@@ -336,7 +336,7 @@ export function LoginPage() {
                   disabled={submitting}
                 >
                   <GithubLogoIcon size={17} weight="fill" aria-hidden="true" />
-                  Продолжить с GitHub
+                  {t('auth.withGithub')}
                 </button>
               </div>
             </>

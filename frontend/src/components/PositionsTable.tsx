@@ -1,22 +1,26 @@
 import { CaretDownIcon, CaretUpIcon } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router-dom'
 import type { PositionRow, PositionSort, SortDirection } from '../api/types'
+import { useTranslation } from '../i18n/context'
+import type { MessageKey } from '../i18n/messages'
+import { useDateFormat } from '../i18n/useDateFormat'
 
 interface Column {
   key: PositionSort | 'attributeCount' | 'cvCount'
-  label: string
+  /** Ключ словаря, а не готовая строка: заголовок зависит от языка. */
+  label: MessageKey
   sortable: boolean
   /** Узкие числовые колонки прячем на телефоне: там важны название и компания. */
   hideOnMobile?: boolean
 }
 
 const COLUMNS: Column[] = [
-  { key: 'title', label: 'Позиция', sortable: true },
-  { key: 'company', label: 'Компания', sortable: true },
-  { key: 'level', label: 'Уровень', sortable: true },
-  { key: 'attributeCount', label: 'Полей', sortable: false, hideOnMobile: true },
-  { key: 'cvCount', label: 'Резюме', sortable: false, hideOnMobile: true },
-  { key: 'updatedAt', label: 'Обновлена', sortable: true, hideOnMobile: true },
+  { key: 'title', label: 'positions.colTitle', sortable: true },
+  { key: 'company', label: 'positions.colCompany', sortable: true },
+  { key: 'level', label: 'positions.colLevel', sortable: true },
+  { key: 'attributeCount', label: 'positions.colFields', sortable: false, hideOnMobile: true },
+  { key: 'cvCount', label: 'positions.colCvs', sortable: false, hideOnMobile: true },
+  { key: 'updatedAt', label: 'positions.colUpdated', sortable: true, hideOnMobile: true },
 ]
 
 interface Props {
@@ -28,8 +32,6 @@ interface Props {
   compact?: boolean
   emptyMessage?: string
 }
-
-const dateFormat = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium' })
 
 /**
  * Таблица позиций — единственное представление каталога: задание прямо
@@ -44,15 +46,17 @@ export function PositionsTable({
   direction = 'desc',
   onSort,
   compact = false,
-  emptyMessage = 'Позиции не найдены.',
+  emptyMessage,
 }: Props) {
   const navigate = useNavigate()
+  const t = useTranslation()
+  const formatDate = useDateFormat()
   const columns = compact ? COLUMNS.filter((column) => !column.hideOnMobile) : COLUMNS
 
   if (rows.length === 0) {
     return (
       <p className="muted table__empty" role="status">
-        {emptyMessage}
+        {emptyMessage ?? t('positions.notFound')}
       </p>
     )
   }
@@ -81,7 +85,7 @@ export function PositionsTable({
                       className="table__sort"
                       onClick={() => onSort(column.key as PositionSort)}
                     >
-                      {column.label}
+                      {t(column.label)}
                       {active &&
                         (direction === 'asc' ? (
                           <CaretUpIcon size={12} weight="bold" aria-hidden="true" />
@@ -90,7 +94,7 @@ export function PositionsTable({
                         ))}
                     </button>
                   ) : (
-                    column.label
+                    t(column.label)
                   )}
                 </th>
               )
@@ -138,7 +142,7 @@ export function PositionsTable({
                 <>
                   <td className="is-secondary num">{row.attributeCount}</td>
                   <td className="is-secondary num">{row.cvCount}</td>
-                  <td className="is-secondary">{dateFormat.format(new Date(row.updatedAt))}</td>
+                  <td className="is-secondary">{formatDate(row.updatedAt)}</td>
                 </>
               )}
             </tr>

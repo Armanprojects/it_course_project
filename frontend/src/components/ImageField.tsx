@@ -1,6 +1,7 @@
 import { ImageIcon, SpinnerGapIcon } from '@phosphor-icons/react'
 import { useId, useRef, useState, type DragEvent } from 'react'
 import { cloudinaryConfigured, uploadImage, UploadError } from '../lib/cloudinary'
+import { useTranslation } from '../i18n/context'
 
 interface Props {
   id: string
@@ -16,6 +17,7 @@ interface Props {
  * ломается, просто теряет загрузку.
  */
 export function ImageField({ id, value, onChange }: Props) {
+  const t = useTranslation()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
@@ -34,7 +36,7 @@ export function ImageField({ id, value, onChange }: Props) {
       onChange(await uploadImage(file))
     } catch (uploadError) {
       setError(
-        uploadError instanceof UploadError ? uploadError.message : 'Не удалось загрузить файл.',
+        uploadError instanceof UploadError ? t(uploadError.key) : t('image.uploadFailed'),
       )
     } finally {
       setBusy(false)
@@ -53,7 +55,7 @@ export function ImageField({ id, value, onChange }: Props) {
   return (
     <div className="col g2">
       {value && (
-        <img className="attr__preview" src={value} alt="" onError={() => setError('Ссылка не открывается как изображение.')} />
+        <img className="attr__preview" src={value} alt="" onError={() => setError(t('image.brokenLink'))} />
       )}
 
       {cloudinaryConfigured && (
@@ -73,7 +75,7 @@ export function ImageField({ id, value, onChange }: Props) {
           )}
 
           <span className="t-sm muted">
-            {busy ? 'Загружаем…' : 'Перетащите файл сюда или'}
+            {t(busy ? 'image.uploading' : 'image.dropHere')}
           </span>
 
           {!busy && (
@@ -82,7 +84,7 @@ export function ImageField({ id, value, onChange }: Props) {
               className="linkbtn"
               onClick={() => fileInput.current?.click()}
             >
-              выберите
+              {t('image.choose')}
             </button>
           )}
 
@@ -101,7 +103,7 @@ export function ImageField({ id, value, onChange }: Props) {
       )}
 
       <label className="label" htmlFor={cloudinaryConfigured ? urlFieldId : id}>
-        {cloudinaryConfigured ? 'или вставьте ссылку' : 'Ссылка на изображение'}
+        {t(cloudinaryConfigured ? 'image.orPasteLink' : 'image.linkLabel')}
       </label>
 
       <input

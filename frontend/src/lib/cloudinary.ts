@@ -6,6 +6,8 @@
  * ссылка. Ключи для unsigned-загрузки публичны по своей природе — они и
  * рассчитаны на то, чтобы лежать в коде фронтенда.
  */
+import type { MessageKey } from '../i18n/messages'
+
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string | undefined
 const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET as string | undefined
 
@@ -14,19 +16,33 @@ export const cloudinaryConfigured = Boolean(CLOUD_NAME && UPLOAD_PRESET)
 
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024
 
-export class UploadError extends Error {}
+/**
+ * Ошибка загрузки. В message лежит ключ словаря, а не готовый текст: модуль
+ * не React-компонент и языка не знает — переводит тот, кто ловит.
+ */
+export class UploadError extends Error {
+  // Поле объявлено отдельно, а не параметром конструктора: сборка идёт с
+  // erasableSyntaxOnly, где параметры-свойства запрещены.
+  readonly key: MessageKey
+
+  constructor(key: MessageKey) {
+    super(key)
+    this.name = 'UploadError'
+    this.key = key
+  }
+}
 
 export async function uploadImage(file: File): Promise<string> {
   if (!cloudinaryConfigured) {
-    throw new UploadError('Загрузка не настроена: не заданы ключи Cloudinary.')
+    throw new UploadError('upload.notConfigured')
   }
 
   if (!file.type.startsWith('image/')) {
-    throw new UploadError('Это не изображение.')
+    throw new UploadError('upload.notImage')
   }
 
   if (file.size > MAX_IMAGE_BYTES) {
-    throw new UploadError('Файл больше 10 МБ.')
+    throw new UploadError('upload.tooBig')
   }
 
   const body = new FormData()
@@ -41,13 +57,13 @@ export async function uploadImage(file: File): Promise<string> {
   })
 
   if (!response.ok) {
-    throw new UploadError('Облако отклонило загрузку. Проверьте upload preset.')
+    throw new UploadError('upload.rejected')
   }
 
   const data = (await response.json()) as { secure_url?: string }
 
   if (!data.secure_url) {
-    throw new UploadError('Облако не вернуло ссылку на файл.')
+    throw new UploadError('upload.noUrl')
   }
 
   return data.secure_url

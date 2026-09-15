@@ -1,6 +1,7 @@
 import { TrashIcon } from '@phosphor-icons/react'
 import type { AttributeValue, PeriodValue, ProfileAttribute } from '../api/types'
 import { ImageField } from './ImageField'
+import { useTranslation } from '../i18n/context'
 
 interface Props {
   attribute: ProfileAttribute
@@ -45,6 +46,7 @@ function asPeriod(value: AttributeValue): PeriodValue {
  * быть видны сразу, и та же подсветка понадобится в резюме.
  */
 export function AttributeField({ attribute, value, onChange, onRemove }: Props) {
+  const t = useTranslation()
   const inputId = `attr-${attribute.attributeId}`
   const isEmpty = value === null || value === '' || value === undefined
 
@@ -53,7 +55,7 @@ export function AttributeField({ attribute, value, onChange, onRemove }: Props) 
       <div className="attr__head">
         <label className="label" htmlFor={inputId}>
           {attribute.name}
-          {isEmpty && <span className="attr__flag">не заполнено</span>}
+          {isEmpty && <span className="attr__flag">{t('common.notFilled')}</span>}
         </label>
 
         {onRemove && (
@@ -61,8 +63,8 @@ export function AttributeField({ attribute, value, onChange, onRemove }: Props) 
             type="button"
             className="attr__remove"
             onClick={onRemove}
-            aria-label={`Убрать атрибут «${attribute.name}» из профиля`}
-            title="Убрать из профиля"
+            aria-label={t('attr.removeFromProfile', { name: attribute.name })}
+            title={t('attr.removeTitle')}
           >
             <TrashIcon size={14} aria-hidden="true" />
           </button>
@@ -76,17 +78,27 @@ export function AttributeField({ attribute, value, onChange, onRemove }: Props) 
   )
 }
 
-function AttributeInput({
+/**
+ * Сам элемент ввода, без обвязки с подписью и кнопкой удаления. Экспортируется
+ * ради резюме: там атрибут правится по месту, и повторять восемь типов ввода
+ * второй раз означало бы гарантированно их рассинхронизировать.
+ */
+export function AttributeInput({
   id,
   attribute,
   value,
   onChange,
+  autoFocus,
+  onBlur,
 }: {
   id: string
-  attribute: ProfileAttribute
+  attribute: Pick<ProfileAttribute, 'attributeId' | 'type' | 'options'>
   value: AttributeValue
   onChange: (value: AttributeValue) => void
+  autoFocus?: boolean
+  onBlur?: () => void
 }) {
+  const t = useTranslation()
   switch (attribute.type) {
     case 'text':
       return (
@@ -94,7 +106,9 @@ function AttributeInput({
           id={id}
           className="input input--area"
           rows={4}
-          placeholder="Поддерживается Markdown"
+          autoFocus={autoFocus}
+          onBlur={onBlur}
+          placeholder={t('attr.markdownHint')}
           value={asText(value)}
           onChange={(event) => onChange(event.target.value)}
         />
@@ -107,6 +121,8 @@ function AttributeInput({
           type="number"
           step="any"
           className="input"
+          autoFocus={autoFocus}
+          onBlur={onBlur}
           value={asNumberText(value)}
           // Пустое поле — это очищенное значение, а не ноль.
           onChange={(event) => onChange(event.target.value === '' ? null : event.target.value)}
@@ -119,6 +135,8 @@ function AttributeInput({
           id={id}
           type="date"
           className="input"
+          autoFocus={autoFocus}
+          onBlur={onBlur}
           value={asText(value)}
           onChange={(event) => onChange(event.target.value || null)}
         />
@@ -130,10 +148,12 @@ function AttributeInput({
           <input
             id={id}
             type="checkbox"
+            autoFocus={autoFocus}
+            onBlur={onBlur}
             checked={value === true}
             onChange={(event) => onChange(event.target.checked)}
           />
-          <span className="t-sm">{value === true ? 'Да' : 'Нет'}</span>
+          <span className="t-sm">{t(value === true ? 'common.yes' : 'common.no')}</span>
         </label>
       )
 
@@ -142,10 +162,12 @@ function AttributeInput({
         <select
           id={id}
           className="input"
+          autoFocus={autoFocus}
+          onBlur={onBlur}
           value={asText(value)}
           onChange={(event) => onChange(event.target.value || null)}
         >
-          <option value="">— не выбрано —</option>
+          <option value="">{t('attr.notSelected')}</option>
           {attribute.options.map((option) => (
             <option key={option} value={option}>
               {option}
@@ -158,12 +180,13 @@ function AttributeInput({
       const period = asPeriod(value)
 
       return (
-        <div className="period">
+        <div className="period" onBlur={onBlur}>
           <input
             id={id}
             type="date"
             className="input"
-            aria-label="Начало периода"
+            autoFocus={autoFocus}
+            aria-label={t('attr.periodStart')}
             value={period.from ?? ''}
             onChange={(event) => onChange({ ...period, from: event.target.value || null })}
           />
@@ -173,7 +196,7 @@ function AttributeInput({
           <input
             type="date"
             className="input"
-            aria-label="Конец периода, пусто — по настоящее время"
+            aria-label={t('attr.periodEnd')}
             value={period.to ?? ''}
             onChange={(event) => onChange({ ...period, to: event.target.value || null })}
           />
@@ -190,6 +213,8 @@ function AttributeInput({
           id={id}
           type="text"
           className="input"
+          autoFocus={autoFocus}
+          onBlur={onBlur}
           value={asText(value)}
           onChange={(event) => onChange(event.target.value)}
         />

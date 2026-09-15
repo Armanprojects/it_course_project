@@ -1,11 +1,13 @@
 import { ArrowCounterClockwiseIcon, MagnifyingGlassIcon, PencilSimpleIcon, PlusIcon, TrashIcon } from '@phosphor-icons/react'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
-import { attributeAdminApi, RequestError, tokenStorage } from '../api/client'
+import { attributeAdminApi, tokenStorage } from '../api/client'
 import type { AttributeInput, AttributeType, ManagedAttribute } from '../api/types'
 import { AppHeader } from '../components/AppHeader'
-import { CATEGORY_LABELS, TYPE_LABELS } from '../lib/attributeLabels'
 import { useCurrentUser } from '../lib/useCurrentUser'
+import { useAttributeLabels } from '../i18n/useAttributeLabels'
+import { useTranslation } from '../i18n/context'
+import { useErrorText } from '../i18n/useErrorText'
 
 const BLANK: AttributeInput = {
   name: '',
@@ -30,6 +32,7 @@ export function AttributeLibraryPage() {
 }
 
 function LibraryGate() {
+  const t = useTranslation()
   const { isRecruiter, loading } = useCurrentUser()
 
   if (loading) {
@@ -38,7 +41,7 @@ function LibraryGate() {
         <AppHeader />
         <main className="page">
           <p className="muted" role="status">
-            Загружаем…
+            {t('common.loading')}
           </p>
         </main>
       </>
@@ -49,6 +52,9 @@ function LibraryGate() {
 }
 
 function LibraryManager() {
+  const t = useTranslation()
+  const errorText = useErrorText()
+  const { categoryLabel } = useAttributeLabels()
   const [items, setItems] = useState<ManagedAttribute[]>([])
   const [categories, setCategories] = useState<string[]>([])
   const [types, setTypes] = useState<AttributeType[]>([])
@@ -79,12 +85,12 @@ function LibraryManager() {
       setError(null)
     } catch (requestError: unknown) {
       setError(
-        requestError instanceof RequestError ? requestError.message : 'Не удалось загрузить.',
+        errorText(requestError, 'lib.loadFailed'),
       )
     } finally {
       setLoaded(true)
     }
-  }, [query, category])
+  }, [query, category, errorText])
 
   useEffect(() => {
     void load()
@@ -98,7 +104,7 @@ function LibraryManager() {
       await load()
     } catch (requestError: unknown) {
       setError(
-        requestError instanceof RequestError ? requestError.message : 'Не удалось выполнить.',
+        errorText(requestError, 'lib.actionFailed'),
       )
     }
   }
@@ -133,7 +139,7 @@ function LibraryManager() {
       await load()
     } catch (requestError: unknown) {
       setError(
-        requestError instanceof RequestError ? requestError.message : 'Не удалось выполнить.',
+        errorText(requestError, 'lib.actionFailed'),
       )
       await load()
     }
@@ -146,16 +152,16 @@ function LibraryManager() {
       <main className="page">
         <div className="panel__head">
           <div className="col g1">
-            <h1 className="h1">Библиотека атрибутов</h1>
+            <h1 className="h1">{t('lib.title')}</h1>
             <p className="muted" style={{ margin: 0 }}>
-              Общий пул — им управляют все рекрутеры
+              {t('lib.subtitle')}
             </p>
           </div>
 
           {editing === null && (
             <button type="button" className="btn btn--primary" onClick={() => setEditing('new')}>
               <PlusIcon size={14} aria-hidden="true" />
-              Новый атрибут
+              {t('lib.newAttribute')}
             </button>
           )}
         </div>
@@ -218,8 +224,8 @@ function LibraryManager() {
               <input
                 type="search"
                 className="apphead__input"
-                placeholder="Название атрибута…"
-                aria-label="Поиск по началу названия"
+                placeholder={t('lib.searchPlaceholder')}
+                aria-label={t('lib.searchLabel')}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
@@ -227,14 +233,14 @@ function LibraryManager() {
 
             <select
               className="input picker__category"
-              aria-label="Категория"
+              aria-label={t('lib.category')}
               value={category}
               onChange={(event) => setCategory(event.target.value)}
             >
-              <option value="">Все категории</option>
+              <option value="">{t('lib.allCategories')}</option>
               {categories.map((value) => (
                 <option key={value} value={value}>
-                  {CATEGORY_LABELS[value] ?? value}
+                  {categoryLabel(value)}
                 </option>
               ))}
             </select>
@@ -252,9 +258,9 @@ function LibraryManager() {
           />
 
           {!loaded ? (
-            <p className="muted table__empty">Загружаем…</p>
+            <p className="muted table__empty">{t('common.loading')}</p>
           ) : items.length === 0 ? (
-            <p className="muted table__empty">Ничего не найдено.</p>
+            <p className="muted table__empty">{t('lib.nothingFound')}</p>
           ) : (
             <div className="table__scroll">
               <table className="table">
@@ -263,7 +269,7 @@ function LibraryManager() {
                     <th scope="col" className="table__pick">
                       <input
                         type="checkbox"
-                        aria-label="Выделить все"
+                        aria-label={t('lib.selectAll')}
                         checked={selected.size > 0 && selected.size === items.length}
                         ref={(node) => {
                           if (node) {
@@ -280,11 +286,11 @@ function LibraryManager() {
                         }
                       />
                     </th>
-                    <th scope="col">Название</th>
-                    <th scope="col">Категория</th>
-                    <th scope="col">Тип</th>
+                    <th scope="col">{t('lib.colName')}</th>
+                    <th scope="col">{t('lib.colCategory')}</th>
+                    <th scope="col">{t('lib.colType')}</th>
                     <th scope="col" className="is-secondary">
-                      Используется
+                      {t('lib.colUsage')}
                     </th>
                   </tr>
                 </thead>
@@ -320,6 +326,8 @@ function AttributeRow({
   onToggle: () => void
   onOpen: () => void
 }) {
+  const t = useTranslation()
+  const { categoryLabel, typeLabel } = useAttributeLabels()
   const used = attribute.usage.profiles + attribute.usage.positions + attribute.usage.rules
 
   return (
@@ -335,21 +343,21 @@ function AttributeRow({
           type="checkbox"
           checked={checked}
           onChange={onToggle}
-          aria-label={`Выделить «${attribute.name}»`}
+          aria-label={t('lib.selectOne', { name: attribute.name })}
         />
       </td>
 
       <td>
         <span className="table__link">{attribute.name}</span>
-        {attribute.system && <span className="chip chip--muted">встроенный</span>}
-        {attribute.removed && <span className="chip chip--muted">удалён</span>}
+        {attribute.system && <span className="chip chip--muted">{t('lib.builtIn')}</span>}
+        {attribute.removed && <span className="chip chip--muted">{t('lib.removedChip')}</span>}
         {attribute.description && <span className="table__sub">{attribute.description}</span>}
       </td>
 
-      <td className="muted">{CATEGORY_LABELS[attribute.category] ?? attribute.category}</td>
+      <td className="muted">{categoryLabel(attribute.category)}</td>
 
       <td className="muted">
-        {TYPE_LABELS[attribute.type] ?? attribute.type}
+        {typeLabel(attribute.type)}
         {attribute.options.length > 0 && (
           <span className="table__sub">{attribute.options.join(' · ')}</span>
         )}
@@ -358,7 +366,11 @@ function AttributeRow({
       <td className="is-secondary muted t-xs">
         {used === 0
           ? '—'
-          : `профилей ${attribute.usage.profiles} · позиций ${attribute.usage.positions} · правил ${attribute.usage.rules}`}
+          : t('lib.usageSummary', {
+              profiles: attribute.usage.profiles,
+              positions: attribute.usage.positions,
+              rules: attribute.usage.rules,
+            })}
       </td>
     </tr>
   )
@@ -386,13 +398,14 @@ function SelectionToolbar({
   onRestore: () => void
   onClear: () => void
 }) {
+  const t = useTranslation()
   const [confirming, setConfirming] = useState(false)
   const chosen = items.filter((item) => selected.has(item.id))
 
   if (chosen.length === 0) {
     return (
       <p className="muted t-sm toolbar__hint">
-        Отметьте атрибуты, чтобы отредактировать, удалить или восстановить их.
+        {t('lib.toolbarHint')}
       </p>
     )
   }
@@ -408,7 +421,7 @@ function SelectionToolbar({
 
   return (
     <div className="toolbar">
-      <span className="t-sm">Выделено: {chosen.length}</span>
+      <span className="t-sm">{t('lib.selectedCount', { count: chosen.length })}</span>
 
       <div className="row g2">
         <button
@@ -416,16 +429,16 @@ function SelectionToolbar({
           className="btn btn--outline"
           disabled={chosen.length !== 1}
           onClick={onEdit}
-          title={chosen.length === 1 ? undefined : 'Редактировать можно один атрибут'}
+          title={chosen.length === 1 ? undefined : t('lib.editOnlyOne')}
         >
           <PencilSimpleIcon size={14} aria-hidden="true" />
-          Редактировать
+          {t('lib.edit')}
         </button>
 
         {restorable.length > 0 && (
           <button type="button" className="btn btn--outline" onClick={onRestore}>
             <ArrowCounterClockwiseIcon size={14} aria-hidden="true" />
-            Восстановить ({restorable.length})
+            {t('lib.restoreCount', { count: restorable.length })}
           </button>
         )}
 
@@ -436,12 +449,12 @@ function SelectionToolbar({
             onClick={() => setConfirming(true)}
           >
             <TrashIcon size={14} aria-hidden="true" />
-            Удалить ({deletable.length})
+            {t('lib.deleteCount', { count: deletable.length })}
           </button>
         )}
 
         <button type="button" className="btn btn--ghost" onClick={onClear}>
-          Снять выделение
+          {t('lib.clearSelection')}
         </button>
       </div>
 
@@ -449,12 +462,12 @@ function SelectionToolbar({
         <div className="notice notice--error toolbar__confirm" role="alert">
           <span>
             {used > 0
-              ? `Атрибуты используются (${used} связей). Значения и ссылки сохранятся, но из библиотеки они исчезнут.`
-              : `Удалить ${deletable.length} атр. из библиотеки?`}
+              ? t('lib.confirmUsed', { count: used })
+              : t('lib.confirmDelete', { count: deletable.length })}
           </span>
           <div className="row g2">
             <button type="button" className="btn btn--ghost" onClick={() => setConfirming(false)}>
-              Отмена
+              {t('common.cancel')}
             </button>
             <button
               type="button"
@@ -464,7 +477,7 @@ function SelectionToolbar({
                 onRemove()
               }}
             >
-              Удалить
+              {t('lib.delete')}
             </button>
           </div>
         </div>
@@ -487,6 +500,8 @@ function AttributeForm({
   onCancel: () => void
   onSave: (input: AttributeInput) => Promise<void>
 }) {
+  const t = useTranslation()
+  const { categoryLabel, typeLabel } = useAttributeLabels()
   const [form, setForm] = useState<AttributeInput>(initial)
   const [busy, setBusy] = useState(false)
 
@@ -507,7 +522,7 @@ function AttributeForm({
     <form className="panel project--form" onSubmit={submit}>
       <div className="field">
         <label className="label" htmlFor="attr-name">
-          Название
+          {t('lib.formName')}
         </label>
         <input
           id="attr-name"
@@ -517,13 +532,13 @@ function AttributeForm({
           value={form.name}
           onChange={(event) => setForm({ ...form, name: event.target.value })}
         />
-        <span className="t-xs muted-3">Должно быть уникальным во всей системе</span>
+        <span className="t-xs muted-3">{t('lib.formNameHint')}</span>
       </div>
 
       <div className="period">
         <div className="field">
           <label className="label" htmlFor="attr-category">
-            Категория
+            {t('lib.category')}
           </label>
           <select
             id="attr-category"
@@ -533,7 +548,7 @@ function AttributeForm({
           >
             {categories.map((value) => (
               <option key={value} value={value}>
-                {CATEGORY_LABELS[value] ?? value}
+                {categoryLabel(value)}
               </option>
             ))}
           </select>
@@ -541,7 +556,7 @@ function AttributeForm({
 
         <div className="field">
           <label className="label" htmlFor="attr-type">
-            Тип
+            {t('lib.colType')}
           </label>
           <select
             id="attr-type"
@@ -554,13 +569,13 @@ function AttributeForm({
           >
             {types.map((value) => (
               <option key={value} value={value}>
-                {TYPE_LABELS[value] ?? value}
+                {typeLabel(value)}
               </option>
             ))}
           </select>
           {lockType && (
             <span className="t-xs muted-3">
-              Тип нельзя менять: уже сохранённые значения станут недействительны
+              {t('lib.formTypeLocked')}
             </span>
           )}
         </div>
@@ -568,7 +583,7 @@ function AttributeForm({
 
       <div className="field">
         <label className="label" htmlFor="attr-description">
-          Описание
+          {t('lib.formDescription')}
         </label>
         <textarea
           id="attr-description"
@@ -582,7 +597,7 @@ function AttributeForm({
       {form.type === 'select' && (
         <div className="field">
           <label className="label" htmlFor="attr-options">
-            Варианты — по одному в строке
+            {t('lib.formOptions')}
           </label>
           <textarea
             id="attr-options"
@@ -599,10 +614,10 @@ function AttributeForm({
 
       <div className="row g2">
         <button type="submit" className="btn btn--primary" disabled={busy}>
-          {busy ? 'Сохраняем…' : 'Сохранить'}
+          {busy ? t('lib.saving') : t('common.save')}
         </button>
         <button type="button" className="btn btn--ghost" onClick={onCancel} disabled={busy}>
-          Отмена
+          {t('common.cancel')}
         </button>
       </div>
     </form>

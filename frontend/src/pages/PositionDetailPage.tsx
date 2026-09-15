@@ -6,15 +6,16 @@ import type { CvRow, PositionAttribute, PositionDetail } from '../api/types'
 import { AppHeader } from '../components/AppHeader'
 import { CvTable } from '../components/CvTable'
 import { DiscussionPanel } from '../components/DiscussionPanel'
-import { CATEGORY_LABELS, TYPE_LABELS } from '../lib/attributeLabels'
 import { useCurrentUser } from '../lib/useCurrentUser'
+import { useAttributeLabels } from '../i18n/useAttributeLabels'
+import { useTranslation } from '../i18n/context'
+import { useDateFormat } from '../i18n/useDateFormat'
+import { useErrorText } from '../i18n/useErrorText'
 
 type State =
   | { kind: 'loading' }
   | { kind: 'ready'; position: PositionDetail }
   | { kind: 'error'; message: string }
-
-const dateFormat = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'long' })
 
 /**
  * Позиция в режиме чтения — то, что доступно гостю.
@@ -32,11 +33,13 @@ export function PositionDetailPage() {
 }
 
 function PositionView({ id }: { id: string | undefined }) {
+  const t = useTranslation()
+  const errorText = useErrorText()
   const numericId = Number(id)
   const valid = Number.isInteger(numericId) && numericId > 0
 
   const [state, setState] = useState<State>(() =>
-    valid ? { kind: 'loading' } : { kind: 'error', message: 'Позиция не найдена.' },
+    valid ? { kind: 'loading' } : { kind: 'error', message: t('position.notFound') },
   )
   const authenticated = tokenStorage.get() !== null
 
@@ -60,10 +63,8 @@ function PositionView({ id }: { id: string | undefined }) {
             kind: 'error',
             message:
               error instanceof RequestError && error.code === 'http_error'
-                ? 'Позиция не найдена.'
-                : error instanceof RequestError
-                  ? error.message
-                  : 'Непредвиденная ошибка.',
+                ? t('position.notFound')
+                : errorText(error, 'common.unexpectedError')
           })
         }
       })
@@ -71,7 +72,7 @@ function PositionView({ id }: { id: string | undefined }) {
     return () => {
       active = false
     }
-  }, [numericId, valid])
+  }, [numericId, valid, errorText, t])
 
   return (
     <>
@@ -80,12 +81,12 @@ function PositionView({ id }: { id: string | undefined }) {
       <main className="page">
         <Link to="/positions" className="backlink">
           <CaretLeftIcon size={14} aria-hidden="true" />
-          Все позиции
+          {t('position.allPositions')}
         </Link>
 
         {state.kind === 'loading' && (
           <p className="muted" role="status">
-            Загружаем…
+            {t('common.loading')}
           </p>
         )}
 
@@ -111,6 +112,9 @@ function PositionBody({
   position: PositionDetail
   authenticated: boolean
 }) {
+  const t = useTranslation()
+  const formatDate = useDateFormat()
+  const { categoryLabel, typeLabel } = useAttributeLabels()
   // Группируем по секции: сгенерированное резюме будет разбито так же,
   // и структура шаблона должна быть видна заранее.
   const sections = new Map<string, PositionAttribute[]>()
@@ -127,7 +131,7 @@ function PositionBody({
           <div className="col g2">
             <h1 className="h1">{position.title}</h1>
             <p className="muted" style={{ margin: 0 }}>
-              {position.company ?? 'Компания не указана'}
+              {position.company ?? t('position.noCompany')}
               {position.level && ` · ${position.level}`}
             </p>
           </div>
@@ -136,7 +140,7 @@ function PositionBody({
             {!position.public && (
               <span className="chip chip--muted">
                 <LockSimpleIcon size={12} aria-hidden="true" />
-                Ограниченный доступ
+                {t('position.restricted')}
               </span>
             )}
 
@@ -157,37 +161,39 @@ function PositionBody({
         )}
 
         <p className="t-xs muted-3" style={{ margin: 0 }}>
-          Обновлена {dateFormat.format(new Date(position.updatedAt))} · в резюме попадёт
-          до {position.maxProjects} проектов
+          {t('position.updatedMeta', {
+            date: formatDate(position.updatedAt),
+            count: position.maxProjects,
+          })}
         </p>
       </section>
 
       <section className="panel">
         <div className="panel__head">
           <div>
-            <h2 className="h2">Из чего состоит резюме</h2>
+            <h2 className="h2">{t('position.templateTitle')}</h2>
             <p className="panel__hint muted-3">
-              Поля шаблона: значения подтянутся из профиля кандидата
+              {t('position.templateHint')}
             </p>
           </div>
         </div>
 
         {position.attributes.length === 0 ? (
-          <p className="muted table__empty">У позиции пока нет полей.</p>
+          <p className="muted table__empty">{t('position.noFields')}</p>
         ) : (
           <div className="col g4">
             {[...sections].map(([section, attributes]) => (
               <div key={section} className="col g2">
-                <h3 className="section__title">{CATEGORY_LABELS[section] ?? section}</h3>
+                <h3 className="section__title">{categoryLabel(section)}</h3>
 
                 <div className="table__scroll">
                   <table className="table">
                     <thead>
                       <tr>
-                        <th scope="col">Поле</th>
-                        <th scope="col">Тип</th>
+                        <th scope="col">{t('position.colField')}</th>
+                        <th scope="col">{t('position.colType')}</th>
                         <th scope="col" className="is-secondary">
-                          Обязательное
+                          {t('position.colRequired')}
                         </th>
                       </tr>
                     </thead>
@@ -203,10 +209,10 @@ function PositionBody({
                             )}
                           </td>
                           <td className="muted">
-                            {TYPE_LABELS[attribute.type] ?? attribute.type}
+                            {typeLabel(attribute.type)}
                           </td>
                           <td className="is-secondary muted">
-                            {attribute.required ? 'да' : '—'}
+                            {attribute.required ? t('common.yes') : '—'}
                           </td>
                         </tr>
                       ))}
@@ -222,7 +228,8 @@ function PositionBody({
       {!authenticated && (
         <div className="notice">
           <span>
-            Чтобы подать резюме на эту позицию, <Link to="/login">войдите или зарегистрируйтесь</Link>.
+            {t('position.signInPrompt')}
+            <Link to="/login">{t('position.signInLink')}</Link>.
           </span>
         </div>
       )}
@@ -245,6 +252,8 @@ function PositionActions({
   position: PositionDetail
   authenticated: boolean
 }) {
+  const t = useTranslation()
+  const errorText = useErrorText()
   const navigate = useNavigate()
   const { isRecruiter, isCandidate } = useCurrentUser()
   const [busy, setBusy] = useState(false)
@@ -262,7 +271,7 @@ function PositionActions({
       navigate(`/positions/${copy.id}/edit`)
     } catch (requestError: unknown) {
       setError(
-        requestError instanceof RequestError ? requestError.message : 'Не удалось скопировать.',
+        errorText(requestError, 'position.copyFailed'),
       )
       setBusy(false)
     }
@@ -277,9 +286,7 @@ function PositionActions({
       navigate(`/cvs/${cv.id}`)
     } catch (requestError: unknown) {
       setError(
-        requestError instanceof RequestError
-          ? requestError.message
-          : 'Не удалось создать резюме.',
+        errorText(requestError, 'position.createCvFailed')
       )
       setBusy(false)
     }
@@ -292,7 +299,7 @@ function PositionActions({
           <>
             <Link to={`/positions/${position.id}/edit`} className="btn btn--outline">
               <PencilSimpleIcon size={14} aria-hidden="true" />
-              Редактировать
+              {t('position.edit')}
             </Link>
             <button
               type="button"
@@ -301,7 +308,7 @@ function PositionActions({
               disabled={busy}
             >
               <CopyIcon size={14} aria-hidden="true" />
-              Дублировать
+              {t('position.duplicate')}
             </button>
           </>
         )}
@@ -313,7 +320,7 @@ function PositionActions({
             onClick={() => void apply()}
             disabled={busy}
           >
-            {busy ? 'Создаём…' : 'Составить резюме'}
+            {t(busy ? 'position.creating' : 'position.composeCv')}
           </button>
         )}
       </div>
@@ -332,6 +339,7 @@ function PositionActions({
  * рекрутерам и админам.
  */
 function PositionTabs({ positionId }: { positionId: number }) {
+  const t = useTranslation()
   const { isRecruiter } = useCurrentUser()
   const [tab, setTab] = useState<'discussion' | 'cvs'>('discussion')
   const [cvs, setCvs] = useState<CvRow[] | null>(null)
@@ -371,7 +379,7 @@ function PositionTabs({ positionId }: { positionId: number }) {
           className={`authtabs__btn${tab === 'discussion' ? ' is-on' : ''}`}
           onClick={() => setTab('discussion')}
         >
-          Обсуждение
+          {t('position.discussion')}
         </button>
 
         {isRecruiter && (
@@ -382,7 +390,7 @@ function PositionTabs({ positionId }: { positionId: number }) {
             className={`authtabs__btn${tab === 'cvs' ? ' is-on' : ''}`}
             onClick={() => setTab('cvs')}
           >
-            Резюме
+            {t('position.cvs')}
           </button>
         )}
       </div>
@@ -390,12 +398,12 @@ function PositionTabs({ positionId }: { positionId: number }) {
       {tab === 'discussion' ? (
         <DiscussionPanel positionId={positionId} />
       ) : cvs === null ? (
-        <p className="muted table__empty">Загружаем…</p>
+        <p className="muted table__empty">{t('common.loading')}</p>
       ) : (
         <CvTable
           rows={cvs}
           showPosition={false}
-          emptyMessage="На эту позицию ещё никто не подал резюме."
+          emptyMessage={t('position.noCvs')}
         />
       )}
     </section>

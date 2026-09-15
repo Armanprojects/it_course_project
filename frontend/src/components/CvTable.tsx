@@ -1,13 +1,14 @@
 import { HeartIcon } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router-dom'
 import type { CvRow } from '../api/types'
-
-const dateFormat = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium' })
+import { useTranslation } from '../i18n/context'
+import { useDateFormat } from '../i18n/useDateFormat'
 
 interface Props {
   rows: CvRow[]
   /** В списке по позиции колонка позиции лишняя — она и так известна. */
   showPosition?: boolean
+  /** Своё сообщение, если по умолчанию «резюме не найдены» не подходит. */
   emptyMessage?: string
 }
 
@@ -17,13 +18,15 @@ interface Props {
  * Табличное представление обязательно по заданию, кнопок в строках нет —
  * кликается вся строка.
  */
-export function CvTable({ rows, showPosition = true, emptyMessage = 'Резюме не найдены.' }: Props) {
+export function CvTable({ rows, showPosition = true, emptyMessage }: Props) {
   const navigate = useNavigate()
+  const t = useTranslation()
+  const formatDate = useDateFormat()
 
   if (rows.length === 0) {
     return (
       <p className="muted table__empty" role="status">
-        {emptyMessage}
+        {emptyMessage ?? t('cvTable.empty')}
       </p>
     )
   }
@@ -33,14 +36,14 @@ export function CvTable({ rows, showPosition = true, emptyMessage = 'Резюм�
       <table className="table">
         <thead>
           <tr>
-            <th scope="col">Кандидат</th>
-            {showPosition && <th scope="col">Позиция</th>}
-            <th scope="col">Статус</th>
+            <th scope="col">{t('cvTable.candidate')}</th>
+            {showPosition && <th scope="col">{t('cvTable.position')}</th>}
+            <th scope="col">{t('cvTable.status')}</th>
             <th scope="col" className="is-secondary">
-              Лайки
+              {t('cvTable.likes')}
             </th>
             <th scope="col" className="is-secondary">
-              Обновлено
+              {t('cvTable.updated')}
             </th>
           </tr>
         </thead>
@@ -73,7 +76,7 @@ export function CvTable({ rows, showPosition = true, emptyMessage = 'Резюм�
 
               <td>
                 <span className={`chip${row.status === 'published' ? ' chip--ok' : ''}`}>
-                  {row.status === 'published' ? 'Опубликовано' : 'Черновик'}
+                  {t(row.status === 'published' ? 'cv.published' : 'cv.draft')}
                 </span>
               </td>
 
@@ -88,7 +91,7 @@ export function CvTable({ rows, showPosition = true, emptyMessage = 'Резюм�
                 </span>
               </td>
 
-              <td className="is-secondary">{dateFormat.format(new Date(row.updatedAt))}</td>
+              <td className="is-secondary">{formatDate(row.updatedAt)}</td>
             </tr>
           ))}
         </tbody>

@@ -36,6 +36,7 @@ final readonly class CvSerializer
             $sections[$section][] = [
                 'attributeId' => $attribute->getId(),
                 'name'        => $attribute->getName(),
+                'description' => $attribute->getDescription(),
                 'type'        => $attribute->getType()->value,
                 'options'     => $attribute->getOptions(),
                 'required'    => $link->isRequired(),
@@ -64,6 +65,9 @@ final readonly class CvSerializer
             // canLike, since an admin has both.
             'canEdit'     => null !== $viewer
                 && ($cv->getCandidate() === $viewer || $viewer->hasRole(UserRole::Admin)),
+            // The values live in the profile, so in-place editing locks against
+            // the profile's version, not the CV's.
+            'profileVersion' => $profile->getVersion(),
             'createdAt'   => $cv->getCreatedAt()->format(\DATE_ATOM),
             'updatedAt'   => $cv->getUpdatedAt()->format(\DATE_ATOM),
             'publishedAt' => $cv->getPublishedAt()?->format(\DATE_ATOM),

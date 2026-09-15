@@ -305,6 +305,7 @@ export interface CvRow {
 export interface CvSectionAttribute {
   attributeId: number
   name: string
+  description: string | null
   type: AttributeType
   options: string[]
   required: boolean
@@ -327,6 +328,8 @@ export interface CvDetail {
   /** Лайкать может рекрутер; публиковать — владелец. У админа есть оба. */
   canLike: boolean
   canEdit: boolean
+  /** Версия профиля: значения лежат там, по ней и идёт блокировка при правке. */
+  profileVersion: number
   createdAt: string
   updatedAt: string
   publishedAt: string | null

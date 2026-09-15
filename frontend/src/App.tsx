@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { SettingsProvider } from './i18n/SettingsContext'
 import { AttributeLibraryPage } from './pages/AttributeLibraryPage'
 import { CvPage } from './pages/CvPage'
 import { CvSearchPage } from './pages/CvSearchPage'
@@ -13,29 +14,31 @@ import { VerifyEmailPage } from './pages/VerifyEmailPage'
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Каталог открыт анонимно: по заданию гость просматривает позиции
-            в режиме чтения, а вход нужен только для резюме и профиля. */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/positions" element={<PositionsPage />} />
-        {/* Раньше конкретного /positions/:id — иначе "new" уйдёт в просмотр. */}
-        <Route path="/positions/new" element={<PositionEditPage />} />
-        <Route path="/positions/:id/edit" element={<PositionEditPage />} />
-        <Route path="/positions/:id" element={<PositionDetailPage />} />
+    <SettingsProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Каталог открыт анонимно: по заданию гость просматривает позиции
+              в режиме чтения, а вход нужен только для резюме и профиля. */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/positions" element={<PositionsPage />} />
+          {/* Раньше конкретного /positions/:id — иначе "new" уйдёт в просмотр. */}
+          <Route path="/positions/new" element={<PositionEditPage />} />
+          <Route path="/positions/:id/edit" element={<PositionEditPage />} />
+          <Route path="/positions/:id" element={<PositionDetailPage />} />
 
-        {/* Всё ниже закрыто входом; сами страницы уводят на /login без токена. */}
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/cvs/search" element={<CvSearchPage />} />
-        <Route path="/cvs/:id" element={<CvPage />} />
-        <Route path="/attributes" element={<AttributeLibraryPage />} />
+          {/* Всё ниже закрыто входом; сами страницы уводят на /login без токена. */}
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/cvs/search" element={<CvSearchPage />} />
+          <Route path="/cvs/:id" element={<CvPage />} />
+          <Route path="/attributes" element={<AttributeLibraryPage />} />
 
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/auth/callback" element={<OAuthCallbackPage />} />
-        <Route path="/auth/verify" element={<VerifyEmailPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/auth/callback" element={<OAuthCallbackPage />} />
+          <Route path="/auth/verify" element={<VerifyEmailPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </SettingsProvider>
   )
 }
 

@@ -1,8 +1,10 @@
 import { PaperPlaneRightIcon } from '@phosphor-icons/react'
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { discussionApi, RequestError } from '../api/client'
+import { discussionApi } from '../api/client'
 import type { DiscussionMessage } from '../api/types'
+import { useTranslation } from '../i18n/context'
+import { useErrorText } from '../i18n/useErrorText'
 
 const Markdown = lazy(() => import('react-markdown'))
 
@@ -26,6 +28,8 @@ interface Props {
  * требует поднимать websocket-сервер.
  */
 export function DiscussionPanel({ positionId }: Props) {
+  const t = useTranslation()
+  const errorText = useErrorText()
   const [messages, setMessages] = useState<DiscussionMessage[]>([])
   const [draft, setDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -85,7 +89,7 @@ export function DiscussionPanel({ positionId }: Props) {
       setDraft('')
     } catch (requestError: unknown) {
       setError(
-        requestError instanceof RequestError ? requestError.message : 'Не удалось отправить.',
+        errorText(requestError, 'discussion.sendFailed'),
       )
     } finally {
       setSending(false)
@@ -95,7 +99,7 @@ export function DiscussionPanel({ positionId }: Props) {
   return (
     <div className="col g4">
       {messages.length === 0 ? (
-        <p className="muted table__empty">Сообщений пока нет. Начните обсуждение.</p>
+        <p className="muted table__empty">{t('discussion.empty')}</p>
       ) : (
         <ol className="thread">
           {messages.map((message) => (
@@ -129,8 +133,8 @@ export function DiscussionPanel({ positionId }: Props) {
         <textarea
           className="input input--area"
           rows={3}
-          placeholder="Ваше сообщение. Поддерживается Markdown."
-          aria-label="Текст сообщения"
+          placeholder={t('discussion.placeholder')}
+          aria-label={t('discussion.label')}
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
         />
@@ -148,7 +152,7 @@ export function DiscussionPanel({ positionId }: Props) {
           disabled={sending || draft.trim() === ''}
         >
           <PaperPlaneRightIcon size={14} aria-hidden="true" />
-          {sending ? 'Отправляем…' : 'Отправить'}
+          {t(sending ? 'discussion.sending' : 'discussion.send')}
         </button>
       </form>
     </div>

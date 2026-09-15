@@ -32,12 +32,25 @@ services:
       - ./backend:/var/www/backend
       # Настройки PHP под медленный том Windows (см. комментарии в файле).
       - ./docker/php-dev.ini:/usr/local/etc/php/conf.d/zz-dev.ini:ro
+      # Пул php-fpm: статичные воркеры, которые не убиваются по простою,
+      # чтобы не платить за прогрев процесса на ровном месте.
+      - ./docker/php-fpm-dev.conf:/usr/local/etc/php-fpm.d/zz-dev.conf:ro
       # Кэш Symfony держим в томе Docker, а не на хосте: он пишется сотнями
       # файлов, и через проброс с Windows каждый запрос стоил секунд.
       # Именованные тома монтируются поверх ./backend, поэтому указываем
       # именно подкаталоги, а не var/ целиком.
       - backend_cache:/var/www/backend/var/cache
       - backend_log:/var/www/backend/var/log
+      # vendor/ — та же история, что и с кэшем, но дороже: Symfony в dev
+      # подключает с него ~340 файлов за запрос, и чтение через проброс с
+      # Windows стоит ~0.65 с там, где с диска контейнера уходит 0.004 с.
+      # Именно это, а не компиляция PHP, давало секундные ответы: профиль
+      # boot'а — 0.43 с CPU против 2.7 с ожидания I/O.
+      #
+      # Зависимости ставит сам контейнер (см. command ниже), поэтому том
+      # наполняется при первом старте. После правки composer.json выполнить:
+      #   docker compose exec php composer install
+      - backend_vendor:/var/www/backend/vendor
     environment:
       DATABASE_URL: "postgresql://app:app@db:5432/cv_app?serverVersion=16&charset=utf8"
       APP_ENV: dev
@@ -45,6 +58,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # Том backend_vendor изначально пуст и перекрывает vendor/ с хоста,
+    # поэтому зависимости ставятся внутри контейнера при первом запуске.
+    # Проверка composer.lock делает повторные старты почти мгновенными.
+    command: >
+      sh -c "if [ ! -f vendor/autoload_runtime.php ]; then
+               composer install --no-interaction --prefer-dist;
+             fi;
+             exec php-fpm"
 
   # --- Vite dev server ---
   frontend:
@@ -75,3 +96,4 @@ volumes:
   frontend_node_modules:
   backend_cache:
   backend_log:
+  backend_vendor:

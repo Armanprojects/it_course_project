@@ -8,6 +8,9 @@ import { AttributeField } from '../components/AttributeField'
 import { AttributePicker } from '../components/AttributePicker'
 import { ProjectsSection } from '../components/ProjectsSection'
 import { useAutosave, type SaveState } from '../lib/useAutosave'
+import { useTranslation } from '../i18n/context'
+import { useDateFormat } from '../i18n/useDateFormat'
+import { useErrorText } from '../i18n/useErrorText'
 
 type Draft = Record<number, AttributeValue>
 
@@ -32,6 +35,8 @@ export function ProfilePage() {
 }
 
 function ProfileView() {
+  const t = useTranslation()
+  const errorText = useErrorText()
   const navigate = useNavigate()
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -60,10 +65,10 @@ function ProfileView() {
       }
 
       setError(
-        requestError instanceof RequestError ? requestError.message : 'Непредвиденная ошибка.',
+        errorText(requestError, 'common.unexpectedError'),
       )
     }
-  }, [navigate])
+  }, [navigate, errorText])
 
   // Загрузка профиля — синхронизация с сервером, это ровно то, для чего
   // эффект и нужен.
@@ -136,11 +141,11 @@ function ProfileView() {
         }
 
         setError(
-          requestError instanceof RequestError ? requestError.message : 'Непредвиденная ошибка.',
+          errorText(requestError, 'common.unexpectedError'),
         )
       }
     },
-    [flush, load, reset],
+    [flush, load, reset, errorText],
   )
 
   const ownedIds = useMemo(
@@ -174,7 +179,7 @@ function ProfileView() {
         <AppHeader />
         <main className="page">
           <p className="muted" role="status">
-            Загружаем…
+            {t('common.loading')}
           </p>
         </main>
       </>
@@ -188,7 +193,7 @@ function ProfileView() {
       <main className="page">
         <div className="panel__head">
           <div className="col g1">
-            <h1 className="h1">Мой профиль</h1>
+            <h1 className="h1">{t('profile.title')}</h1>
             <p className="muted" style={{ margin: 0 }}>
               {profile.user.email}
             </p>
@@ -206,9 +211,9 @@ function ProfileView() {
         <section className="panel">
           <div className="panel__head">
             <div>
-              <h2 className="h2">Обо мне</h2>
+              <h2 className="h2">{t('profile.about')}</h2>
               <p className="panel__hint muted-3">
-                Встроенные поля — их нельзя убрать из профиля
+                {t('profile.aboutHint')}
               </p>
             </div>
           </div>
@@ -228,14 +233,14 @@ function ProfileView() {
         <section className="panel">
           <div className="panel__head">
             <div>
-              <h2 className="h2">Информация</h2>
-              <p className="panel__hint muted-3">Атрибуты, выбранные из библиотеки</p>
+              <h2 className="h2">{t('profile.info')}</h2>
+              <p className="panel__hint muted-3">{t('profile.infoHint')}</p>
             </div>
 
             {!picking && (
               <button type="button" className="btn btn--outline" onClick={() => setPicking(true)}>
                 <PlusIcon size={14} aria-hidden="true" />
-                Добавить атрибут
+                {t('profile.addAttribute')}
               </button>
             )}
           </div>
@@ -255,7 +260,7 @@ function ProfileView() {
 
           {profile.info.length === 0 ? (
             <p className="muted table__empty">
-              Пока ничего не добавлено. Выберите атрибуты из библиотеки.
+              {t('profile.infoEmpty')}
             </p>
           ) : (
             <div className="attrgrid">
@@ -286,16 +291,17 @@ function ProfileView() {
 
 /** Индикатор автосохранения: человек должен видеть, что правки не потеряны. */
 function SaveBadge({ state }: { state: SaveState }) {
+  const t = useTranslation()
   if (state === 'idle') {
     return null
   }
 
   const text: Record<Exclude<SaveState, 'idle'>, string> = {
-    pending: 'Есть несохранённые изменения',
-    saving: 'Сохраняем…',
-    saved: 'Сохранено',
-    conflict: 'Профиль изменился в другой вкладке — данные перезагружены',
-    error: 'Не удалось сохранить',
+    pending: t('profile.savePending'),
+    saving: t('profile.saving'),
+    saved: t('profile.saved'),
+    conflict: t('profile.saveConflict'),
+    error: t('profile.saveError'),
   }
 
   const tone = state === 'conflict' || state === 'error' ? 'is-warn' : ''
@@ -314,41 +320,41 @@ function SaveBadge({ state }: { state: SaveState }) {
   )
 }
 
-const dateFormat = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium' })
-
 /**
  * Раздел «Резюме»: таблица резюме кандидата — по одному на позицию.
  * Табличное представление здесь обязательно по заданию.
  */
 function CvSection({ cvs }: { cvs: ProfileData['cvs'] }) {
+  const t = useTranslation()
+  const formatDate = useDateFormat()
   return (
     <section className="panel">
       <div className="panel__head">
         <div>
-          <h2 className="h2">Резюме</h2>
-          <p className="panel__hint muted-3">Не больше одного резюме на позицию</p>
+          <h2 className="h2">{t('profile.cvs')}</h2>
+          <p className="panel__hint muted-3">{t('profile.cvsHint')}</p>
         </div>
 
-        <Link to="/positions">Найти позицию</Link>
+        <Link to="/positions">{t('profile.findPosition')}</Link>
       </div>
 
       {cvs.length === 0 ? (
         <p className="muted table__empty">
-          Резюме пока нет. Выберите позицию в каталоге, чтобы создать первое.
+          {t('profile.cvsEmpty')}
         </p>
       ) : (
         <div className="table__scroll">
           <table className="table">
             <thead>
               <tr>
-                <th scope="col">Позиция</th>
-                <th scope="col">Компания</th>
-                <th scope="col">Статус</th>
+                <th scope="col">{t('positions.colTitle')}</th>
+                <th scope="col">{t('positions.colCompany')}</th>
+                <th scope="col">{t('cvTable.status')}</th>
                 <th scope="col" className="is-secondary">
-                  Лайки
+                  {t('cvTable.likes')}
                 </th>
                 <th scope="col" className="is-secondary">
-                  Обновлено
+                  {t('cvTable.updated')}
                 </th>
               </tr>
             </thead>
@@ -363,11 +369,11 @@ function CvSection({ cvs }: { cvs: ProfileData['cvs'] }) {
                   <td>{cv.position.company ?? <span className="muted-3">—</span>}</td>
                   <td>
                     <span className={`chip${cv.status === 'published' ? ' chip--ok' : ''}`}>
-                      {cv.status === 'published' ? 'Опубликовано' : 'Черновик'}
+                      {t(cv.status === 'published' ? 'cv.published' : 'cv.draft')}
                     </span>
                   </td>
                   <td className="is-secondary num">{cv.likesCount}</td>
-                  <td className="is-secondary">{dateFormat.format(new Date(cv.updatedAt))}</td>
+                  <td className="is-secondary">{formatDate(cv.updatedAt)}</td>
                 </tr>
               ))}
             </tbody>

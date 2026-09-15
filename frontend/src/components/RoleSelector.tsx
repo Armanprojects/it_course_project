@@ -1,5 +1,6 @@
 import { CaretRightIcon } from '@phosphor-icons/react'
 import type { SelectableRole } from '../api/types'
+import { useTranslation } from '../i18n/context'
 import { ROLE_OPTIONS } from '../lib/roles'
 
 interface Props {
@@ -11,6 +12,8 @@ interface Props {
  * Промежуточного «подтвердить» здесь нет — выбор и есть действие.
  */
 export function RoleSelector({ onPick }: Props) {
+  const t = useTranslation()
+
   return (
     <div className="rolepick mt6">
       {ROLE_OPTIONS.map(({ value, title, text, Icon, mod }) => (
@@ -21,8 +24,8 @@ export function RoleSelector({ onPick }: Props) {
           </span>
 
           <span className="rolecard__body">
-            <span className="rolecard__title">{title}</span>
-            <span className="rolecard__text">{text}</span>
+            <span className="rolecard__title">{t(title)}</span>
+            <span className="rolecard__text">{t(text)}</span>
           </span>
 
           <span className="rolecard__go">

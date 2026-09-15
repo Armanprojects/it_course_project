@@ -1,8 +1,10 @@
 import { MagnifyingGlassIcon, PlusIcon, XIcon } from '@phosphor-icons/react'
 import { useEffect, useState } from 'react'
-import { libraryApi, RequestError } from '../api/client'
+import { libraryApi } from '../api/client'
 import type { AttributeLibrary, LibraryAttribute } from '../api/types'
-import { CATEGORY_LABELS, TYPE_LABELS } from '../lib/attributeLabels'
+import { useAttributeLabels } from '../i18n/useAttributeLabels'
+import { useTranslation } from '../i18n/context'
+import { useErrorText } from '../i18n/useErrorText'
 
 interface Props {
   /** Уже добавленные — их прячем из выдачи. */
@@ -19,6 +21,9 @@ interface Props {
  * сервер — фильтровать полную выдачу на клиенте значило бы сначала её выкачать.
  */
 export function AttributePicker({ ownedIds, onPick, onClose }: Props) {
+  const t = useTranslation()
+  const errorText = useErrorText()
+  const { categoryLabel, typeLabel } = useAttributeLabels()
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('')
   const [library, setLibrary] = useState<AttributeLibrary | null>(null)
@@ -47,9 +52,7 @@ export function AttributePicker({ ownedIds, onPick, onClose }: Props) {
       .catch((requestError: unknown) => {
         if (active) {
           setError(
-            requestError instanceof RequestError
-              ? requestError.message
-              : 'Не удалось загрузить библиотеку.',
+            errorText(requestError, 'picker.loadFailed')
           )
         }
       })
@@ -57,7 +60,7 @@ export function AttributePicker({ ownedIds, onPick, onClose }: Props) {
     return () => {
       active = false
     }
-  }, [query, category])
+  }, [query, category, errorText])
 
   const available = (library?.items ?? []).filter((item) => !ownedIds.has(item.id))
   const recent = (library?.recent ?? []).filter((item) => !ownedIds.has(item.id))
@@ -65,8 +68,8 @@ export function AttributePicker({ ownedIds, onPick, onClose }: Props) {
   return (
     <div className="picker">
       <div className="picker__head">
-        <h3 className="h2">Добавить атрибут</h3>
-        <button type="button" className="attr__remove" onClick={onClose} aria-label="Закрыть">
+        <h3 className="h2">{t('picker.title')}</h3>
+        <button type="button" className="attr__remove" onClick={onClose} aria-label={t('picker.close')}>
           <XIcon size={16} aria-hidden="true" />
         </button>
       </div>
@@ -77,8 +80,8 @@ export function AttributePicker({ ownedIds, onPick, onClose }: Props) {
           <input
             type="search"
             className="apphead__input"
-            placeholder="Название атрибута…"
-            aria-label="Поиск атрибута по началу названия"
+            placeholder={t('picker.searchPlaceholder')}
+            aria-label={t('picker.searchLabel')}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -86,14 +89,14 @@ export function AttributePicker({ ownedIds, onPick, onClose }: Props) {
 
         <select
           className="input picker__category"
-          aria-label="Категория"
+          aria-label={t('picker.categoryLabel')}
           value={category}
           onChange={(event) => setCategory(event.target.value)}
         >
-          <option value="">Все категории</option>
+          <option value="">{t('picker.allCategories')}</option>
           {(library?.categories ?? []).map((value) => (
             <option key={value} value={value}>
-              {CATEGORY_LABELS[value] ?? value}
+              {categoryLabel(value)}
             </option>
           ))}
         </select>
@@ -109,7 +112,7 @@ export function AttributePicker({ ownedIds, onPick, onClose }: Props) {
           иначе они спорят с выдачей по запросу. */}
       {!query && !category && recent.length > 0 && (
         <div className="col g2">
-          <p className="section__title">Недавно использованные</p>
+          <p className="section__title">{t('picker.recent')}</p>
           <div className="cloud">
             {recent.map((attribute) => (
               <button
@@ -129,7 +132,7 @@ export function AttributePicker({ ownedIds, onPick, onClose }: Props) {
       <div className="picker__list">
         {available.length === 0 ? (
           <p className="muted table__empty">
-            {library === null ? 'Загружаем…' : 'Ничего не найдено.'}
+            {t(library === null ? 'common.loading' : 'picker.nothing')}
           </p>
         ) : (
           available.map((attribute) => (
@@ -142,8 +145,8 @@ export function AttributePicker({ ownedIds, onPick, onClose }: Props) {
               <span className="col g1">
                 <span className="picker__name">{attribute.name}</span>
                 <span className="t-xs muted-3">
-                  {CATEGORY_LABELS[attribute.category] ?? attribute.category} ·{' '}
-                  {TYPE_LABELS[attribute.type] ?? attribute.type}
+                  {categoryLabel(attribute.category)} ·{' '}
+                  {typeLabel(attribute.type)}
                 </span>
               </span>
               <PlusIcon size={14} aria-hidden="true" />

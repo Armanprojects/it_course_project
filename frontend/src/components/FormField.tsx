@@ -1,6 +1,7 @@
 import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react'
 import { useId, useState } from 'react'
 import { evaluatePassword } from '../lib/passwordStrength'
+import { useTranslation } from '../i18n/context'
 
 interface Props {
   label: string
@@ -32,6 +33,7 @@ export function FormField({
   disabled = false,
   showStrength = false,
 }: Props) {
+  const t = useTranslation()
   const id = useId()
   const errorId = `${id}-error`
   const hintId = `${id}-hint`
@@ -77,7 +79,7 @@ export function FormField({
             className="field__reveal"
             onClick={() => setRevealed((v) => !v)}
             disabled={disabled}
-            aria-label={revealed ? 'Скрыть пароль' : 'Показать пароль'}
+            aria-label={t(revealed ? 'password.hide' : 'password.show')}
           >
             {revealed ? (
               <EyeSlashIcon size={17} aria-hidden="true" />
@@ -106,7 +108,9 @@ export function FormField({
           {/* aria-live не ставим: индикатор меняется на каждый символ, и
               озвучивание каждого шага мешало бы вводу. */}
           <span id={hintId} className="t-xs muted-3">
-            {strength.label ? `${strength.label} · ${strength.hint}` : strength.hint}
+            {strength.label
+              ? `${t(strength.label)} · ${t(strength.hint, strength.hintParams)}`
+              : t(strength.hint, strength.hintParams)}
           </span>
         </>
       )}

@@ -1,22 +1,25 @@
 import { ArrowRightIcon } from '@phosphor-icons/react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { catalogApi, RequestError } from '../api/client'
+import { catalogApi } from '../api/client'
 import type { HomeData, PublicStats, TagCloudEntry } from '../api/types'
 import { AppHeader } from '../components/AppHeader'
 import { PositionsTable } from '../components/PositionsTable'
+import { useTranslation } from '../i18n/context'
+import type { MessageKey } from '../i18n/messages'
+import { useErrorText } from '../i18n/useErrorText'
 
 type State =
   | { kind: 'loading' }
   | { kind: 'ready'; data: HomeData }
   | { kind: 'error'; message: string }
 
-const STAT_LABELS: { key: keyof PublicStats; label: string }[] = [
-  { key: 'positions', label: 'Позиций' },
-  { key: 'submittedCvs', label: 'Резюме подано' },
-  { key: 'cvsLast24h', label: 'Создано за сутки' },
-  { key: 'candidates', label: 'Кандидатов' },
-  { key: 'recruiters', label: 'Рекрутеров' },
+const STAT_LABELS: { key: keyof PublicStats; label: MessageKey }[] = [
+  { key: 'positions', label: 'home.statPositions' },
+  { key: 'submittedCvs', label: 'home.statSubmitted' },
+  { key: 'cvsLast24h', label: 'home.statLast24h' },
+  { key: 'candidates', label: 'home.statCandidates' },
+  { key: 'recruiters', label: 'home.statRecruiters' },
 ]
 
 /**
@@ -25,6 +28,8 @@ const STAT_LABELS: { key: keyof PublicStats; label: string }[] = [
  * обсуждения закрыты входом.
  */
 export function HomePage() {
+  const t = useTranslation()
+  const errorText = useErrorText()
   const [state, setState] = useState<State>({ kind: 'loading' })
 
   useEffect(() => {
@@ -41,7 +46,7 @@ export function HomePage() {
         if (active) {
           setState({
             kind: 'error',
-            message: error instanceof RequestError ? error.message : 'Непредвиденная ошибка.',
+            message: errorText(error, 'common.unexpectedError'),
           })
         }
       })
@@ -51,7 +56,7 @@ export function HomePage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [errorText])
 
   return (
     <>
@@ -59,27 +64,23 @@ export function HomePage() {
 
       <main className="page">
         <section className="hero">
-          <h1 className="h1">Позиции и резюме в одном месте</h1>
-          <p className="hero__text muted">
-            Рекрутеры собирают шаблоны позиций из общей библиотеки атрибутов, кандидаты
-            заполняют профиль один раз, а резюме под каждую позицию система собирает сама.
-            Каталог открыт всем — вход нужен только чтобы подать резюме.
-          </p>
+          <h1 className="h1">{t('home.title')}</h1>
+          <p className="hero__text muted">{t('home.lead')}</p>
 
           <div className="hero__actions">
             <Link to="/positions" className="btn btn--primary btn--lg">
-              Смотреть все позиции
+              {t('home.browse')}
               <ArrowRightIcon size={16} aria-hidden="true" />
             </Link>
             <Link to="/login" className="btn btn--outline btn--lg">
-              Создать аккаунт
+              {t('home.signup')}
             </Link>
           </div>
         </section>
 
         {state.kind === 'loading' && (
           <p className="muted" role="status">
-            Загружаем…
+            {t('common.loading')}
           </p>
         )}
 
@@ -96,28 +97,29 @@ export function HomePage() {
 }
 
 function HomeContent({ data }: { data: HomeData }) {
+  const t = useTranslation()
   return (
     <div className="col g6">
       <StatsBar stats={data.stats} />
 
       <Panel
-        title="Последние позиции"
-        hint="Недавно созданные и обновлённые"
-        action={<Link to="/positions">Все позиции</Link>}
+        title={t('home.latest')}
+        hint={t('home.latestHint')}
+        action={<Link to="/positions">{t('home.allPositions')}</Link>}
       >
         <PositionsTable rows={data.latestPositions} />
       </Panel>
 
       <div className="home__split">
-        <Panel title="Самые популярные" hint="Топ-5 по числу поданных резюме">
+        <Panel title={t('home.popular')} hint={t('home.popularHint')}>
           <PositionsTable
             rows={data.topPositions}
             compact
-            emptyMessage="Пока никто не подал резюме."
+            emptyMessage={t('home.popularEmpty')}
           />
         </Panel>
 
-        <Panel title="Технологии" hint="Теги проектов и позиций">
+        <Panel title={t('home.tags')} hint={t('home.tagsHint')}>
           <TagCloud tags={data.tagCloud} />
         </Panel>
       </div>
@@ -126,11 +128,12 @@ function HomeContent({ data }: { data: HomeData }) {
 }
 
 function StatsBar({ stats }: { stats: PublicStats }) {
+  const t = useTranslation()
   return (
     <dl className="stats">
       {STAT_LABELS.map(({ key, label }) => (
         <div key={key} className="stats__item">
-          <dt className="stats__label">{label}</dt>
+          <dt className="stats__label">{t(label)}</dt>
           <dd className="stats__value">{stats[key]}</dd>
         </div>
       ))}
@@ -143,10 +146,11 @@ function StatsBar({ stats }: { stats: PublicStats }) {
  * стоит число — размер шрифта сам по себе слишком неточная шкала.
  */
 function TagCloud({ tags }: { tags: TagCloudEntry[] }) {
+  const t = useTranslation()
   const navigate = useNavigate()
 
   if (tags.length === 0) {
-    return <p className="muted table__empty">Тегов пока нет.</p>
+    return <p className="muted table__empty">{t('home.tagsEmpty')}</p>
   }
 
   const max = Math.max(...tags.map((tag) => tag.usageCount))

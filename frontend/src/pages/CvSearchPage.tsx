@@ -1,11 +1,13 @@
 import { MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { useEffect, useState } from 'react'
 import { Navigate, useSearchParams } from 'react-router-dom'
-import { cvApi, RequestError, tokenStorage } from '../api/client'
+import { cvApi, tokenStorage } from '../api/client'
 import type { CvRow } from '../api/types'
 import { AppHeader } from '../components/AppHeader'
 import { CvTable } from '../components/CvTable'
 import { useCurrentUser } from '../lib/useCurrentUser'
+import { useTranslation } from '../i18n/context'
+import { useErrorText } from '../i18n/useErrorText'
 
 /**
  * Полнотекстовый поиск по резюме — один из трёх путей к данным кандидата,
@@ -24,6 +26,7 @@ export function CvSearchPage() {
 }
 
 function SearchGate() {
+  const t = useTranslation()
   const { isRecruiter, loading } = useCurrentUser()
 
   if (loading) {
@@ -32,7 +35,7 @@ function SearchGate() {
         <AppHeader />
         <main className="page">
           <p className="muted" role="status">
-            Загружаем…
+            {t('common.loading')}
           </p>
         </main>
       </>
@@ -43,6 +46,8 @@ function SearchGate() {
 }
 
 function CvSearch() {
+  const t = useTranslation()
+  const errorText = useErrorText()
   const [params, setParams] = useSearchParams()
   const [found, setFound] = useState<{ query: string; items: CvRow[] } | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -72,7 +77,7 @@ function CvSearch() {
       .catch((requestError: unknown) => {
         if (active) {
           setError(
-            requestError instanceof RequestError ? requestError.message : 'Поиск не удался.',
+            errorText(requestError, 'cvSearch.failed'),
           )
         }
       })
@@ -80,7 +85,7 @@ function CvSearch() {
     return () => {
       active = false
     }
-  }, [query])
+  }, [query, errorText])
 
   return (
     <>
@@ -88,9 +93,9 @@ function CvSearch() {
 
       <main className="page">
         <div className="col g1">
-          <h1 className="h1">Поиск по резюме</h1>
+          <h1 className="h1">{t('cvSearch.title')}</h1>
           <p className="muted" style={{ margin: 0 }}>
-            По навыкам, проектам, городу — по любому тексту в профиле кандидата
+            {t('cvSearch.lead')}
           </p>
         </div>
 
@@ -106,15 +111,15 @@ function CvSearch() {
             <input
               type="search"
               className="apphead__input"
-              placeholder="Например: kubernetes, Berlin, аналитика…"
-              aria-label="Запрос"
+              placeholder={t('cvSearch.placeholder')}
+              aria-label={t('cvSearch.label')}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
             />
           </div>
 
           <button type="submit" className="btn btn--primary">
-            Найти
+            {t('cvSearch.submit')}
           </button>
         </form>
 
@@ -126,19 +131,19 @@ function CvSearch() {
 
         <section className="panel">
           {query.trim() === '' ? (
-            <p className="muted table__empty">Введите запрос, чтобы найти кандидатов.</p>
+            <p className="muted table__empty">{t('cvSearch.prompt')}</p>
           ) : rows === null ? (
             <p className="muted table__empty" role="status">
-              Ищем…
+              {t('cvSearch.searching')}
             </p>
           ) : (
             <>
               <p className="panel__hint muted-3" style={{ margin: 0 }}>
-                Найдено: {rows.length}
+                {t('cvSearch.found', { count: rows.length })}
               </p>
               <CvTable
                 rows={rows}
-                emptyMessage={`По запросу «${query}» ничего не найдено.`}
+                emptyMessage={t('cvSearch.nothingFor', { query })}
               />
             </>
           )}

@@ -4,7 +4,6 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
   libraryApi,
   positionAdminApi,
-  RequestError,
   tokenStorage,
 } from '../api/client'
 import type {
@@ -19,8 +18,10 @@ import { AccessRuleEditor } from '../components/AccessRuleEditor'
 import { AppHeader } from '../components/AppHeader'
 import { AttributePicker } from '../components/AttributePicker'
 import { TagInput } from '../components/TagInput'
-import { CATEGORY_LABELS, TYPE_LABELS } from '../lib/attributeLabels'
 import { useCurrentUser } from '../lib/useCurrentUser'
+import { useAttributeLabels } from '../i18n/useAttributeLabels'
+import { useTranslation } from '../i18n/context'
+import { useErrorText } from '../i18n/useErrorText'
 
 const LEVELS = ['Junior', 'Middle', 'Senior', 'C-level']
 
@@ -51,6 +52,7 @@ export function PositionEditPage() {
 }
 
 function EditorGate() {
+  const t = useTranslation()
   const { isRecruiter, loading } = useCurrentUser()
 
   if (loading) {
@@ -59,7 +61,7 @@ function EditorGate() {
         <AppHeader />
         <main className="page">
           <p className="muted" role="status">
-            Загружаем…
+            {t('common.loading')}
           </p>
         </main>
       </>
@@ -74,6 +76,9 @@ function EditorGate() {
 }
 
 function PositionEditor() {
+  const t = useTranslation()
+  const errorText = useErrorText()
+  const { categoryLabel, typeLabel } = useAttributeLabels()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const isNew = id === undefined
@@ -105,14 +110,14 @@ function PositionEditor() {
       })
       .catch(() => {
         if (active) {
-          setError('Не удалось загрузить библиотеку атрибутов.')
+          setError(t('edit.libraryFailed'))
         }
       })
 
     return () => {
       active = false
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     if (isNew) {
@@ -147,7 +152,7 @@ function PositionEditor() {
       .catch((requestError: unknown) => {
         if (active) {
           setError(
-            requestError instanceof RequestError ? requestError.message : 'Позиция не найдена.',
+            errorText(requestError, 'position.notFound'),
           )
           setLoaded(true)
         }
@@ -156,7 +161,7 @@ function PositionEditor() {
     return () => {
       active = false
     }
-  }, [id, isNew])
+  }, [id, isNew, errorText])
 
   const move = (index: number, delta: number) => {
     const next = [...attributes]
@@ -201,11 +206,11 @@ function PositionEditor() {
       navigate(`/positions/${saved.id}`)
     } catch (requestError: unknown) {
       setError(
-        requestError instanceof RequestError ? requestError.message : 'Не удалось сохранить.',
+        errorText(requestError, 'edit.saveFailed'),
       )
       setBusy(false)
     }
-  }, [attributes, form, id, isNew, navigate, rules, version])
+  }, [attributes, form, id, isNew, navigate, rules, version, errorText])
 
   const remove = async () => {
     if (isNew) {
@@ -219,7 +224,7 @@ function PositionEditor() {
       navigate('/positions')
     } catch (requestError: unknown) {
       setError(
-        requestError instanceof RequestError ? requestError.message : 'Не удалось удалить.',
+        errorText(requestError, 'edit.deleteFailed'),
       )
       setBusy(false)
     }
@@ -231,7 +236,7 @@ function PositionEditor() {
         <AppHeader />
         <main className="page">
           <p className="muted" role="status">
-            Загружаем…
+            {t('common.loading')}
           </p>
         </main>
       </>
@@ -247,14 +252,14 @@ function PositionEditor() {
       <main className="page">
         <Link to={isNew ? '/positions' : `/positions/${id}`} className="backlink">
           <CaretLeftIcon size={14} aria-hidden="true" />
-          {isNew ? 'К каталогу' : 'К позиции'}
+          {t(isNew ? 'edit.toCatalogue' : 'edit.toPosition')}
         </Link>
 
         <div className="panel__head">
-          <h1 className="h1">{isNew ? 'Новая позиция' : 'Редактирование позиции'}</h1>
+          <h1 className="h1">{t(isNew ? 'edit.newTitle' : 'edit.editTitle')}</h1>
 
           {!isNew && (
-            <DangerButton busy={busy} onConfirm={remove} label="Удалить позицию" />
+            <DangerButton busy={busy} onConfirm={remove} label={t('edit.deletePosition')} />
           )}
         </div>
 
@@ -265,11 +270,11 @@ function PositionEditor() {
         )}
 
         <section className="panel">
-          <h2 className="h2">Основное</h2>
+          <h2 className="h2">{t('edit.basics')}</h2>
 
           <div className="field">
             <label className="label" htmlFor="pos-title">
-              Название
+              {t('edit.name')}
             </label>
             <input
               id="pos-title"
@@ -284,7 +289,7 @@ function PositionEditor() {
           <div className="period">
             <div className="field">
               <label className="label" htmlFor="pos-company">
-                Компания
+                {t('edit.company')}
               </label>
               <input
                 id="pos-company"
@@ -296,7 +301,7 @@ function PositionEditor() {
 
             <div className="field">
               <label className="label" htmlFor="pos-level">
-                Уровень
+                {t('edit.level')}
               </label>
               <select
                 id="pos-level"
@@ -304,7 +309,7 @@ function PositionEditor() {
                 value={form.level ?? ''}
                 onChange={(event) => setForm({ ...form, level: event.target.value })}
               >
-                <option value="">— не указан —</option>
+                <option value="">{t('edit.levelNone')}</option>
                 {LEVELS.map((level) => (
                   <option key={level} value={level}>
                     {level}
@@ -316,7 +321,7 @@ function PositionEditor() {
 
           <div className="field">
             <label className="label" htmlFor="pos-description">
-              Краткое описание
+              {t('edit.shortDescription')}
             </label>
             <textarea
               id="pos-description"
@@ -331,16 +336,16 @@ function PositionEditor() {
         <section className="panel">
           <div className="panel__head">
             <div>
-              <h2 className="h2">Шаблон резюме</h2>
+              <h2 className="h2">{t('edit.template')}</h2>
               <p className="panel__hint muted-3">
-                Эти поля попадут в резюме, значения подтянутся из профиля кандидата
+                {t('edit.templateHint')}
               </p>
             </div>
 
             {!picking && (
               <button type="button" className="btn btn--outline" onClick={() => setPicking(true)}>
                 <PlusIcon size={14} aria-hidden="true" />
-                Добавить поле
+                {t('edit.addField')}
               </button>
             )}
           </div>
@@ -369,7 +374,7 @@ function PositionEditor() {
           )}
 
           {attributes.length === 0 ? (
-            <p className="muted table__empty">Полей пока нет.</p>
+            <p className="muted table__empty">{t('edit.noFields')}</p>
           ) : (
             <div className="col g2">
               {attributes.map((attribute, index) => (
@@ -377,8 +382,8 @@ function PositionEditor() {
                   <div className="col g1">
                     <span className="picker__name">{attribute.name}</span>
                     <span className="t-xs muted-3">
-                      {CATEGORY_LABELS[attribute.category] ?? attribute.category} ·{' '}
-                      {TYPE_LABELS[attribute.type] ?? attribute.type}
+                      {categoryLabel(attribute.category)} ·{' '}
+                      {typeLabel(attribute.type)}
                     </span>
                   </div>
 
@@ -394,7 +399,7 @@ function PositionEditor() {
                         )
                       }
                     />
-                    обязательное
+                    {t('edit.required')}
                   </label>
 
                   <div className="row g1">
@@ -403,7 +408,7 @@ function PositionEditor() {
                       className="attr__remove"
                       onClick={() => move(index, -1)}
                       disabled={index === 0}
-                      aria-label="Выше"
+                      aria-label={t('edit.moveUp')}
                     >
                       <ArrowUpIcon size={13} aria-hidden="true" />
                     </button>
@@ -412,7 +417,7 @@ function PositionEditor() {
                       className="attr__remove"
                       onClick={() => move(index, 1)}
                       disabled={index === attributes.length - 1}
-                      aria-label="Ниже"
+                      aria-label={t('edit.moveDown')}
                     >
                       <ArrowDownIcon size={13} aria-hidden="true" />
                     </button>
@@ -422,7 +427,7 @@ function PositionEditor() {
                       onClick={() =>
                         setAttributes((current) => current.filter((_, i) => i !== index))
                       }
-                      aria-label={`Убрать ${attribute.name}`}
+                      aria-label={t('edit.removeField', { name: attribute.name })}
                     >
                       <TrashIcon size={13} aria-hidden="true" />
                     </button>
@@ -436,9 +441,9 @@ function PositionEditor() {
         <section className="panel">
           <div className="panel__head">
             <div>
-              <h2 className="h2">Доступ</h2>
+              <h2 className="h2">{t('edit.access')}</h2>
               <p className="panel__hint muted-3">
-                Кто может подать резюме на эту позицию
+                {t('edit.accessHint')}
               </p>
             </div>
           </div>
@@ -450,13 +455,13 @@ function PositionEditor() {
               onChange={(event) => setForm({ ...form, public: event.target.checked })}
             />
             <span className="t-sm">
-              Публичная — доступна всем вошедшим пользователям
+              {t('edit.publicLabel')}
             </span>
           </label>
 
           {!form.public && (
             <>
-              <p className="section__title">Правила (выполняются все сразу)</p>
+              <p className="section__title">{t('edit.rulesTitle')}</p>
               <AccessRuleEditor
                 rules={rules}
                 attributes={library}
@@ -470,15 +475,15 @@ function PositionEditor() {
         <section className="panel">
           <div className="panel__head">
             <div>
-              <h2 className="h2">Проекты в резюме</h2>
+              <h2 className="h2">{t('edit.projectsTitle')}</h2>
               <p className="panel__hint muted-3">
-                Теги отбирают релевантные проекты кандидата; пусто — подойдут любые
+                {t('edit.projectsHint')}
               </p>
             </div>
           </div>
 
           <div className="field">
-            <span className="label">Теги проектов</span>
+            <span className="label">{t('edit.projectTags')}</span>
             <TagInput
               tags={form.projectTags}
               onChange={(projectTags) => setForm({ ...form, projectTags })}
@@ -487,7 +492,7 @@ function PositionEditor() {
 
           <div className="field" style={{ maxWidth: 220 }}>
             <label className="label" htmlFor="pos-max">
-              Максимум проектов
+              {t('edit.maxProjects')}
             </label>
             <input
               id="pos-max"
@@ -510,11 +515,11 @@ function PositionEditor() {
             disabled={busy || form.title.trim() === ''}
             onClick={() => void submit()}
           >
-            {busy ? 'Сохраняем…' : 'Сохранить'}
+            {t(busy ? 'edit.saving' : 'common.save')}
           </button>
 
           <Link to={isNew ? '/positions' : `/positions/${id}`} className="btn btn--ghost btn--lg">
-            Отмена
+            {t('common.cancel')}
           </Link>
         </div>
       </main>
@@ -532,6 +537,7 @@ function DangerButton({
   onConfirm: () => void
   label: string
 }) {
+  const t = useTranslation()
   const [confirming, setConfirming] = useState(false)
 
   if (!confirming) {
@@ -545,13 +551,13 @@ function DangerButton({
 
   return (
     <div className="notice notice--error" role="alert">
-      <span>Удалить вместе с резюме и обсуждением?</span>
+      <span>{t('edit.confirmDelete')}</span>
       <div className="row g2">
         <button type="button" className="btn btn--ghost" onClick={() => setConfirming(false)}>
-          Отмена
+          {t('common.cancel')}
         </button>
         <button type="button" className="btn btn--primary" disabled={busy} onClick={onConfirm}>
-          Удалить
+          {t('edit.delete')}
         </button>
       </div>
     </div>

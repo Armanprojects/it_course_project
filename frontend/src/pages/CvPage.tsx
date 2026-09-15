@@ -1,14 +1,19 @@
-import { CaretLeftIcon, HeartIcon, HeartStraightIcon } from '@phosphor-icons/react'
+import { CaretLeftIcon, HeartIcon, HeartStraightIcon, PencilSimpleIcon } from '@phosphor-icons/react'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { cvApi, RequestError, tokenStorage } from '../api/client'
 import type { AttributeValue, CvDetail, CvSectionAttribute } from '../api/types'
 import { AppHeader } from '../components/AppHeader'
-import { CATEGORY_LABELS } from '../lib/attributeLabels'
+import { AttributeInput } from '../components/AttributeField'
+import { useAttributeLabels } from '../i18n/useAttributeLabels'
+import { useTranslation } from '../i18n/context'
+import type { MessageKey } from '../i18n/messages'
+import { useDateFormat } from '../i18n/useDateFormat'
+import { useErrorText } from '../i18n/useErrorText'
 
 const Markdown = lazy(() => import('react-markdown'))
 
-const dateFormat = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium' })
+type Translate = (key: MessageKey, params?: Record<string, string | number>) => string
 
 /**
  * Сгенерированное резюме.
@@ -26,6 +31,10 @@ export function CvPage() {
 }
 
 function CvView() {
+  const t = useTranslation()
+  const errorText = useErrorText()
+  const formatDate = useDateFormat()
+  const { categoryLabel } = useAttributeLabels()
   const { id } = useParams<{ id: string }>()
   const [cv, setCv] = useState<CvDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -44,7 +53,7 @@ function CvView() {
       .catch((requestError: unknown) => {
         if (active) {
           setError(
-            requestError instanceof RequestError ? requestError.message : 'Резюме недоступно.',
+            errorText(requestError, 'cv.unavailableShort'),
           )
         }
       })
@@ -52,7 +61,7 @@ function CvView() {
     return () => {
       active = false
     }
-  }, [id])
+  }, [id, errorText])
 
   const toggleLike = async () => {
     if (cv === null) {
@@ -72,6 +81,38 @@ function CvView() {
     }
   }
 
+  /**
+   * Правка атрибута по месту. Значение уходит в профиль — там единственное
+   * эталонное значение, — а в ответ приходит пересобранное резюме: обновляется
+   * и подсветка пустых полей, и признак complete, от которого зависит кнопка
+   * публикации.
+   */
+  const saveAttribute = async (attributeId: number, value: AttributeValue) => {
+    if (cv === null) {
+      return
+    }
+
+    setBusy(true)
+    setError(null)
+
+    try {
+      setCv(await cvApi.editAttribute(cv.id, attributeId, value, cv.profileVersion))
+    } catch (requestError: unknown) {
+      if (requestError instanceof RequestError && requestError.isConflict) {
+        // Профиль изменили в другой вкладке: перечитываем, иначе следующая
+        // правка уйдёт со старой версией и снова упрётся в конфликт.
+        setError(t('cv.conflict'))
+        setCv(await cvApi.show(cv.id))
+      } else {
+        setError(
+          errorText(requestError, 'cv.saveFailed'),
+        )
+      }
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const togglePublish = async () => {
     if (cv === null) {
       return
@@ -84,7 +125,7 @@ function CvView() {
       setCv(cv.status === 'published' ? await cvApi.unpublish(cv.id) : await cvApi.publish(cv.id))
     } catch (requestError: unknown) {
       setError(
-        requestError instanceof RequestError ? requestError.message : 'Не удалось изменить статус.',
+        errorText(requestError, 'cv.statusFailed'),
       )
     } finally {
       setBusy(false)
@@ -110,7 +151,7 @@ function CvView() {
         <AppHeader />
         <main className="page">
           <p className="muted" role="status">
-            Загружаем…
+            {t('common.loading')}
           </p>
         </main>
       </>
@@ -145,7 +186,7 @@ function CvView() {
 
             <div className="row g2">
               <span className={`chip${cv.status === 'published' ? ' chip--ok' : ''}`}>
-                {cv.status === 'published' ? 'Опубликовано' : 'Черновик'}
+                {t(cv.status === 'published' ? 'cv.published' : 'cv.draft')}
               </span>
 
               {/* Лайкать могут только рекрутеры — сервер решает, клиент лишь
@@ -157,7 +198,7 @@ function CvView() {
                   onClick={() => void toggleLike()}
                   disabled={busy}
                   aria-pressed={cv.likedByMe}
-                  aria-label={cv.likedByMe ? 'Убрать лайк' : 'Поставить лайк'}
+                  aria-label={t(cv.likedByMe ? 'cv.unlike' : 'cv.like')}
                 >
                   {cv.likedByMe ? (
                     <HeartIcon size={15} weight="fill" aria-hidden="true" />
@@ -172,19 +213,25 @@ function CvView() {
 
           {cv.missing.length > 0 && (
             <div className="notice notice--error">
-              <span>Не заполнено: {cv.missing.join(', ')}. Пока резюме нельзя опубликовать.</span>
+              <span>{t('cv.notFilledMissing', { names: cv.missing.join(', ') })}</span>
             </div>
           )}
 
           {cv.sections.map((section) => (
             <div key={section.section} className="col g2">
               <h2 className="section__title">
-                {CATEGORY_LABELS[section.section] ?? section.section}
+                {categoryLabel(section.section)}
               </h2>
 
               <dl className="cvsheet__grid">
                 {section.attributes.map((attribute) => (
-                  <CvValue key={attribute.attributeId} attribute={attribute} />
+                  <CvValue
+                    key={attribute.attributeId}
+                    attribute={attribute}
+                    editable={cv.canEdit}
+                    busy={busy}
+                    onSave={(value) => saveAttribute(attribute.attributeId, value)}
+                  />
                 ))}
               </dl>
             </div>
@@ -192,7 +239,7 @@ function CvView() {
 
           {cv.projects.length > 0 && (
             <div className="col g3">
-              <h2 className="section__title">Проекты</h2>
+              <h2 className="section__title">{t('cv.projects')}</h2>
 
               {cv.projects.map((project) => (
                 <article key={project.id} className="col g2">
@@ -201,12 +248,12 @@ function CvView() {
                     {(project.periodFrom || project.periodTo) && (
                       <span className="t-xs muted-3">
                         {project.periodFrom
-                          ? dateFormat.format(new Date(project.periodFrom))
+                          ? formatDate(project.periodFrom)
                           : '…'}{' '}
                         —{' '}
                         {project.periodTo
-                          ? dateFormat.format(new Date(project.periodTo))
-                          : 'по настоящее время'}
+                          ? formatDate(project.periodTo)
+                          : t('cv.ongoing')}
                       </span>
                     )}
                   </div>
@@ -244,11 +291,11 @@ function CvView() {
               disabled={busy || (cv.status !== 'published' && !cv.complete)}
               onClick={() => void togglePublish()}
             >
-              {cv.status === 'published' ? 'Снять с публикации' : 'Опубликовать'}
+              {t(cv.status === 'published' ? 'cv.unpublish' : 'cv.publish')}
             </button>
 
             <Link to="/profile" className="btn btn--ghost">
-              Заполнить профиль
+              {t('cv.fillProfile')}
             </Link>
           </div>
         )}
@@ -257,29 +304,117 @@ function CvView() {
   )
 }
 
-/** Пустое значение подсвечиваем красным — прямое требование задания. */
-function CvValue({ attribute }: { attribute: CvSectionAttribute }) {
+/**
+ * Одно поле резюме. Пустое значение подсвечиваем красным — прямое требование
+ * задания, — а владельцу (и админу) поле открывается на правку по клику.
+ *
+ * Читающий рекрутер получает тот же компонент без editable: разметка одна,
+ * различается только интерактивность.
+ */
+function CvValue({
+  attribute,
+  editable,
+  busy,
+  onSave,
+}: {
+  attribute: CvSectionAttribute
+  editable: boolean
+  busy: boolean
+  onSave: (value: AttributeValue) => void | Promise<void>
+}) {
+  const t = useTranslation()
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState<AttributeValue>(attribute.value)
+
+  const open = () => {
+    setDraft(attribute.value)
+    setEditing(true)
+  }
+
+  const commit = () => {
+    setEditing(false)
+
+    // Ничего не трогали — незачем гонять запрос и поднимать версию профиля.
+    if (draft !== attribute.value) {
+      void onSave(draft)
+    }
+  }
+
+  if (editing) {
+    return (
+      <div className={`cvsheet__row${attribute.empty ? ' is-empty' : ''}`}>
+        <dt className="label" id={`cvattr-${attribute.attributeId}-label`}>
+          {attribute.name}
+        </dt>
+        <dd className="cvsheet__value">
+          <AttributeInput
+            id={`cvattr-${attribute.attributeId}`}
+            attribute={attribute}
+            value={draft}
+            onChange={setDraft}
+            autoFocus
+            // Картинка и период сохраняются кнопкой: у загрузчика свой blur,
+            // а у периода два поля, и уход с первого не значит конец правки.
+            onBlur={
+              attribute.type === 'image' || attribute.type === 'period' ? undefined : commit
+            }
+          />
+
+          {(attribute.type === 'image' || attribute.type === 'period') && (
+            <div className="row g2" style={{ marginTop: 'var(--s2)' }}>
+              <button type="button" className="btn btn--primary" onClick={commit} disabled={busy}>
+                {t('common.save')}
+              </button>
+              <button type="button" className="btn btn--ghost" onClick={() => setEditing(false)}>
+                {t('common.cancel')}
+              </button>
+            </div>
+          )}
+        </dd>
+      </div>
+    )
+  }
+
   return (
     <div className={`cvsheet__row${attribute.empty ? ' is-empty' : ''}`}>
       <dt className="label">{attribute.name}</dt>
       <dd className="cvsheet__value">
-        {attribute.empty ? (
-          <span className="cvsheet__blank">не заполнено</span>
+        {editable ? (
+          <button
+            type="button"
+            className="cvsheet__edit"
+            onClick={open}
+            disabled={busy}
+            aria-label={t('cv.editAttribute', { name: attribute.name })}
+          >
+            {attribute.empty ? (
+              <span className="cvsheet__blank">{t('common.notFilled')}</span>
+            ) : (
+              renderValue(attribute.value, attribute.type, t)
+            )}
+            <PencilSimpleIcon size={13} aria-hidden="true" className="cvsheet__pencil" />
+          </button>
+        ) : attribute.empty ? (
+          <span className="cvsheet__blank">{t('common.notFilled')}</span>
         ) : (
-          renderValue(attribute.value, attribute.type)
+          renderValue(attribute.value, attribute.type, t)
         )}
       </dd>
     </div>
   )
 }
 
-function renderValue(value: AttributeValue, type: string) {
+/**
+ * Отрисовка значения атрибута только для чтения. Переводчик передаётся
+ * аргументом: функция не компонент, свой хук здесь вызвать нельзя.
+ */
+function renderValue(value: AttributeValue, type: string, t: Translate) {
   if (value === null) {
     return null
   }
 
   if (type === 'boolean') {
-    return value === true ? 'да' : 'нет'
+    return t(value === true ? 'common.yes' : 'common.no')
   }
 
   if (type === 'image' && typeof value === 'string') {
@@ -289,7 +424,7 @@ function renderValue(value: AttributeValue, type: string) {
   if (type === 'period' && typeof value === 'object') {
     const period = value as { from: string | null; to: string | null }
 
-    return `${period.from ?? '…'} — ${period.to ?? 'по настоящее время'}`
+    return `${period.from ?? '…'} — ${period.to ?? t('cv.ongoing')}`
   }
 
   if (type === 'numeric' && typeof value === 'string') {

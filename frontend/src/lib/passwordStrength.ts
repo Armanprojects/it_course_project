@@ -1,12 +1,17 @@
+import type { MessageKey } from '../i18n/messages'
+
 export type StrengthLevel = 'weak' | 'medium' | 'strong'
 
 export interface PasswordStrength {
   /** Сколько из трёх сегментов индикатора зажечь. */
   score: 0 | 1 | 2 | 3
   level: StrengthLevel
-  label: string
+  /** Ключи словаря, а не готовые строки: модуль ничего не знает о языке. */
+  label: MessageKey | null
   /** Требование, которое ещё не выполнено, — что именно исправить. */
-  hint: string
+  hint: MessageKey
+  /** Подстановки для hint, если он с числом. */
+  hintParams?: Record<string, number>
 }
 
 /** Минимальная длина; та же проверка продублирована на бэкенде. */
@@ -20,7 +25,13 @@ export const MIN_PASSWORD_LENGTH = 8
  */
 export function evaluatePassword(password: string): PasswordStrength {
   if (!password) {
-    return { score: 0, level: 'weak', label: '', hint: `Минимум ${MIN_PASSWORD_LENGTH} символов, буквы и цифры` }
+    return {
+      score: 0,
+      level: 'weak',
+      label: null,
+      hint: 'password.hintMin',
+      hintParams: { min: MIN_PASSWORD_LENGTH },
+    }
   }
 
   const longEnough = password.length >= MIN_PASSWORD_LENGTH
@@ -32,8 +43,9 @@ export function evaluatePassword(password: string): PasswordStrength {
     return {
       score: 1,
       level: 'weak',
-      label: 'Слишком короткий',
-      hint: `Нужно ещё ${MIN_PASSWORD_LENGTH - password.length} символов`,
+      label: 'password.tooShort',
+      hint: 'password.needMore',
+      hintParams: { count: MIN_PASSWORD_LENGTH - password.length },
     }
   }
 
@@ -41,8 +53,8 @@ export function evaluatePassword(password: string): PasswordStrength {
     return {
       score: 1,
       level: 'weak',
-      label: 'Слабый',
-      hint: hasLetter ? 'Добавьте цифру' : 'Добавьте букву',
+      label: 'password.weak',
+      hint: hasLetter ? 'password.addDigit' : 'password.addLetter',
     }
   }
 
@@ -50,10 +62,10 @@ export function evaluatePassword(password: string): PasswordStrength {
     return {
       score: 2,
       level: 'medium',
-      label: 'Средний',
-      hint: 'Заглавная буква или символ сделают пароль надёжнее',
+      label: 'password.medium',
+      hint: 'password.mediumHint',
     }
   }
 
-  return { score: 3, level: 'strong', label: 'Надёжный', hint: 'Такой пароль подойдёт' }
+  return { score: 3, level: 'strong', label: 'password.strong', hint: 'password.strongHint' }
 }

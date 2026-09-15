@@ -1,17 +1,19 @@
 import { TrashIcon } from '@phosphor-icons/react'
 import type { AccessRule, AttributeType, FilterOperator, LibraryAttribute } from '../api/types'
+import { useTranslation } from '../i18n/context'
+import type { MessageKey } from '../i18n/messages'
 
 /** Подписи операторов из App\Enum\FilterOperator. */
-const OPERATOR_LABELS: Record<FilterOperator, string> = {
-  eq: 'равно',
-  neq: 'не равно',
-  gt: 'больше',
-  gte: 'больше или равно',
-  lt: 'меньше',
-  lte: 'меньше или равно',
-  contains: 'содержит',
-  in: 'один из',
-  is_set: 'заполнено',
+const OPERATOR_LABELS: Record<FilterOperator, MessageKey> = {
+  eq: 'rule.op.eq',
+  neq: 'rule.op.neq',
+  gt: 'rule.op.gt',
+  gte: 'rule.op.gte',
+  lt: 'rule.op.lt',
+  lte: 'rule.op.lte',
+  contains: 'rule.op.contains',
+  in: 'rule.op.in',
+  is_set: 'rule.op.isSet',
 }
 
 interface Props {
@@ -31,6 +33,7 @@ interface Props {
  * с сервера, чтобы клиент не мог предложить «содержит» для флажка.
  */
 export function AccessRuleEditor({ rules, attributes, operators, onChange }: Props) {
+  const t = useTranslation()
   const byId = new Map(attributes.map((attribute) => [attribute.id, attribute]))
 
   const update = (index: number, patch: Partial<AccessRule>) => {
@@ -52,8 +55,7 @@ export function AccessRuleEditor({ rules, attributes, operators, onChange }: Pro
     <div className="col g3">
       {rules.length === 0 ? (
         <p className="muted t-sm" style={{ margin: 0 }}>
-          Правил нет — позиция закрыта для всех, пока не станет публичной или не
-          появится хотя бы одно правило.
+          {t('rule.empty')}
         </p>
       ) : (
         rules.map((rule, index) => {
@@ -65,7 +67,7 @@ export function AccessRuleEditor({ rules, attributes, operators, onChange }: Pro
             <div className="rulerow" key={`${rule.attributeId}-${index}`}>
               <select
                 className="input"
-                aria-label="Атрибут"
+                aria-label={t('rule.attribute')}
                 value={rule.attributeId}
                 onChange={(event) => {
                   const next = byId.get(Number(event.target.value))
@@ -89,7 +91,7 @@ export function AccessRuleEditor({ rules, attributes, operators, onChange }: Pro
 
               <select
                 className="input"
-                aria-label="Оператор"
+                aria-label={t('rule.operator')}
                 value={rule.operator}
                 onChange={(event) =>
                   update(index, { operator: event.target.value as FilterOperator })
@@ -97,7 +99,7 @@ export function AccessRuleEditor({ rules, attributes, operators, onChange }: Pro
               >
                 {allowed.map((operator) => (
                   <option key={operator} value={operator}>
-                    {OPERATOR_LABELS[operator]}
+                    {t(OPERATOR_LABELS[operator])}
                   </option>
                 ))}
               </select>
@@ -114,7 +116,7 @@ export function AccessRuleEditor({ rules, attributes, operators, onChange }: Pro
                 type="button"
                 className="attr__remove"
                 onClick={() => onChange(rules.filter((_, i) => i !== index))}
-                aria-label="Убрать правило"
+                aria-label={t('rule.remove')}
               >
                 <TrashIcon size={14} aria-hidden="true" />
               </button>
@@ -130,7 +132,7 @@ export function AccessRuleEditor({ rules, attributes, operators, onChange }: Pro
         onClick={add}
         disabled={attributes.length === 0}
       >
-        Добавить правило
+        {t('rule.add')}
       </button>
     </div>
   )
@@ -150,21 +152,23 @@ function OperandInput({
   value: unknown
   onChange: (value: unknown) => void
 }) {
+  const t = useTranslation()
+
   // «Заполнено» проверяет наличие значения, сравнивать не с чем.
   if (operator === 'is_set') {
-    return <span className="muted-3 t-sm rulerow__none">значение не нужно</span>
+    return <span className="muted-3 t-sm rulerow__none">{t('rule.noValue')}</span>
   }
 
   if (type === 'boolean') {
     return (
       <select
         className="input"
-        aria-label="Значение"
+        aria-label={t('rule.value')}
         value={value === true ? 'true' : 'false'}
         onChange={(event) => onChange(event.target.value === 'true')}
       >
-        <option value="true">отмечено</option>
-        <option value="false">не отмечено</option>
+        <option value="true">{t('rule.checked')}</option>
+        <option value="false">{t('rule.unchecked')}</option>
       </select>
     )
   }
@@ -198,11 +202,11 @@ function OperandInput({
     return (
       <select
         className="input"
-        aria-label="Значение"
+        aria-label={t('rule.value')}
         value={typeof value === 'string' ? value : ''}
         onChange={(event) => onChange(event.target.value)}
       >
-        <option value="">— выберите —</option>
+        <option value="">{t('rule.choose')}</option>
         {options.map((option) => (
           <option key={option} value={option}>
             {option}
@@ -217,7 +221,7 @@ function OperandInput({
   return (
     <input
       className="input"
-      aria-label="Значение"
+      aria-label={t('rule.value')}
       type={type === 'numeric' ? 'number' : type === 'date' ? 'date' : 'text'}
       step={type === 'numeric' ? 'any' : undefined}
       // Операнд приходит из decimal(20,6) строкой «5.000000»: показывать

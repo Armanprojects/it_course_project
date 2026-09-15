@@ -1,8 +1,11 @@
 import { PencilSimpleIcon, PlusIcon, TrashIcon } from '@phosphor-icons/react'
 import { lazy, Suspense, useState, type FormEvent } from 'react'
-import { profileApi, RequestError } from '../api/client'
+import { profileApi } from '../api/client'
 import type { ProfileProject, ProjectInput } from '../api/types'
+import { useTranslation } from '../i18n/context'
+import { useDateFormat } from '../i18n/useDateFormat'
 import { TagInput } from './TagInput'
+import { useErrorText } from '../i18n/useErrorText'
 
 // Рендерер Markdown весит больше, чем всё остальное приложение, и нужен
 // только здесь — грузим его отдельным чанком, а не в общем бандле.
@@ -21,15 +24,17 @@ const EMPTY: ProjectInput = {
   tags: [],
 }
 
-const monthFormat = new Intl.DateTimeFormat('ru-RU', { year: 'numeric', month: 'short' })
-
-function formatPeriod(project: ProfileProject): string | null {
+function formatPeriod(
+  project: ProfileProject,
+  formatMonth: (value: string | Date | null | undefined) => string,
+  ongoing: string,
+): string | null {
   if (!project.periodFrom && !project.periodTo) {
     return null
   }
 
-  const from = project.periodFrom ? monthFormat.format(new Date(project.periodFrom)) : '…'
-  const to = project.periodTo ? monthFormat.format(new Date(project.periodTo)) : 'по настоящее время'
+  const from = project.periodFrom ? formatMonth(project.periodFrom) : '…'
+  const to = project.periodTo ? formatMonth(project.periodTo) : ongoing
 
   return `${from} — ${to}`
 }
@@ -42,6 +47,7 @@ function formatPeriod(project: ProfileProject): string | null {
  * подтверждением, и удалять проект по таймеру было бы опасно.
  */
 export function ProjectsSection({ projects, onChanged }: Props) {
+  const t = useTranslation()
   // null — форма закрыта, число — правим проект, 'new' — создаём.
   const [editing, setEditing] = useState<number | 'new' | null>(null)
   const [selected, setSelected] = useState<Set<number>>(new Set())
@@ -82,16 +88,14 @@ export function ProjectsSection({ projects, onChanged }: Props) {
     <section className="panel">
       <div className="panel__head">
         <div>
-          <h2 className="h2">Проекты</h2>
-          <p className="panel__hint muted-3">
-            Описание поддерживает Markdown, теги — автодополнение
-          </p>
+          <h2 className="h2">{t('projects.title')}</h2>
+          <p className="panel__hint muted-3">{t('projects.hint')}</p>
         </div>
 
         {editing === null && (
           <button type="button" className="btn btn--outline" onClick={() => setEditing('new')}>
             <PlusIcon size={14} aria-hidden="true" />
-            Добавить проект
+            {t('projects.add')}
           </button>
         )}
       </div>
@@ -129,7 +133,7 @@ export function ProjectsSection({ projects, onChanged }: Props) {
       )}
 
       {projects.length === 0 && editing !== 'new' ? (
-        <p className="muted table__empty">Проектов пока нет.</p>
+        <p className="muted table__empty">{t('projects.empty')}</p>
       ) : (
         <>
           {/* Действия — в панели над списком, а не кнопками в каждой карточке:
@@ -175,19 +179,16 @@ function ProjectToolbar({
   onRemove: () => void
   onClear: () => void
 }) {
+  const t = useTranslation()
   const [confirming, setConfirming] = useState(false)
 
   if (count === 0) {
-    return (
-      <p className="muted t-sm toolbar__hint">
-        Отметьте проект, чтобы отредактировать или удалить его.
-      </p>
-    )
+    return <p className="muted t-sm toolbar__hint">{t('projects.pickHint')}</p>
   }
 
   return (
     <div className="toolbar">
-      <span className="t-sm">Выделено: {count}</span>
+      <span className="t-sm">{t('projects.selected', { count })}</span>
 
       <div className="row g2">
         <button
@@ -195,10 +196,10 @@ function ProjectToolbar({
           className="btn btn--outline"
           disabled={count !== 1 || busy}
           onClick={onEdit}
-          title={count === 1 ? undefined : 'Редактировать можно один проект'}
+          title={count === 1 ? undefined : t('projects.editOnlyOne')}
         >
           <PencilSimpleIcon size={14} aria-hidden="true" />
-          Редактировать
+          {t('projects.edit')}
         </button>
 
         <button
@@ -208,20 +209,22 @@ function ProjectToolbar({
           onClick={() => setConfirming(true)}
         >
           <TrashIcon size={14} aria-hidden="true" />
-          Удалить ({count})
+          {t('projects.remove', { count })}
         </button>
 
         <button type="button" className="btn btn--ghost" onClick={onClear} disabled={busy}>
-          Снять выделение
+          {t('projects.clear')}
         </button>
       </div>
 
       {confirming && (
         <div className="notice notice--error toolbar__confirm" role="alert">
-          <span>Удалить {count === 1 ? 'проект' : `проектов: ${count}`}?</span>
+          <span>
+            {count === 1 ? t('projects.confirmOne') : t('projects.confirmMany', { count })}
+          </span>
           <div className="row g2">
             <button type="button" className="btn btn--ghost" onClick={() => setConfirming(false)}>
-              Отмена
+              {t('projects.cancel')}
             </button>
             <button
               type="button"
@@ -232,7 +235,7 @@ function ProjectToolbar({
                 onRemove()
               }}
             >
-              Удалить
+              {t('projects.confirmRemove')}
             </button>
           </div>
         </div>
@@ -252,7 +255,9 @@ function ProjectCard({
   onToggle: () => void
   onOpen: () => void
 }) {
-  const period = formatPeriod(project)
+  const t = useTranslation()
+  const formatMonth = useDateFormat({ year: 'numeric', month: 'short' })
+  const period = formatPeriod(project, formatMonth, t('projects.ongoing'))
 
   return (
     <article
@@ -268,7 +273,7 @@ function ProjectCard({
             type="checkbox"
             checked={checked}
             onChange={onToggle}
-            aria-label={`Выделить проект «${project.name}»`}
+            aria-label={t('projects.pick', { name: project.name })}
           />
         </label>
 
@@ -311,6 +316,8 @@ function ProjectForm({
   onCancel: () => void
   onSaved: () => void
 }) {
+  const t = useTranslation()
+  const errorText = useErrorText()
   const [form, setForm] = useState<ProjectInput>(initial)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -335,9 +342,7 @@ function ProjectForm({
       onSaved()
     } catch (requestError: unknown) {
       setError(
-        requestError instanceof RequestError
-          ? requestError.message
-          : 'Не удалось сохранить проект.',
+        errorText(requestError, 'projects.saveFailed')
       )
       setBusy(false)
     }
@@ -347,7 +352,7 @@ function ProjectForm({
     <form className="project project--form" onSubmit={submit}>
       <div className="field">
         <label className="label" htmlFor="project-name">
-          Название
+          {t('projects.name')}
         </label>
         <input
           id="project-name"
@@ -362,7 +367,7 @@ function ProjectForm({
       <div className="period">
         <div className="field">
           <label className="label" htmlFor="project-from">
-            Начало
+            {t('projects.from')}
           </label>
           <input
             id="project-from"
@@ -375,7 +380,7 @@ function ProjectForm({
 
         <div className="field">
           <label className="label" htmlFor="project-to">
-            Окончание
+            {t('projects.to')}
           </label>
           <input
             id="project-to"
@@ -384,26 +389,26 @@ function ProjectForm({
             value={form.periodTo ?? ''}
             onChange={(event) => setForm({ ...form, periodTo: event.target.value || null })}
           />
-          <span className="t-xs muted-3">Пусто — проект ещё идёт</span>
+          <span className="t-xs muted-3">{t('projects.toHint')}</span>
         </div>
       </div>
 
       <div className="field">
         <label className="label" htmlFor="project-description">
-          Описание
+          {t('projects.description')}
         </label>
         <textarea
           id="project-description"
           className="input input--area"
           rows={5}
-          placeholder="Поддерживается Markdown: **жирный**, списки, ссылки"
+          placeholder={t('projects.descriptionPlaceholder')}
           value={form.description ?? ''}
           onChange={(event) => setForm({ ...form, description: event.target.value })}
         />
       </div>
 
       <div className="field">
-        <span className="label">Технологии</span>
+        <span className="label">{t('projects.tech')}</span>
         <TagInput tags={form.tags} onChange={(tags) => setForm({ ...form, tags })} />
       </div>
 
@@ -415,10 +420,10 @@ function ProjectForm({
 
       <div className="row g2">
         <button type="submit" className="btn btn--primary" disabled={busy}>
-          {busy ? 'Сохраняем…' : 'Сохранить'}
+          {busy ? t('projects.saving') : t('projects.save')}
         </button>
         <button type="button" className="btn btn--ghost" onClick={onCancel} disabled={busy}>
-          Отмена
+          {t('projects.cancel')}
         </button>
       </div>
     </form>

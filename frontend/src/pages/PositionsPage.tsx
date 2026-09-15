@@ -1,11 +1,13 @@
 import { PlusIcon } from '@phosphor-icons/react'
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { catalogApi, RequestError } from '../api/client'
+import { catalogApi } from '../api/client'
 import type { PositionPage, PositionSort, SortDirection } from '../api/types'
 import { AppHeader } from '../components/AppHeader'
 import { PositionsTable } from '../components/PositionsTable'
 import { useCurrentUser } from '../lib/useCurrentUser'
+import { useTranslation } from '../i18n/context'
+import { useErrorText } from '../i18n/useErrorText'
 
 const SORTS: PositionSort[] = ['title', 'company', 'level', 'createdAt', 'updatedAt']
 
@@ -27,6 +29,8 @@ function parseSort(value: string | null): PositionSort {
  * страницу, а не первую.
  */
 export function PositionsPage() {
+  const t = useTranslation()
+  const errorText = useErrorText()
   const [params, setParams] = useSearchParams()
   const [result, setResult] = useState<Loaded | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -59,9 +63,7 @@ export function PositionsPage() {
       .catch((requestError: unknown) => {
         if (active) {
           setError(
-            requestError instanceof RequestError
-              ? requestError.message
-              : 'Непредвиденная ошибка.',
+            errorText(requestError, 'common.unexpectedError')
           )
         }
       })
@@ -69,7 +71,7 @@ export function PositionsPage() {
     return () => {
       active = false
     }
-  }, [search, sort, direction, pageNumber, queryKey])
+  }, [search, sort, direction, pageNumber, queryKey, errorText])
 
   /** Клик по той же колонке разворачивает порядок, по другой — сортирует по ней. */
   const changeSort = (column: PositionSort) => {
@@ -108,11 +110,11 @@ export function PositionsPage() {
         <div className="panel">
           <div className="panel__head">
             <div>
-              <h1 className="h1">Позиции</h1>
+              <h1 className="h1">{t('positions.title')}</h1>
               <p className="panel__hint muted-3">
                 {page
-                  ? `Найдено: ${page.total}`
-                  : 'Каталог открыт без входа — подать резюме можно после регистрации.'}
+                  ? t('positions.found', { count: page.total })
+                  : t('positions.guestHint')}
               </p>
             </div>
 
@@ -121,14 +123,14 @@ export function PositionsPage() {
             <div className="row g2">
               {search && (
                 <button type="button" className="btn btn--outline" onClick={clearSearch}>
-                  Сбросить поиск «{search}»
+                  {t('positions.clearSearch', { query: search })}
                 </button>
               )}
 
               {isRecruiter && (
                 <Link to="/positions/new" className="btn btn--primary">
                   <PlusIcon size={14} aria-hidden="true" />
-                  Новая позиция
+                  {t('positions.new')}
                 </Link>
               )}
             </div>
@@ -150,31 +152,31 @@ export function PositionsPage() {
                 direction={direction}
                 onSort={changeSort}
                 emptyMessage={
-                  search ? `По запросу «${search}» ничего не найдено.` : 'Позиций пока нет.'
+                  search ? t('positions.notFoundFor', { query: search }) : t('positions.empty')
                 }
               />
             )}
 
             {!page && loading && (
               <p className="muted table__empty" role="status">
-                Загружаем…
+                {t('common.loading')}
               </p>
             )}
           </div>
 
           {page && page.pages > 1 && (
-            <nav className="pager" aria-label="Страницы каталога">
+            <nav className="pager" aria-label={t('positions.pager')}>
               <button
                 type="button"
                 className="btn btn--outline"
                 disabled={page.page <= 1}
                 onClick={() => goToPage(page.page - 1)}
               >
-                Назад
+                {t('positions.prev')}
               </button>
 
               <span className="muted t-sm">
-                Страница {page.page} из {page.pages}
+                {t('positions.pageOf', { page: page.page, pages: page.pages })}
               </span>
 
               <button
@@ -183,7 +185,7 @@ export function PositionsPage() {
                 disabled={page.page >= page.pages}
                 onClick={() => goToPage(page.page + 1)}
               >
-                Вперёд
+                {t('positions.next')}
               </button>
             </nav>
           )}

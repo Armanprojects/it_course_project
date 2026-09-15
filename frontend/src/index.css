@@ -61,6 +61,59 @@
 
   --f-ui: 'Inter', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   --t-fast: 0.13s ease;
+
+  color-scheme: light;
+}
+
+/*
+ * Тёмная тема.
+ *
+ * Переопределяем саму нейтральную шкалу, а не только семантические токены:
+ * в вёрстке ~30 мест ссылаются на --n-* напрямую, и если инвертировать одни
+ * лишь фон и текст, эти места останутся светлыми. Шкала перевёрнута
+ * (n-0 — самый тёмный, n-950 — самый светлый), поэтому весь существующий CSS
+ * читается в тёмной теме без единой правки.
+ *
+ * Статусные цвета заданы отдельно: их светлые фоны (#ecfdf5 и подобные)
+ * инверсией не получаются — нужны тёмные подложки с сохранением смысла.
+ */
+:root[data-theme='dark'] {
+  --n-0: #101013;
+  --n-50: #17171b;
+  --n-100: #1d1d22;
+  --n-150: #24242a;
+  --n-200: #2b2b32;
+  --n-300: #3a3a43;
+  --n-400: #6b6b76;
+  --n-500: #8e8e99;
+  --n-600: #a8a8b3;
+  --n-800: #d6d6dc;
+  --n-900: #ebebef;
+  --n-950: #f7f7f9;
+
+  /* Индиго на тёмном фоне светлее: тот же акцент, но с контрастом к подложке. */
+  --a-50: #1e1b38;
+  --a-100: #2a2554;
+  --a-600: #8b83f7;
+  --a-700: #a49dff;
+
+  --ok-bg: #0e2a20;
+  --ok-fg: #4ade80;
+  --ok-br: #1c5341;
+  --warn-fg: #fbbf24;
+  --err-bg: #2c1416;
+  --err-fg: #f87171;
+  --err-br: #5d2326;
+
+  --bg-app: #0b0b0e;
+  --bg-surface: var(--n-50);
+  --text-1: var(--n-950);
+  --text-2: var(--n-600);
+  --text-3: var(--n-500);
+  /* Инверсный текст лежит на светлой кнопке — в тёмной теме он тёмный. */
+  --text-inv: #101013;
+
+  color-scheme: dark;
 }
 
 * {
@@ -1534,6 +1587,99 @@ textarea {
 .cvsheet__blank {
   color: var(--err-fg);
   font-size: 13px;
+}
+
+/*
+ * Поле резюме, открытое владельцу на правку. Кнопка, а не div с onClick:
+ * так поле доступно с клавиатуры и читается скринридером без ARIA-костылей.
+ * Выглядит при этом как обычный текст — карандаш появляется по наведению.
+ */
+.cvsheet__edit {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  width: 100%;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+
+.cvsheet__edit:hover:not(:disabled),
+.cvsheet__edit:focus-visible {
+  background: var(--line-soft);
+}
+
+.cvsheet__edit:disabled {
+  cursor: default;
+}
+
+.cvsheet__pencil {
+  flex: none;
+  margin-left: auto;
+  opacity: 0;
+  color: var(--text-3);
+  transition: opacity var(--t-fast);
+}
+
+.cvsheet__edit:hover .cvsheet__pencil,
+.cvsheet__edit:focus-visible .cvsheet__pencil {
+  opacity: 1;
+}
+
+/* --- Переключатели темы и языка ------------------------------------------- */
+.apphead__prefs {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  padding-left: var(--s2);
+  margin-left: var(--s1);
+  border-left: 1px solid var(--line);
+}
+
+.iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--text-2);
+  cursor: pointer;
+  transition:
+    background var(--t-fast),
+    color var(--t-fast);
+}
+
+.iconbtn:hover {
+  background: var(--n-100);
+  color: var(--text-1);
+}
+
+.langpick {
+  height: 30px;
+  padding: 0 var(--s1) 0 var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--bg-surface);
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.langpick:hover {
+  color: var(--text-1);
 }
 
 .likebtn {

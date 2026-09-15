@@ -79,6 +79,15 @@ export class RequestError extends Error {
   get isConflict(): boolean {
     return this.code === 'version_conflict'
   }
+
+  /**
+   * Ошибки, которые придумал сам клиент (сеть, неизвестный сбой), несут в
+   * message ключ словаря — их надо перевести. Сообщения бэкенда приходят
+   * готовым текстом и отдаются как есть.
+   */
+  get isLocalized(): boolean {
+    return this.code === 'network_error' || this.code === 'unexpected_error'
+  }
 }
 
 function toRequestError(error: unknown): RequestError {
@@ -94,14 +103,13 @@ function toRequestError(error: unknown): RequestError {
       )
     }
 
-    // Ответа нет вообще — сеть или упавший бэкенд.
-    return new RequestError(
-      'Сервер недоступен. Проверьте подключение и попробуйте снова.',
-      'network_error',
-    )
+    // Ответа нет вообще — сеть или упавший бэкенд. Здесь и ниже в message
+    // кладётся ключ словаря: модуль не компонент, языка он не знает, а по
+    // code вызывающий код всё равно понимает, что случилось.
+    return new RequestError('error.network', 'network_error')
   }
 
-  return new RequestError('Непредвиденная ошибка.', 'unexpected_error')
+  return new RequestError('common.unexpectedError', 'unexpected_error')
 }
 
 async function request<T>(run: () => Promise<{ data: T }>): Promise<T> {
@@ -125,6 +133,13 @@ export const authApi = {
     ),
 
   verifyEmail: (token: string) => request<AuthResponse>(() => api.post('/auth/verify', { token })),
+
+  /**
+   * Язык и тема. Поля необязательные: переключатель меняет что-то одно,
+   * отсутствующее поле сервер оставляет как есть.
+   */
+  updateSettings: (settings: { locale?: string; theme?: string }) =>
+    request<User>(() => api.patch('/auth/settings', settings)),
 
   resendVerification: (email: string) =>
     request<RegistrationPending>(() => api.post('/auth/verify/resend', { email })),
@@ -258,6 +273,13 @@ export const cvApi = {
 
   start: (positionId: number) =>
     request<CvDetail>(() => api.post(`/cvs/positions/${positionId}`)),
+
+  /**
+   * Правка одного атрибута прямо в резюме. Значение уходит в профиль — резюме
+   * своих значений не хранит, — поэтому и версия здесь профильная.
+   */
+  editAttribute: (id: number, attributeId: number, value: AttributeValue, version: number) =>
+    request<CvDetail>(() => api.patch(`/cvs/${id}/attributes`, { attributeId, value, version })),
 
   publish: (id: number) => request<CvDetail>(() => api.post(`/cvs/${id}/publish`)),
 
