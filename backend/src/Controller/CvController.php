@@ -12,7 +12,9 @@ use App\Repository\CvRepository;
 use App\Repository\PositionRepository;
 use App\Service\Cv\CvSerializer;
 use App\Service\Cv\CvService;
+use App\Service\Export\CvPdfGenerator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -93,6 +95,30 @@ final class CvController extends AbstractController
         $this->assertCanView($cv, $user);
 
         return $this->json($this->serializer->serialize($cv, $user));
+    }
+
+    /**
+     * The printable version, carrying a QR code back to this page.
+     *
+     * Same access rules as reading the CV on screen: a draft belongs to its
+     * owner, a published CV is open to recruiters.
+     */
+    #[Route('/{id<\d+>}/pdf', name: 'api_cvs_pdf', methods: ['GET'])]
+    public function pdf(int $id, #[CurrentUser] User $user, CvPdfGenerator $pdf): Response
+    {
+        $cv = $this->find($id);
+        $this->assertCanView($cv, $user);
+
+        $response = new Response($pdf->generate($cv));
+        $response->headers->set('Content-Type', 'application/pdf');
+        // inline: the browser opens it in its own viewer, from which printing
+        // and saving are one click away — this is a document to be read.
+        $response->headers->set(
+            'Content-Disposition',
+            HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_INLINE, $pdf->fileName($cv)),
+        );
+
+        return $response;
     }
 
     /**

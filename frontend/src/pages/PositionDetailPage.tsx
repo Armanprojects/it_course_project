@@ -1,4 +1,11 @@
-import { CaretLeftIcon, CopyIcon, LockSimpleIcon, PencilSimpleIcon } from '@phosphor-icons/react'
+import {
+  CaretLeftIcon,
+  CopyIcon,
+  DownloadSimpleIcon,
+  FileXlsIcon,
+  LockSimpleIcon,
+  PencilSimpleIcon,
+} from '@phosphor-icons/react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { catalogApi, cvApi, positionAdminApi, RequestError, tokenStorage } from '../api/client'
@@ -379,12 +386,75 @@ function PositionTabs({ positionId }: { positionId: number }) {
       ) : cvs === null ? (
         <p className="muted table__empty">{t('common.loading')}</p>
       ) : (
-        <CvTable
-          rows={cvs}
-          showPosition={false}
-          emptyMessage={t('position.noCvs')}
-        />
+        <>
+          <CvExport positionId={positionId} disabled={cvs.length === 0} />
+          <CvTable
+            rows={cvs}
+            showPosition={false}
+            emptyMessage={t('position.noCvs')}
+          />
+        </>
       )}
     </section>
+  )
+}
+
+/**
+ * Выгрузка резюме позиции в таблицу.
+ *
+ * Скачивание идёт запросом, а не ссылкой: токен живёт в localStorage и уходит
+ * заголовком, которого у обычного <a href> нет.
+ */
+function CvExport({ positionId, disabled }: { positionId: number; disabled: boolean }) {
+  const t = useTranslation()
+  const errorText = useErrorText()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const run = async (format: 'csv' | 'xls') => {
+    setBusy(true)
+    setError(null)
+
+    try {
+      await positionAdminApi.exportCvs(positionId, format)
+    } catch (requestError: unknown) {
+      setError(errorText(requestError, 'position.exportFailed'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="panel__head">
+      <p className="panel__hint muted-3">{t('position.exportHint')}</p>
+
+      <div className="row g2">
+        <button
+          type="button"
+          className="btn btn--outline"
+          disabled={busy || disabled}
+          onClick={() => void run('csv')}
+        >
+          <DownloadSimpleIcon size={14} aria-hidden="true" />
+          {t('position.exportCsv')}
+        </button>
+
+        <button
+          type="button"
+          className="btn btn--outline"
+          disabled={busy || disabled}
+          onClick={() => void run('xls')}
+        >
+          <FileXlsIcon size={14} aria-hidden="true" />
+          {t('position.exportExcel')}
+        </button>
+      </div>
+
+      {error !== null && (
+        <div className="notice notice--error" role="alert">
+          <span>{error}</span>
+        </div>
+      )}
+    </div>
   )
 }

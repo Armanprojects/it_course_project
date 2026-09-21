@@ -10,6 +10,8 @@
         "doctrine/doctrine-bundle": "^3.3",
         "doctrine/doctrine-migrations-bundle": "^4.0",
         "doctrine/orm": "^3.6",
+        "dompdf/dompdf": "^3.1",
+        "endroid/qr-code": "^6.0",
         "knpuniversity/oauth2-client-bundle": "^2.20",
         "league/oauth2-github": "^3.1",
         "league/oauth2-google": "^5.0",

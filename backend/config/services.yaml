@@ -24,6 +24,11 @@ services:
         arguments:
             $frontendUrl: '%env(FRONTEND_URL)%'
 
+    # QR-код в печатном резюме ведёт на страницу этого же резюме в приложении.
+    App\Service\Export\CvPdfGenerator:
+        arguments:
+            $frontendUrl: '%env(FRONTEND_URL)%'
+
     App\Service\Auth\EmailVerificationService:
         arguments:
             $frontendUrl: '%env(FRONTEND_URL)%'

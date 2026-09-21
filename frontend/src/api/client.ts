@@ -1,4 +1,5 @@
 import axios, { AxiosError } from 'axios'
+import type { AxiosResponse } from 'axios'
 import type {
   ApiError,
   AttributeInput,
@@ -197,6 +198,87 @@ async function request<T>(run: () => Promise<{ data: T }>): Promise<T> {
   }
 }
 
+/**
+ * Сообщение об ошибке, когда ответ запрашивали блобом.
+ *
+ * При responseType: 'blob' тело ошибки тоже приходит блобом, и обычный разбор
+ * увидел бы вместо JSON объект Blob. Читаем его текстом и возвращаемся к общему
+ * формату ошибки — иначе вместо «резюме не найдено» пользователь получит
+ * «непредвиденная ошибка».
+ */
+async function blobError(error: unknown): Promise<RequestError> {
+  if (error instanceof AxiosError && error.response?.data instanceof Blob) {
+    try {
+      const parsed = JSON.parse(await error.response.data.text()) as ApiError
+
+      if (parsed.message) {
+        return new RequestError(parsed.message, parsed.error ?? 'request_failed')
+      }
+    } catch {
+      // Не JSON — значит это не наш конверт ошибки, пусть решает общий разбор.
+    }
+  }
+
+  return toRequestError(error)
+}
+
+/**
+ * Скачивание файла.
+ *
+ * request<T> отдаёт только data и про заголовки ничего не знает, а имя файла
+ * сервер присылает в Content-Disposition — поэтому для файлов отдельный путь.
+ */
+async function download(
+  run: () => Promise<AxiosResponse<Blob>>,
+  fallbackName: string,
+): Promise<void> {
+  let response: AxiosResponse<Blob>
+
+  try {
+    response = await run()
+  } catch (error) {
+    throw await blobError(error)
+  }
+
+  const url = URL.createObjectURL(response.data)
+  const link = document.createElement('a')
+
+  link.href = url
+  link.download = fileNameOf(response, fallbackName)
+  // Ссылка должна быть в документе: Firefox игнорирует click() у элемента,
+  // которого нет в дереве.
+  document.body.append(link)
+  link.click()
+  link.remove()
+
+  // Освобождаем сразу после клика: браузер к этому моменту уже забрал данные,
+  // а без revoke блоб живёт до перезагрузки страницы.
+  URL.revokeObjectURL(url)
+}
+
+/** Имя из Content-Disposition; filename*= (RFC 5987) важнее обычного. */
+function fileNameOf(response: AxiosResponse<Blob>, fallback: string): string {
+  const disposition = response.headers['content-disposition'] as string | undefined
+
+  if (disposition === undefined) {
+    return fallback
+  }
+
+  const utf8 = /filename\*=UTF-8''([^;]+)/i.exec(disposition)
+
+  if (utf8?.[1]) {
+    try {
+      return decodeURIComponent(utf8[1])
+    } catch {
+      return fallback
+    }
+  }
+
+  const plain = /filename="?([^";]+)"?/i.exec(disposition)
+
+  return plain?.[1] ?? fallback
+}
+
 export const authApi = {
   login: (email: string, password: string) =>
     request<AuthResponse>(() => api.post('/auth/login', { email, password })),
@@ -354,6 +436,22 @@ export const positionAdminApi = {
       api.get(`/positions/${id}/cvs`, { params: { drafts: drafts ? 1 : undefined } }),
     ),
 
+  /**
+   * Сводная таблица резюме по позиции — для анализа в Excel.
+   *
+   * Формат xls — это SpreadsheetML, а не zip-архив xlsx: в рантайм-образе нет
+   * ext-zip, а Excel открывает оба одинаково.
+   */
+  exportCvs: (id: number, format: 'csv' | 'xls', drafts = false) =>
+    download(
+      () =>
+        api.get<Blob>(`/positions/${id}/cvs/export`, {
+          params: { format, drafts: drafts ? 1 : undefined },
+          responseType: 'blob',
+        }),
+      `position-${id}-cvs.${format}`,
+    ),
+
   /** Какие операторы допускает каждый тип атрибута. */
   operators: () =>
     request<{ operators: Record<AttributeType, FilterOperator[]> }>(() =>
@@ -405,6 +503,10 @@ export const cvApi = {
 
   search: (q: string) =>
     request<{ items: CvRow[]; total: number }>(() => api.get('/cvs/search', { params: { q } })),
+
+  /** Печатный вариант резюме с QR-кодом обратно на эту страницу. */
+  pdf: (id: number) =>
+    download(() => api.get<Blob>(`/cvs/${id}/pdf`, { responseType: 'blob' }), `cv-${id}.pdf`),
 }
 
 /** Обсуждение позиции. Обновления — опросом: after отдаёт только новое. */

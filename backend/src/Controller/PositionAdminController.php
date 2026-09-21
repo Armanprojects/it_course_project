@@ -13,10 +13,14 @@ use App\Enum\FilterOperator;
 use App\Repository\CvRepository;
 use App\Repository\PositionRepository;
 use App\Service\Cv\CvSerializer;
+use App\Service\Export\CsvWriter;
+use App\Service\Export\CvExporter;
+use App\Service\Export\ExcelWriter;
 use App\Service\Position\PositionService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
@@ -112,6 +116,37 @@ final class PositionAdminController extends AbstractController
     }
 
     /**
+     * The same list of CVs as a spreadsheet: one row per candidate, one column
+     * per attribute of the template.
+     *
+     * Reading applications side by side is what a recruiter actually does with
+     * them, and that is a job for Excel rather than for a web page.
+     */
+    #[Route('/{id<\d+>}/cvs/export', name: 'api_positions_cvs_export', methods: ['GET'])]
+    public function exportCvs(
+        int $id,
+        Request $request,
+        CvExporter $exporter,
+        CsvWriter $csv,
+        ExcelWriter $excel,
+    ): Response {
+        $position = $this->find($id);
+        $format   = strtolower((string) $request->query->get('format', 'csv'));
+
+        if (!\in_array($format, ['csv', 'xls'], true)) {
+            throw $this->createNotFoundException('Неизвестный формат экспорта.');
+        }
+
+        $table = $exporter->tableFor($position, $request->query->getBoolean('drafts'));
+
+        [$body, $type] = 'csv' === $format
+            ? [$csv->write($table), 'text/csv; charset=UTF-8']
+            : [$excel->write($table, $position->getTitle()), 'application/vnd.ms-excel; charset=UTF-8'];
+
+        return $this->fileResponse($body, $this->exportName($position, $format), $type);
+    }
+
+    /**
      * Which filter operators each attribute type accepts — the rule editor
      * needs it to offer only valid combinations.
      */
@@ -128,6 +163,30 @@ final class PositionAdminController extends AbstractController
         }
 
         return $this->json(['operators' => $byType]);
+    }
+
+    /**
+     * Content-Disposition twice over: the plain name for old clients, the
+     * UTF-8 one for everybody else — a position titled in Cyrillic would
+     * otherwise download as a string of escapes.
+     */
+    private function fileResponse(string $body, string $name, string $contentType): Response
+    {
+        $response = new Response($body);
+        $response->headers->set('Content-Type', $contentType);
+        $response->headers->set(
+            'Content-Disposition',
+            HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $name, 'export.' . pathinfo($name, \PATHINFO_EXTENSION)),
+        );
+
+        return $response;
+    }
+
+    private function exportName(Position $position, string $format): string
+    {
+        $slug = trim(preg_replace('/\s+/u', '-', trim($position->getTitle())) ?? '');
+
+        return \sprintf('%s-cvs-%s.%s', '' !== $slug ? $slug : 'position', date('Y-m-d'), $format);
     }
 
     private function find(int $id): Position

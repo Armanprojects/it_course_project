@@ -1,0 +1,129 @@
+{# Печатный вариант резюме.
+
+   Разметка намеренно проще, чем на экране: Dompdf поддерживает CSS 2.1, без
+   flex и grid, поэтому колонки собраны таблицами, а не раскладкой. Шрифт —
+   DejaVu Sans: он идёт в комплекте с Dompdf и единственный из встроенных
+   умеет кириллицу. #}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <style>
+        @page { margin: 14mm 14mm 16mm; }
+
+        body {
+            font-family: 'DejaVu Sans', sans-serif;
+            font-size: 9.5pt;
+            line-height: 1.45;
+            color: #1e293b;
+            margin: 0;
+        }
+
+        /* Колонтитул с номером страницы: у Dompdf это единственный способ
+           напечатать что-то на каждой странице. */
+        .footer {
+            position: fixed;
+            bottom: -10mm;
+            left: 0;
+            right: 0;
+            font-size: 7.5pt;
+            color: #94a3b8;
+        }
+        .footer td { border: 0; padding: 0; }
+        .footer .right { text-align: right; }
+
+        .head { width: 100%; border-collapse: collapse; margin-bottom: 6mm; }
+        .head td { vertical-align: top; border: 0; padding: 0; }
+        .head .qr { width: 26mm; text-align: right; }
+
+        h1 { font-size: 17pt; margin: 0 0 1mm; color: #0c4a6e; }
+        .role { font-size: 10.5pt; color: #0369a1; margin: 0 0 2mm; }
+        .meta { font-size: 8pt; color: #64748b; margin: 0; }
+        .qr-hint { font-size: 6.5pt; color: #94a3b8; text-align: center; margin-top: 1mm; }
+
+        h2 {
+            font-size: 10pt;
+            color: #0c4a6e;
+            margin: 5mm 0 2mm;
+            padding-bottom: 1mm;
+            border-bottom: 0.4mm solid #bae6fd;
+            text-transform: uppercase;
+            letter-spacing: 0.3pt;
+        }
+
+        table.rows { width: 100%; border-collapse: collapse; }
+        table.rows td { border: 0; padding: 1.1mm 0; vertical-align: top; }
+        td.label { width: 42mm; color: #64748b; padding-right: 4mm; }
+        td.value { color: #0f172a; }
+        .empty { color: #b91c1c; font-style: italic; }
+
+        .project { margin-bottom: 3mm; }
+        .project__name { font-weight: bold; color: #0f172a; }
+        .project__period { font-size: 8pt; color: #64748b; }
+        .project__text { margin: 1mm 0 0; }
+        .tags { font-size: 8pt; color: #0369a1; margin-top: 0.8mm; }
+
+        .link { color: #0369a1; }
+        /* Ссылка на картинку печатается адресом: в PDF внешние изображения не
+           тянем — это и медленно, и зависит от доступности чужого хоста. */
+        .url { font-size: 7.5pt; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+
+<table class="footer">
+    <tr>
+        <td>{{ appName }} · {{ link }}</td>
+        <td class="right">{{ generatedAt }}</td>
+    </tr>
+</table>
+
+<table class="head">
+    <tr>
+        <td>
+            <h1>{{ candidate }}</h1>
+            <p class="role">{{ position.title }}{% if position.company %} · {{ position.company }}{% endif %}{% if position.level %} · {{ position.level }}{% endif %}</p>
+            <p class="meta">{{ email }}{% if published %} · опубликовано {{ published }}{% endif %}</p>
+        </td>
+        <td class="qr">
+            {{ qr|raw }}
+            <div class="qr-hint">резюме онлайн</div>
+        </td>
+    </tr>
+</table>
+
+{% for section in sections %}
+    <h2>{{ section.title }}</h2>
+    <table class="rows">
+        {% for row in section.attributes %}
+            <tr>
+                <td class="label">{{ row.name }}</td>
+                <td class="value">
+                    {%- if row.empty -%}
+                        <span class="empty">не заполнено</span>
+                    {%- elseif row.isUrl -%}
+                        <span class="link url">{{ row.value }}</span>
+                    {%- else -%}
+                        {{ row.value|nl2br }}
+                    {%- endif -%}
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endfor %}
+
+{% if projects is not empty %}
+    <h2>Проекты</h2>
+    {% for project in projects %}
+        <div class="project">
+            <span class="project__name">{{ project.name }}</span>
+            {% if project.period %}<span class="project__period"> · {{ project.period }}</span>{% endif %}
+            {% if project.description %}<p class="project__text">{{ project.description|nl2br }}</p>{% endif %}
+            {% if project.tags is not empty %}<div class="tags">{{ project.tags|join(' · ') }}</div>{% endif %}
+        </div>
+    {% endfor %}
+{% endif %}
+
+</body>
+</html>

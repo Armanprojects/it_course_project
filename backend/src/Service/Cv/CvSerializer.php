@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Enum\AttributeCategory;
 use App\Enum\AttributeType;
 use App\Enum\UserRole;
+use App\Service\Export\CandidateNaming;
 
 /**
  * Renders a CV: the candidate's profile seen through a position's template.
@@ -19,6 +20,10 @@ use App\Enum\UserRole;
  */
 final readonly class CvSerializer
 {
+    public function __construct(private CandidateNaming $naming)
+    {
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -136,26 +141,9 @@ final readonly class CvSerializer
         ];
     }
 
-    /**
-     * Built from the built-in name attributes, falling back to the address:
-     * a CV row with no name at all would be unusable in a recruiter's table.
-     */
     private function candidateName(Cv $cv): string
     {
-        $profile = $cv->getProfile();
-        $parts   = [];
-
-        foreach ($profile->getAttributeValues() as $value) {
-            $name = mb_strtolower($value->getAttribute()->getName());
-
-            if (\in_array($name, ['first name', 'last name'], true) && !$value->isEmpty()) {
-                $parts[$name] = (string) $value->getValueString();
-            }
-        }
-
-        $full = trim(($parts['first name'] ?? '') . ' ' . ($parts['last name'] ?? ''));
-
-        return '' !== $full ? $full : $cv->getCandidate()->getEmail();
+        return $this->naming->forCv($cv);
     }
 
     private function canLike(?User $viewer): bool

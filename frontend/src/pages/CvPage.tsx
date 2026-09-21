@@ -1,4 +1,10 @@
-import { CaretLeftIcon, HeartIcon, HeartStraightIcon, PencilSimpleIcon } from '@phosphor-icons/react'
+import {
+  CaretLeftIcon,
+  FilePdfIcon,
+  HeartIcon,
+  HeartStraightIcon,
+  PencilSimpleIcon,
+} from '@phosphor-icons/react'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { cvApi, RequestError, tokenStorage } from '../api/client'
@@ -39,6 +45,8 @@ function CvView() {
   const [cv, setCv] = useState<CvDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // Отдельный флаг: сборка PDF не мешает ни публикации, ни лайку.
+  const [downloading, setDownloading] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -141,6 +149,23 @@ function CvView() {
       )
     } finally {
       setBusy(false)
+    }
+  }
+
+  const downloadPdf = async () => {
+    if (cv === null) {
+      return
+    }
+
+    setDownloading(true)
+    setError(null)
+
+    try {
+      await cvApi.pdf(cv.id)
+    } catch (requestError: unknown) {
+      setError(errorText(requestError, 'cv.pdfFailed'))
+    } finally {
+      setDownloading(false)
     }
   }
 
@@ -323,23 +348,37 @@ function CvView() {
         </section>
 
         {/* Публикация — действие владельца (и админа от его имени). Сервер
-            присылает canEdit отдельно от canLike: у админа есть оба права. */}
-        {cv.canEdit && (
-          <div className="row g3">
-            <button
-              type="button"
-              className="btn btn--primary"
-              disabled={busy || (cv.status !== 'published' && !cv.complete)}
-              onClick={() => void togglePublish()}
-            >
-              {t(cv.status === 'published' ? 'cv.unpublish' : 'cv.publish')}
-            </button>
+            присылает canEdit отдельно от canLike: у админа есть оба права.
+            Печать же доступна всем, кто это резюме видит, поэтому кнопка PDF
+            стоит вне этого условия. */}
+        <div className="row g3">
+          {cv.canEdit && (
+            <>
+              <button
+                type="button"
+                className="btn btn--primary"
+                disabled={busy || (cv.status !== 'published' && !cv.complete)}
+                onClick={() => void togglePublish()}
+              >
+                {t(cv.status === 'published' ? 'cv.unpublish' : 'cv.publish')}
+              </button>
 
-            <Link to="/profile" className="btn btn--ghost">
-              {t('cv.fillProfile')}
-            </Link>
-          </div>
-        )}
+              <Link to="/profile" className="btn btn--ghost">
+                {t('cv.fillProfile')}
+              </Link>
+            </>
+          )}
+
+          <button
+            type="button"
+            className="btn btn--outline"
+            disabled={downloading}
+            onClick={() => void downloadPdf()}
+          >
+            <FilePdfIcon size={14} aria-hidden="true" />
+            {t('cv.downloadPdf')}
+          </button>
+        </div>
       </main>
     </>
   )
