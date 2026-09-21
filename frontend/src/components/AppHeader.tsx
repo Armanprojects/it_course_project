@@ -16,7 +16,7 @@ export function AppHeader() {
 function HeaderBar({ initialQuery }: { initialQuery: string }) {
   const navigate = useNavigate()
   const [query, setQuery] = useState(initialQuery)
-  const { isRecruiter, isAdmin } = useCurrentUser()
+  const { isRecruiter, isAdmin, hasProfile } = useCurrentUser()
   const { t, locale, setLocale, theme, setTheme } = useSettings()
 
   const authenticated = tokenStorage.isValid()
@@ -87,9 +87,13 @@ function HeaderBar({ initialQuery }: { initialQuery: string }) {
 
               )}
 
-              <Link to="/profile" className="btn btn--ghost">
-                {t('header.profile')}
-              </Link>
+              {/* Профиль заводится не каждому: у части рекрутёрских учёток
+                  его нет, и ссылка вела бы на 404. */}
+              {hasProfile && (
+                <Link to="/profile" className="btn btn--ghost">
+                  {t('header.profile')}
+                </Link>
+              )}
 
               <button type="button" className="btn btn--outline" onClick={logout}>
                 {t('header.logout')}

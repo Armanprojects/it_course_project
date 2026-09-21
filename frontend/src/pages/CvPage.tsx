@@ -11,6 +11,7 @@ import { cvApi, RequestError, tokenStorage } from '../api/client'
 import type { AttributeValue, CvDetail, CvSectionAttribute } from '../api/types'
 import { AppHeader } from '../components/AppHeader'
 import { AttributeInput } from '../components/AttributeField'
+import { useCurrentUser } from '../lib/useCurrentUser'
 import { useAttributeLabels } from '../i18n/useAttributeLabels'
 import { useTranslation } from '../i18n/context'
 import type { MessageKey } from '../i18n/messages'
@@ -34,6 +35,7 @@ function CvView() {
   const errorText = useErrorText()
   const formatDate = useDateFormat()
   const { categoryLabel } = useAttributeLabels()
+  const { hasProfile } = useCurrentUser()
   const { id } = useParams<{ id: string }>()
   const [cv, setCv] = useState<CvDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -360,9 +362,13 @@ function CvView() {
                 {t(cv.status === 'published' ? 'cv.unpublish' : 'cv.publish')}
               </button>
 
-              <Link to="/profile" className="btn btn--ghost">
-                {t('cv.fillProfile')}
-              </Link>
+              {/* Админ правит чужое резюме как владелец, но своей анкеты у
+                  него может и не быть — тогда ссылка вела бы на 404. */}
+              {hasProfile && (
+                <Link to="/profile" className="btn btn--ghost">
+                  {t('cv.fillProfile')}
+                </Link>
+              )}
 
             </>
 

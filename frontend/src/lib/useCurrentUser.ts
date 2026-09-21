@@ -27,6 +27,14 @@ export interface CurrentUser {
   isRecruiter: boolean
   isAdmin: boolean
   isCandidate: boolean
+  /**
+   * Есть ли у пользователя собственная анкета.
+   *
+   * Смотрим на profileId, а не на роль: профиль заводится при регистрации
+   * любому, но у заведённых иначе (сидер, ранние учётки) его может не быть —
+   * и тогда страница профиля отвечает 404.
+   */
+  hasProfile: boolean
 }
 
 export function useCurrentUser(): CurrentUser {
@@ -71,5 +79,6 @@ export function useCurrentUser(): CurrentUser {
     isRecruiter: isAdmin || roles.includes(UserRole.Recruiter),
     isAdmin,
     isCandidate: roles.includes(UserRole.Candidate),
+    hasProfile: user?.profileId !== null && user?.profileId !== undefined,
   }
 }
