@@ -81,12 +81,26 @@ fi
 #
 # Выключается переменной SEED_ON_START=0 в дашборде Render, а SEED_MINIMAL=1
 # возвращает прежнее поведение — только атрибуты и три пустые позиции.
+#
+# SEED_FRESH=1 — разовое пересоздание демо. Команда дополнять данные не умеет:
+# увидев хоть одну позицию, она выходит, поэтому изменения в наборе (новые
+# атрибуты, позиции) на уже заполненную базу сами не приедут. Флаг стирает
+# ВСЁ, включая учётные записи и заведённые вручную позиции, и сеет заново.
+# После успешного деплоя верните переменную в 0 в дашборде Render, иначе
+# каждый рестарт контейнера будет обнулять базу.
 if [ -n "$DATABASE_URL" ] && [ "${SEED_ON_START:-1}" != "0" ]; then
+    seed_args="--no-interaction"
+
     if [ "${SEED_MINIMAL:-0}" = "1" ]; then
-        php bin/console app:seed --minimal --no-interaction
-    else
-        php bin/console app:seed --no-interaction
+        seed_args="$seed_args --minimal"
     fi
+
+    if [ "${SEED_FRESH:-0}" = "1" ]; then
+        echo "SEED_FRESH=1: демо-данные пересоздаются, прежние будут стёрты."
+        seed_args="$seed_args --fresh"
+    fi
+
+    php bin/console app:seed $seed_args
 fi
 
 # --- 8. Запуск процессов ---
