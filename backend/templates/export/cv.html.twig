@@ -10,7 +10,9 @@
     <meta charset="UTF-8">
     <title>{{ title }}</title>
     <style>
-        @page { margin: 14mm 14mm 16mm; }
+        /* Нижнее поле увеличено: в нём стоит QR-подвал, и без запаса
+           текст последней секции наезжал бы на код. */
+        @page { margin: 14mm 14mm 42mm; }
 
         body {
             font-family: 'DejaVu Sans', sans-serif;
@@ -20,27 +22,46 @@
             margin: 0;
         }
 
-        /* Колонтитул с номером страницы: у Dompdf это единственный способ
-           напечатать что-то на каждой странице. */
-        .footer {
-            position: fixed;
-            bottom: -10mm;
-            left: 0;
-            right: 0;
-            font-size: 7.5pt;
-            color: #94a3b8;
-        }
-        .footer td { border: 0; padding: 0; }
-        .footer .right { text-align: right; }
-
         .head { width: 100%; border-collapse: collapse; margin-bottom: 6mm; }
         .head td { vertical-align: top; border: 0; padding: 0; }
-        .head .qr { width: 32mm; text-align: right; }
+        .head .photo { width: 30mm; padding-right: 6mm; }
+        /* Рамка и фон — на случай картинки с прозрачностью или светлым краем:
+           без них фото сливается с листом. */
+        .head .photo img {
+            width: 30mm;
+            border: 0.3mm solid #bae6fd;
+            border-radius: 1.5mm;
+            background: #f8fafc;
+        }
 
         h1 { font-size: 17pt; margin: 0 0 1mm; color: #0c4a6e; }
         .role { font-size: 10.5pt; color: #0369a1; margin: 0 0 2mm; }
         .meta { font-size: 8pt; color: #64748b; margin: 0; }
-        .qr-hint { font-size: 6.5pt; color: #94a3b8; text-align: center; margin-top: 1mm; }
+        /* QR прижат к низу листа, слева.
+           Dompdf игнорирует top/bottom у position: fixed — такой блок всегда
+           садится в начало области содержимого. Поэтому фиксируем обёртку во
+           всю высоту страницы, а внутри неё прижимаем содержимое к низу
+           обычным absolute. */
+        .qrpin {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 182mm;
+            /* Низ обёртки ложится на (height + 14mm) от верха листа, а блок
+               с кодом — около 40mm высотой. 233mm оставляют ему место
+               целиком и держат поле ~14mm до края, как у остальных полей. */
+            height: 233mm;
+        }
+        .qrbox {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 90mm;
+        }
+        .qrbox td { border: 0; padding: 0; vertical-align: middle; }
+        .qrbox .label { padding-left: 4mm; font-size: 8pt; color: #64748b; }
+        .qrbox .label b { display: block; color: #0c4a6e; font-size: 9pt; margin-bottom: 0.8mm; }
+        .qrbox .label span { font-size: 7pt; color: #94a3b8; word-break: break-all; }
 
         h2 {
             font-size: 10pt;
@@ -72,23 +93,29 @@
 </head>
 <body>
 
-<table class="footer">
+<div class="qrpin">
+<table class="qrbox">
     <tr>
-        <td>{{ appName }} · {{ link }}</td>
-        <td class="right">{{ generatedAt }}</td>
+        <td>{{ qr|raw }}</td>
+        <td class="label">
+            <b>Резюме онлайн</b>
+            Отсканируйте код, чтобы открыть актуальную версию:
+            <span>{{ link }}</span>
+            <span>{{ appName }} · {{ generatedAt }}</span>
+        </td>
     </tr>
 </table>
+</div>
 
 <table class="head">
     <tr>
+        {% if photo %}
+            <td class="photo"><img src="{{ photo }}" alt=""></td>
+        {% endif %}
         <td>
             <h1>{{ candidate }}</h1>
             <p class="role">{{ position.title }}{% if position.company %} · {{ position.company }}{% endif %}{% if position.level %} · {{ position.level }}{% endif %}</p>
             <p class="meta">{{ email }}{% if published %} · опубликовано {{ published }}{% endif %}</p>
-        </td>
-        <td class="qr">
-            {{ qr|raw }}
-            <div class="qr-hint">резюме онлайн</div>
         </td>
     </tr>
 </table>
@@ -102,7 +129,9 @@
                 <td class="value">
                     {%- if row.empty -%}
                         <span class="empty">не заполнено</span>
-                    {%- elseif row.isUrl -%}
+                    {%- elseif row.value starts with 'http' -%}
+                        {# Картинка, которую не удалось загрузить, и прочие
+                           ссылки печатаются адресом — мелким, с переносом. #}
                         <span class="link url">{{ row.value }}</span>
                     {%- else -%}
                         {{ row.value|nl2br }}

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Service\Export;
 
 use App\Entity\Cv;
-use App\Entity\PositionAttribute;
 use App\Enum\AttributeCategory;
 use App\Enum\AttributeType;
 use Dompdf\Dompdf;
@@ -26,6 +25,7 @@ final readonly class CvPdfGenerator
         private ValueFormatter $formatter,
         private CandidateNaming $naming,
         private QrCodeRenderer $qr,
+        private PhotoFetcher $photos,
         private string $frontendUrl,
     ) {
     }
@@ -33,6 +33,9 @@ final readonly class CvPdfGenerator
     public function generate(Cv $cv): string
     {
         $link = rtrim($this->frontendUrl, '/') . '/cvs/' . $cv->getId();
+        // Фото тянется по сети, поэтому берём его один раз: и в шапку, и как
+        // признак того, что строку с адресом из таблицы можно убрать.
+        $photo = $this->photo($cv);
 
         $html = $this->twig->render('export/cv.html.twig', [
             'appName'     => 'CVMatch',
@@ -48,7 +51,8 @@ final readonly class CvPdfGenerator
             'generatedAt' => (new \DateTimeImmutable())->format('d.m.Y'),
             'link'        => $link,
             'qr'          => $this->qr->toHtml($link),
-            'sections'    => $this->sections($cv),
+            'photo'       => $photo,
+            'sections'    => $this->sections($cv, null !== $photo),
             'projects'    => $this->projects($cv),
         ]);
 
@@ -75,27 +79,65 @@ final readonly class CvPdfGenerator
         );
     }
 
-    /** @return list<array{title: string, attributes: list<array{name: string, value: string, empty: bool, isUrl: bool}>}> */
-    private function sections(Cv $cv): array
+    /**
+     * Фото кандидата для шапки — первое заполненное изображение шаблона.
+     *
+     * Картинка одна на документ: шаблон может просить несколько изображений,
+     * но портрет в шапке ровно один, остальные остаются строками таблицы.
+     */
+    private function photo(Cv $cv): ?string
     {
-        $profile  = $cv->getProfile();
-        $grouped  = [];
+        $profile = $cv->getProfile();
+
+        foreach ($cv->getPosition()->getAttributes() as $link) {
+            if (AttributeType::Image !== $link->getAttribute()->getType()) {
+                continue;
+            }
+
+            $value = $profile->getValueFor($link->getAttribute());
+
+            if (null === $value || $value->isEmpty()) {
+                continue;
+            }
+
+            $photo = $this->photos->toDataUri($value->getValueImageUrl());
+
+            if (null !== $photo) {
+                return $photo;
+            }
+        }
+
+        return null;
+    }
+
+    /** @return list<array{title: string, attributes: list<array{name: string, value: string, empty: bool}>}> */
+    private function sections(Cv $cv, bool $photoUsed): array
+    {
+        $profile = $cv->getProfile();
+        $grouped = [];
 
         foreach ($cv->getPosition()->getAttributes() as $link) {
             $attribute = $link->getAttribute();
             $value     = $profile->getValueFor($attribute);
             $section   = $link->getSection() ?? $attribute->getCategory()->value;
 
+            // Фото ушло в шапку — строкой с адресом его дублировать незачем.
+            if ($photoUsed && AttributeType::Image === $attribute->getType()) {
+                continue;
+            }
+
             $grouped[$section][] = [
                 'name'  => $attribute->getName(),
                 'value' => $this->formatter->format($value),
                 'empty' => null === $value || $value->isEmpty(),
-                'isUrl' => $this->isUrl($link, $value?->isEmpty() ?? true),
             ];
         }
 
         $personal = AttributeCategory::PersonalInformation->value;
         $ordered  = [];
+
+        // Секция могла состоять из одного фото — тогда она опустела.
+        $grouped = array_filter($grouped, static fn (array $rows): bool => [] !== $rows);
 
         if (isset($grouped[$personal])) {
             $ordered[] = ['title' => $this->sectionTitle($personal), 'attributes' => $grouped[$personal]];
@@ -140,11 +182,6 @@ final readonly class CvPdfGenerator
             null !== $end                    => $end,
             default                          => '',
         };
-    }
-
-    private function isUrl(PositionAttribute $link, bool $empty): bool
-    {
-        return !$empty && AttributeType::Image === $link->getAttribute()->getType();
     }
 
     private function sectionTitle(string $section): string
