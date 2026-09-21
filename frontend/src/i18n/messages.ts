@@ -1,5 +1,5 @@
 export const ru = {
-  "app.name": "Hiring Platform",
+  "app.name": "CVMatch",
   "common.loading": "Загружаем…",
   "common.save": "Сохранить",
   "common.cancel": "Отмена",
@@ -414,7 +414,7 @@ export type MessageKey = keyof typeof ru
 export type Messages = Record<MessageKey, string>
 
 export const en: Messages = {
-  "app.name": "Hiring Platform",
+  "app.name": "CVMatch",
   "common.loading": "Loading…",
   "common.save": "Save",
   "common.cancel": "Cancel",

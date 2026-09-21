@@ -216,6 +216,9 @@ textarea {
   white-space: nowrap;
   transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast);
   user-select: none;
+  /* Часть кнопок — это <Link>, то есть <a>: без сброса браузер подчёркивает
+     их текст, и кнопка выглядит ссылкой. */
+  text-decoration: none;
 }
 
 .btn svg {
@@ -854,10 +857,6 @@ textarea {
   margin-left: auto;
 }
 
-.apphead__nav a {
-  text-decoration: none;
-}
-
 /* --- Каркас страницы ----------------------------------------------------- */
 .page {
   max-width: 1120px;
@@ -887,10 +886,6 @@ textarea {
   gap: var(--s3);
 }
 
-.hero__actions a {
-  text-decoration: none;
-}
-
 .panel {
   display: flex;
   flex-direction: column;
@@ -914,7 +909,10 @@ textarea {
   font-size: 12.5px;
 }
 
-.panel__head a {
+/* Правило для текстовых ссылок в шапке панели. :not(.btn) обязателен:
+   у селектора с тегом специфичность выше, чем у .btn--primary, и без
+   исключения кнопка-ссылка получала бы серый текст вместо белого. */
+.panel__head a:not(.btn) {
   font-size: 13px;
   color: var(--text-2);
 }
