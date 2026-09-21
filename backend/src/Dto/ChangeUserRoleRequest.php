@@ -7,13 +7,6 @@ namespace App\Dto;
 use App\Enum\UserRole;
 use Symfony\Component\Validator\Constraints as Assert;
 
-/**
- * One role granted to or revoked from a user by an administrator.
- *
- * The role travels in the body rather than the URL so the same endpoint serves
- * both directions (POST grants, DELETE revokes) and the value is validated
- * against the enum instead of being pattern-matched in a route.
- */
 final class ChangeUserRoleRequest
 {
     public function __construct(
@@ -23,9 +16,7 @@ final class ChangeUserRoleRequest
     ) {
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     public static function roles(): array
     {
         return array_column(UserRole::cases(), 'value');

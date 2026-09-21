@@ -7,14 +7,6 @@ namespace App\Entity;
 use App\Repository\TagRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-
-/**
- * Technology tag, shared by projects and positions.
- *
- * Kept as a separate table rather than a json column so that autocompletion
- * ("LIKE 're%'") and the tag cloud ("ORDER BY usage_count") run on an index
- * instead of scanning every project.
- */
 #[ORM\Entity(repositoryClass: TagRepository::class)]
 #[ORM\Table(name: 'tag')]
 #[ORM\UniqueConstraint(name: 'uniq_tag_name_normalized', columns: ['name_normalized'])]
@@ -26,18 +18,12 @@ class Tag
     #[ORM\Column]
     private ?int $id = null;
 
-    /**
-     * Display form, keeps whatever casing was typed first.
-     */
     #[ORM\Column(length: 64)]
     private string $name;
 
     #[ORM\Column(length: 64)]
     private string $nameNormalized;
 
-    /**
-     * Denormalised number of projects using the tag, drives the tag cloud.
-     */
     #[ORM\Column]
     private int $usageCount = 0;
 

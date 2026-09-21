@@ -2,12 +2,6 @@ import { useEffect, useState } from 'react'
 import { authApi, tokenStorage } from '../api/client'
 import { UserRole, type User } from '../api/types'
 
-/**
- * Текущий пользователь, чтобы UI знал, что показывать рекрутеру.
- *
- * Ответ кэшируется в модуле: шапка, страница позиции и таблица резюме
- * спрашивают его независимо, а /api/auth/me должен уйти один раз.
- */
 let cached: User | null = null
 let inFlight: Promise<User> | null = null
 
@@ -52,8 +46,6 @@ export function useCurrentUser(): CurrentUser {
           setUser(loaded)
         }
       })
-      // Протухший токен — не повод ронять страницу: она просто отрисуется
-      // как для гостя, а защищённые экраны сами уведут на вход.
       .catch(() => {
         if (active) {
           setUser(null)
@@ -76,7 +68,6 @@ export function useCurrentUser(): CurrentUser {
   return {
     user,
     loading,
-    // Админ наследует права рекрутера — так же, как в role_hierarchy на бэкенде.
     isRecruiter: isAdmin || roles.includes(UserRole.Recruiter),
     isAdmin,
     isCandidate: roles.includes(UserRole.Candidate),

@@ -8,12 +8,6 @@ use App\Enum\AttributeType;
 use App\Enum\FilterOperator;
 use Doctrine\ORM\Mapping as ORM;
 
-
-/**
- * A single condition restricting access to a position, e.g.
- * "IELTS Score" > 7.0, "Remote Work" is checked, "Presentation Skills" = "Advanced".
- * All rules of a position are combined with AND.
- */
 #[ORM\Entity]
 #[ORM\Table(name: 'position_access_rule')]
 #[ORM\Index(name: 'idx_access_rule_attribute', columns: ['attribute_id'])]
@@ -28,9 +22,6 @@ class PositionAccessRule
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private Position $position;
 
-    /**
-     * No onDelete: the database must refuse to drop an attribute still in use.
-     */
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
     private Attribute $attribute;
@@ -50,11 +41,7 @@ class PositionAccessRule
     #[ORM\Column(nullable: true)]
     private ?bool $operandBool = null;
 
-    /**
-     * Choices for FilterOperator::In.
-     *
-     * @var list<string>|null
-     */
+    /** @var list<string>|null */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $operandOptions = null;
 
@@ -167,17 +154,13 @@ class PositionAccessRule
         $this->operandBool = $operand;
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     public function getOperandOptions(): array
     {
         return $this->operandOptions ?? [];
     }
 
-    /**
-     * @param list<string> $operands
-     */
+    /** @param list<string> $operands */
     public function setOperandOptions(array $operands): void
     {
         $this->assertType(AttributeType::Select);

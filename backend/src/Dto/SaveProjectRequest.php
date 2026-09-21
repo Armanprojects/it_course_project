@@ -8,9 +8,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 final class SaveProjectRequest
 {
-    /**
-     * @param list<string> $tags free-form tag names; unknown ones are created
-     */
+    /** @param list<string> $tags free-form tag names; unknown ones are created */
     public function __construct(
         #[Assert\NotBlank(message: 'Укажите название проекта.')]
         #[Assert\Length(max: 180, maxMessage: 'Название не длиннее {{ limit }} символов.')]
@@ -22,10 +20,6 @@ final class SaveProjectRequest
         #[Assert\Date(message: 'Дата начала должна быть в формате ГГГГ-ММ-ДД.')]
         public readonly ?string $periodFrom = null,
 
-        /**
-         * Null means the project is still running — that is what makes a
-         * project "ongoing", so an empty end date is valid, not missing.
-         */
         #[Assert\Date(message: 'Дата окончания должна быть в формате ГГГГ-ММ-ДД.')]
         public readonly ?string $periodTo = null,
 
@@ -48,11 +42,7 @@ final class SaveProjectRequest
         return $this->toDate($this->periodTo);
     }
 
-    /**
-     * Trimmed, de-duplicated case-insensitively, blanks dropped.
-     *
-     * @return list<string>
-     */
+    /** @return list<string> */
     public function cleanTags(): array
     {
         $seen = [];

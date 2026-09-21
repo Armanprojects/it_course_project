@@ -10,9 +10,7 @@ use App\Enum\OAuthProvider;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-/**
- * @extends ServiceEntityRepository<UserIdentity>
- */
+/** @extends ServiceEntityRepository<UserIdentity> */
 class UserIdentityRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)

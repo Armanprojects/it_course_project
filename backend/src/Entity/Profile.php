@@ -8,7 +8,6 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-
 #[ORM\Entity]
 #[ORM\Table(name: 'profile')]
 class Profile
@@ -22,7 +21,6 @@ class Profile
     #[ORM\JoinColumn(nullable: false, unique: true, onDelete: 'CASCADE')]
     private User $user;
 
-
     #[ORM\Version]
     #[ORM\Column(type: 'integer')]
     private int $version = 1;
@@ -30,24 +28,16 @@ class Profile
     #[ORM\Column]
     private \DateTimeImmutable $updatedAt;
 
-    /**
-     * Master values of the attributes picked from the library, one row per attribute.
-     *
-     * @var Collection<int, AttributeValue>
-     */
+    /** @var Collection<int, AttributeValue> */
     #[ORM\OneToMany(mappedBy: 'profile', targetEntity: AttributeValue::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $attributeValues;
 
-    /**
-     * @var Collection<int, Project>
-     */
+    /** @var Collection<int, Project> */
     #[ORM\OneToMany(mappedBy: 'profile', targetEntity: Project::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\OrderBy(['sortOrder' => 'ASC'])]
     private Collection $projects;
 
-    /**
-     * @var Collection<int, Cv>
-     */
+    /** @var Collection<int, Cv> */
     #[ORM\OneToMany(mappedBy: 'profile', targetEntity: Cv::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $cvs;
 
@@ -87,9 +77,7 @@ class Profile
         $this->updatedAt = new \DateTimeImmutable();
     }
 
-    /**
-     * @return Collection<int, AttributeValue>
-     */
+    /** @return Collection<int, AttributeValue> */
     public function getAttributeValues(): Collection
     {
         return $this->attributeValues;
@@ -106,9 +94,6 @@ class Profile
         return null;
     }
 
-    /**
-     * Attaches the attribute to the profile, keeping the existing value if any.
-     */
     public function addAttribute(Attribute $attribute): AttributeValue
     {
         $value = $this->getValueFor($attribute);
@@ -141,9 +126,7 @@ class Profile
         return null !== $this->getValueFor($attribute);
     }
 
-    /**
-     * @return Collection<int, Project>
-     */
+    /** @return Collection<int, Project> */
     public function getProjects(): Collection
     {
         return $this->projects;
@@ -164,9 +147,7 @@ class Profile
         }
     }
 
-    /**
-     * @return Collection<int, Cv>
-     */
+    /** @return Collection<int, Cv> */
     public function getCvs(): Collection
     {
         return $this->cvs;
@@ -183,9 +164,6 @@ class Profile
         return null;
     }
 
-    /**
-     * At most one CV per position, so an existing one is returned as is.
-     */
     public function startCv(Position $position): Cv
     {
         $cv = $this->getCvFor($position);

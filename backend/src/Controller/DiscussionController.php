@@ -21,17 +21,6 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-/**
- * The discussion tab of a position.
- *
- * Open to every authenticated user — candidates and recruiters both take part
- * — but closed to anonymous visitors, who by the brief may only read the
- * catalogue.
- *
- * Updates reach other viewers by polling: the client passes the last id it
- * holds and gets only what is newer, which keeps a 2-5 second refresh cheap
- * without a socket server to run.
- */
 #[Route('/api/positions/{id<\d+>}/discussion')]
 #[IsGranted('IS_AUTHENTICATED_FULLY')]
 final class DiscussionController extends AbstractController
@@ -61,8 +50,6 @@ final class DiscussionController extends AbstractController
                 fn (DiscussionPost $post): array => $this->serialize($post, $user),
                 $posts,
             ),
-            // The client polls with this, so it is handed back explicitly
-            // rather than being derived from a possibly empty list.
             'lastId' => [] === $posts ? $after : end($posts)->getId(),
         ]);
     }
@@ -92,15 +79,11 @@ final class DiscussionController extends AbstractController
         return $position;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function serialize(DiscussionPost $post, User $viewer): array
     {
         $author = $post->getAuthor();
 
-        // The brief makes the author's name a link to their profile only for
-        // recruiters; for anyone else it stays plain text.
         $canOpenProfile = $viewer->hasRole(UserRole::Recruiter) || $viewer->hasRole(UserRole::Admin);
 
         return [

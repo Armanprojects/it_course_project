@@ -3,26 +3,15 @@ import type { MessageKey } from '../i18n/messages'
 export type StrengthLevel = 'weak' | 'medium' | 'strong'
 
 export interface PasswordStrength {
-  /** Сколько из трёх сегментов индикатора зажечь. */
   score: 0 | 1 | 2 | 3
   level: StrengthLevel
-  /** Ключи словаря, а не готовые строки: модуль ничего не знает о языке. */
   label: MessageKey | null
-  /** Требование, которое ещё не выполнено, — что именно исправить. */
   hint: MessageKey
-  /** Подстановки для hint, если он с числом. */
   hintParams?: Record<string, number>
 }
 
-/** Минимальная длина; та же проверка продублирована на бэкенде. */
 export const MIN_PASSWORD_LENGTH = 8
 
-/**
- * Оценка надёжности пароля для индикатора под полем.
- *
- * Считаем выполненные требования, а не энтропию: пользователю нужно знать,
- * что именно добавить, а число вроде «46 бит» ему ни о чём не говорит.
- */
 export function evaluatePassword(password: string): PasswordStrength {
   if (!password) {
     return {

@@ -24,18 +24,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-/**
- * Fills an empty database with a believable catalogue: attributes, tags,
- * recruiters, candidates with filled-in profiles, positions and submitted CVs.
- *
- * Written as a console command rather than a fixtures bundle so it also runs
- * against the deployed database, where dev dependencies are not installed.
- *
- *   php bin/console app:seed          # skips if data already exists
- *   php bin/console app:seed --fresh  # wipes the demo data first
- *
- * Every account it creates shares the same password, printed at the end.
- */
 #[AsCommand(
     name: 'app:seed',
     description: 'Наполнить базу демонстрационными позициями, атрибутами и резюме',
@@ -82,9 +70,6 @@ final class SeedDemoDataCommand extends Command
 
         $io->title('Наполнение демонстрационными данными');
 
-        // Стартовый набор для боевого стенда: библиотека атрибутов и несколько
-        // позиций, но без выдуманных кандидатов и их резюме — они мешали бы
-        // настоящим пользователям и засоряли бы поиск рекрутёра.
         $minimal = (bool) $input->getOption('minimal');
 
         $tags       = $this->createTags();
@@ -127,11 +112,6 @@ final class SeedDemoDataCommand extends Command
             ->getSingleScalarResult() > 0;
     }
 
-    /**
-     * Order matters: the tables referencing others go first, and the whole set
-     * is truncated rather than deleted row by row so the identity sequences
-     * restart and seeded ids stay predictable between runs.
-     */
     private function truncate(SymfonyStyle $io): void
     {
         $io->text('Очистка существующих данных…');
@@ -149,9 +129,7 @@ final class SeedDemoDataCommand extends Command
         );
     }
 
-    /**
-     * @return array<string, Tag>
-     */
+    /** @return array<string, Tag> */
     private function createTags(): array
     {
         $names = [
@@ -172,13 +150,7 @@ final class SeedDemoDataCommand extends Command
         return $tags;
     }
 
-    /**
-     * The library every position and profile draws from. The "personal
-     * information" ones are marked as system: they are the built-ins the brief
-     * says recruiters must never be able to delete.
-     *
-     * @return array<string, Attribute>
-     */
+    /** @return array<string, Attribute> */
     private function createAttributes(): array
     {
         $definitions = [
@@ -220,9 +192,7 @@ final class SeedDemoDataCommand extends Command
         return $attributes;
     }
 
-    /**
-     * @return list<User>
-     */
+    /** @return list<User> */
     private function createRecruiters(): array
     {
         $admin = $this->createUser('admin@example.com', UserRole::Admin);
@@ -236,12 +206,8 @@ final class SeedDemoDataCommand extends Command
     }
 
     /**
-     * Candidates with their attribute values already filled in, so the access
-     * rules on the positions actually select somebody.
-     *
      * @param array<string, Attribute> $attributes
      * @param array<string, Tag>       $tags
-     *
      * @return list<Profile>
      */
     private function createCandidates(array $attributes, array $tags): array
@@ -311,8 +277,6 @@ final class SeedDemoDataCommand extends Command
             foreach ($tagNames as $tagName) {
                 $tag = $tags[$tagName] ?? null;
 
-                // The counter is the caller's job by design — it is what the
-                // tag cloud sorts on, so a missed increment hides the tag.
                 if (null !== $tag && $project->addTag($tag)) {
                     $tag->incrementUsage();
                 }
@@ -327,7 +291,6 @@ final class SeedDemoDataCommand extends Command
      * @param array<string, Attribute> $attributes
      * @param array<string, Tag>       $tags
      * @param list<User>               $recruiters
-     *
      * @return list<Position>
      */
     private function createPositions(
@@ -432,9 +395,6 @@ final class SeedDemoDataCommand extends Command
             ],
         ];
 
-        // Минимальный набор — три ПУБЛИЧНЫЕ позиции: каталог открыт гостю, и
-        // закрытая позиция на свежем стенде выглядела бы как пропажа. Берём
-        // разные шаблоны — с правилом доступа и без, с разными наборами полей.
         if ($minimal) {
             $public = array_values(array_filter(
                 $definitions,
@@ -462,8 +422,7 @@ final class SeedDemoDataCommand extends Command
 
             foreach ($attributeNames as $order => $attributeName) {
                 $link = $position->addAttribute($attributes[$attributeName], $order);
-                // The built-in identity fields are what makes a CV a CV, so
-                // they are the ones publishing must insist on.
+
                 $link->setRequired($attributes[$attributeName]->isSystem());
                 $link->setSection($attributes[$attributeName]->getCategory()->value);
             }
@@ -472,7 +431,6 @@ final class SeedDemoDataCommand extends Command
                 $this->addAccessRule($position, $attributes[$attributeName], $operator, $operand);
             }
 
-            // Spread the timestamps so "latest positions" has something to sort.
             $this->backdate($position, $index);
 
             $this->em->persist($position);
@@ -502,11 +460,6 @@ final class SeedDemoDataCommand extends Command
         $this->em->persist($rule);
     }
 
-    /**
-     * Timestamps are set through the mapping rather than a setter: they are
-     * deliberately not writable on the entity, and a demo catalogue where every
-     * row was created in the same second would make the sorting untestable.
-     */
     private function backdate(Position $position, int $index): void
     {
         $metadata = $this->em->getClassMetadata(Position::class);
@@ -519,16 +472,11 @@ final class SeedDemoDataCommand extends Command
     }
 
     /**
-     * Submitted CVs, so that "most popular positions" and the counters on the
-     * home page are ranking real rows rather than showing zeroes.
-     *
      * @param list<Position> $positions
      * @param list<Profile>  $candidates
      */
     private function createCvs(array $positions, array $candidates): int
     {
-        // A deliberately uneven spread: the first positions collect the most
-        // CVs, so the top-5 table has a visible ordering.
         $spread = [8, 6, 5, 4, 4, 3, 3, 2, 2, 1, 1, 0];
         $total  = 0;
 
@@ -540,8 +488,6 @@ final class SeedDemoDataCommand extends Command
                 $this->em->persist($cv);
                 ++$total;
 
-                // Leave a couple of drafts: the published counter and the total
-                // must be able to differ, otherwise the stats prove nothing.
                 if (0 === ($offset + $index) % 4) {
                     continue;
                 }

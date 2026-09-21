@@ -7,14 +7,6 @@ namespace App\Service\Export;
 use App\Entity\AttributeValue;
 use App\Enum\AttributeType;
 
-/**
- * Flattens a typed attribute value into one printable string.
- *
- * The serializers keep the shape a JSON client needs (booleans stay booleans,
- * a period stays an object). A spreadsheet cell and a printed line have no such
- * luxury: both need a single string, and both must render it the same way, so
- * the rules live here once instead of in the CSV writer and the PDF template.
- */
 final readonly class ValueFormatter
 {
     public function __construct(private string $dateFormat = 'd.m.Y')
@@ -39,10 +31,6 @@ final readonly class ValueFormatter
         };
     }
 
-    /**
-     * Trailing zeros come from the decimal(20,6) column, not from the user:
-     * someone who typed 5 should not read 5.000000 back in their spreadsheet.
-     */
     private function number(string $raw): string
     {
         if (!str_contains($raw, '.')) {

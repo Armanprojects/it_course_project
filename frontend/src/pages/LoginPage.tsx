@@ -21,9 +21,6 @@ interface FieldErrors {
 }
 
 export function LoginPage() {
-  // Вошедшему тут делать нечего: страница входа существует ради получения
-  // токена, а он уже есть. Проверяем срок, а не факт наличия, иначе
-  // протухший токен запер бы человека без возможности войти заново.
   if (tokenStorage.isValid()) {
     return <Navigate to="/" replace />
   }
@@ -33,10 +30,6 @@ export function LoginPage() {
 
 function LoginForm() {
   const t = useTranslation()
-  // Начинаем с формы входа: вход — то, зачем сюда приходят чаще всего, и
-  // спрашивать роль у того, у кого уже есть аккаунт, незачем — она в нём
-  // записана. Выбор роли ('pick') возникает только по пути к регистрации,
-  // где он действительно нужен, а 'sent' — экран «проверьте почту».
   const [step, setStep] = useState<Step>('form')
   const [mode, setMode] = useState<Mode>('login')
   const [role, setRole] = useState<SelectableRole>(UserRole.Candidate)
@@ -46,28 +39,20 @@ function LoginForm() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  // Почему показан экран подтверждения: после регистрации или после
-  // попытки входа в неподтверждённый аккаунт — тексты там разные.
   const [sentReason, setSentReason] = useState<'sent' | 'blocked'>('sent')
 
   const summaryRef = useRef<HTMLDivElement>(null)
   const headingRef = useRef<HTMLHeadingElement>(null)
-  // Счётчик, а не флаг: две неудачные отправки подряд должны снова увести
-  // фокус на сводку, даже если её текст не изменился.
   const [failedSubmits, setFailedSubmits] = useState(0)
 
   const isSignup = mode === 'signup'
 
-  // Смена шага — это смена содержимого экрана: фокус переносим на заголовок,
-  // иначе он остался бы на исчезнувшей кнопке и скринридер промолчал бы.
   useEffect(() => {
     if (step === 'form') {
       headingRef.current?.focus()
     }
   }, [step])
 
-  // Фокус переносим в эффекте, а не в обработчике: в момент вызова блок
-  // сводки ещё не отрисован и ref пустой.
   useEffect(() => {
     if (failedSubmits > 0) {
       summaryRef.current?.focus()
@@ -113,13 +98,8 @@ function LoginForm() {
 
     setFieldErrors({})
     setFormError(null)
-    // Повтор пароля не переносим между режимами: при входе поле исчезает,
-    // и оставшееся значение всплыло бы при возврате к регистрации.
     setPasswordConfirmation('')
 
-    // К регистрации — только через выбор роли: от неё зависит и что человек
-    // увидит после входа, и какой аккаунт создаст сервер. Режим переключится
-    // в pickRole, когда выбор сделан.
     if (next === 'signup') {
       setStep('pick')
 
@@ -129,12 +109,6 @@ function LoginForm() {
     setMode(next)
   }
 
-  /**
-   * Ошибка снимается сразу, как только пользователь правит поле, а новая
-   * показывается только на blur: иначе «Укажите пароль» висит поверх уже
-   * исправленного ввода, а проверка на каждый символ ругается на
-   * недописанный адрес.
-   */
   const editField =
     (field: keyof FieldErrors, setValue: (v: string) => void) => (value: string) => {
       setValue(value)
@@ -176,9 +150,6 @@ function LoginForm() {
       window.location.href = '/'
     } catch (error) {
       if (error instanceof RequestError) {
-        // Пароль верен, но адрес не подтверждён — это не ошибка ввода, а
-        // незавершённая регистрация. Ведём на экран с повторной отправкой,
-        // иначе человек упирается в сообщение без единого действия.
         if ('email_not_verified' === error.code) {
           setSentReason('blocked')
           setStep('sent')
@@ -186,8 +157,6 @@ function LoginForm() {
           return
         }
 
-        // violations приходят с бэкенда — раскладываем их по полям, чтобы
-        // ошибка была видна рядом с проблемным вводом, а не только сверху.
         setFieldErrors({
           email: error.violations.email,
           password: error.violations.password,
@@ -213,7 +182,9 @@ function LoginForm() {
           <span className="auth__logo" aria-hidden="true">
             C
           </span>
+
           <span>CVMatch</span>
+
         </div>
 
         <div className="auth__box">
@@ -232,6 +203,7 @@ function LoginForm() {
               </button>
 
               <h1 className="h1">{t('auth.signupTitle')}</h1>
+
               <p className="muted mt3" style={{ margin: 0 }}>
                 {t('auth.pickRole')}
               </p>
@@ -241,19 +213,19 @@ function LoginForm() {
               <p className="t-sm muted-3 mt6" style={{ margin: 0 }}>
                 {t('auth.terms')}
               </p>
+
             </>
+
           )}
 
           {step === 'form' && (
             <>
-              {/* Роль относится только к регистрации: при входе её определяет
-                  сам аккаунт, и показывать её здесь значило бы намекать, что
-                  выбор влияет на вход. */}
               {isSignup && (
                 <button type="button" className="auth__back" onClick={() => setStep('pick')}>
                   <CaretLeftIcon size={14} aria-hidden="true" />
                   {t('auth.otherRole')}
                 </button>
+
               )}
 
               <div className="row row--between g3">
@@ -272,7 +244,9 @@ function LoginForm() {
                     >
                       {t('auth.change')}
                     </button>
+
                   </span>
+
                 )}
               </div>
 
@@ -285,6 +259,7 @@ function LoginForm() {
                 >
                   {t('auth.signin')}
                 </button>
+
                 <button
                   type="button"
                   className={`authtabs__btn${isSignup ? ' is-on' : ''}`}
@@ -293,6 +268,7 @@ function LoginForm() {
                 >
                   {t('auth.signup')}
                 </button>
+
               </div>
 
               <form className="col g4 mt5" onSubmit={handleSubmit} noValidate>
@@ -300,7 +276,9 @@ function LoginForm() {
                   <div ref={summaryRef} tabIndex={-1} role="alert" className="notice notice--error">
                     <WarningCircleIcon size={16} weight="fill" aria-hidden="true" />
                     <span>{formError}</span>
+
                   </div>
+
                 )}
 
                 <FormField
@@ -347,6 +325,7 @@ function LoginForm() {
                     placeholder={t('auth.repeatPlaceholder')}
                     disabled={submitting}
                   />
+
                 )}
 
                 <button
@@ -362,6 +341,7 @@ function LoginForm() {
                       ? t('auth.createAccount')
                       : t('auth.signin')}
                 </button>
+
               </form>
 
               <div className="auth__or mt5">{t('auth.or')}</div>
@@ -386,8 +366,11 @@ function LoginForm() {
                   <GithubLogoIcon size={17} weight="fill" aria-hidden="true" />
                   {t('auth.withGithub')}
                 </button>
+
               </div>
+
             </>
+
           )}
 
           {step === 'sent' && (
@@ -401,13 +384,17 @@ function LoginForm() {
                 setPasswordConfirmation('')
               }}
             />
+
           )}
         </div>
 
         <p className="auth__foot" style={{ margin: 0 }}>
           © {new Date().getFullYear()} CVMatch
         </p>
+
       </div>
+
     </div>
+
   )
 }

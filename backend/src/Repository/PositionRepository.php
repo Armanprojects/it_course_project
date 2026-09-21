@@ -13,18 +13,12 @@ use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 
-/**
- * @extends ServiceEntityRepository<Position>
- */
+/** @extends ServiceEntityRepository<Position> */
 class PositionRepository extends ServiceEntityRepository
 {
     public const DEFAULT_PAGE_SIZE = 20;
     public const MAX_PAGE_SIZE     = 100;
 
-    /**
-     * Whitelist of sortable columns. The client sends a key, never a column
-     * name — passing user input straight into ORDER BY would be an injection.
-     */
     private const SORTABLE = [
         'title'     => 'p.title',
         'company'   => 'p.company',
@@ -38,15 +32,7 @@ class PositionRepository extends ServiceEntityRepository
         parent::__construct($registry, Position::class);
     }
 
-    /**
-     * One page of the positions table, plus the total for the pager.
-     *
-     * The submitted-CV counter is fetched for the whole page in a single
-     * grouped query instead of per row, so the listing costs a fixed number of
-     * queries no matter how many positions it shows.
-     *
-     * @return array{items: list<array<string, mixed>>, total: int, page: int, pageSize: int, pages: int}
-     */
+    /** @return array{items: list<array<string, mixed>>, total: int, page: int, pageSize: int, pages: int} */
     public function findPage(
         ?string $search = null,
         string $sort = 'updatedAt',
@@ -63,7 +49,7 @@ class PositionRepository extends ServiceEntityRepository
         $column = self::SORTABLE[$sort] ?? self::SORTABLE['updatedAt'];
 
         $qb->orderBy($column, 'asc' === mb_strtolower($direction) ? 'ASC' : 'DESC')
-            // Second key keeps paging stable when the sorted column ties.
+
             ->addOrderBy('p.id', 'DESC')
             ->setFirstResult(($page - 1) * $pageSize)
             ->setMaxResults($pageSize);
@@ -85,11 +71,7 @@ class PositionRepository extends ServiceEntityRepository
         ];
     }
 
-    /**
-     * Most recently created or updated positions, for the home page table.
-     *
-     * @return list<array<string, mixed>>
-     */
+    /** @return list<array<string, mixed>> */
     public function findLatest(int $limit = 5): array
     {
         /** @var list<Position> $positions */
@@ -103,14 +85,7 @@ class PositionRepository extends ServiceEntityRepository
         return $this->toRows($positions);
     }
 
-    /**
-     * Top positions by number of submitted CVs.
-     *
-     * Grouped and ordered in the database: ranking this in PHP would mean
-     * loading every position with all of its CVs just to keep five rows.
-     *
-     * @return list<array<string, mixed>>
-     */
+    /** @return list<array<string, mixed>> */
     public function findMostPopular(int $limit = 5): array
     {
         /** @var list<array{0: Position, cvCount: int|string}> $rows */
@@ -148,10 +123,6 @@ class PositionRepository extends ServiceEntityRepository
         return $items;
     }
 
-    /**
-     * Read-only detail of a single position: the attributes its template is
-     * made of, joined in one go so rendering them costs no extra query.
-     */
     public function findDetail(int $id): ?Position
     {
         return $this->createQueryBuilder('p')
@@ -175,7 +146,6 @@ class PositionRepository extends ServiceEntityRepository
 
     /**
      * @param list<Position> $positions
-     *
      * @return list<array<string, mixed>>
      */
     private function toRows(array $positions): array
@@ -196,13 +166,7 @@ class PositionRepository extends ServiceEntityRepository
     }
 
     /**
-     * Active template-attribute counts keyed by position id.
-     *
-     * Counted in one grouped query: reading $position->getAttributes() per row
-     * would lazy-load a collection per position — a query inside a loop.
-     *
      * @param list<Position> $positions
-     *
      * @return array<int, int>
      */
     private function countAttributesFor(array $positions): array
@@ -235,7 +199,6 @@ class PositionRepository extends ServiceEntityRepository
 
     /**
      * @param list<Position> $positions
-     *
      * @return list<int>
      */
     private function idsOf(array $positions): array
@@ -252,10 +215,7 @@ class PositionRepository extends ServiceEntityRepository
     }
 
     /**
-     * Submitted CV counts keyed by position id, for a whole batch of positions.
-     *
      * @param list<Position> $positions
-     *
      * @return array<int, int>
      */
     private function countPublishedCvsFor(array $positions): array
@@ -287,13 +247,6 @@ class PositionRepository extends ServiceEntityRepository
         return $counts;
     }
 
-    /**
-     * Full-text search over title, company and description, backed by the
-     * PostgreSQL tsvector index on the table.
-     *
-     * The trailing ILIKE keeps a half-typed word like "devo" matching, which a
-     * tsquery alone would not: the index stores whole lexemes.
-     */
     private function applySearch(QueryBuilder $qb, ?string $search): void
     {
         $search = trim((string) $search);
@@ -314,10 +267,6 @@ class PositionRepository extends ServiceEntityRepository
         $qb->setParameter('prefix', '%' . mb_strtolower($search) . '%');
     }
 
-    /**
-     * Turns free-form input into a prefix tsquery: each word becomes "word:*"
-     * and the words are ANDed, so "senior back" narrows instead of widening.
-     */
     private function toPrefixQuery(string $search): string
     {
         $words = preg_split('/[^\p{L}\p{N}]+/u', $search, -1, \PREG_SPLIT_NO_EMPTY);
@@ -329,9 +278,7 @@ class PositionRepository extends ServiceEntityRepository
         return implode(' & ', array_map(static fn (string $word): string => $word . ':*', $words));
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function toRow(Position $position, int $cvCount, int $attributeCount): array
     {
         return [

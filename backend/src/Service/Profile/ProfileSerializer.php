@@ -12,18 +12,10 @@ use App\Entity\Project;
 use App\Entity\Tag;
 use App\Enum\AttributeType;
 
-/**
- * The single definition of what a profile looks like over the wire.
- *
- * Values are emitted under one `value` key whatever the type, so the client
- * has one shape to render and one shape to send back — the type field tells it
- * which editor to use.
- */
 final readonly class ProfileSerializer
 {
     /**
      * @param list<Attribute> $systemAttributes built-ins that must always show
-     *
      * @return array<string, mixed>
      */
     public function serialize(Profile $profile, array $systemAttributes): array
@@ -45,12 +37,7 @@ final readonly class ProfileSerializer
     }
 
     /**
-     * The "Me" section: every built-in attribute, whether or not the profile
-     * has a value yet. They are permanent, so an empty one still gets a row —
-     * otherwise the section would silently shrink for a new user.
-     *
      * @param list<Attribute> $systemAttributes
-     *
      * @return list<array<string, mixed>>
      */
     private function serializeMe(Profile $profile, array $systemAttributes): array
@@ -66,11 +53,7 @@ final readonly class ProfileSerializer
         return $rows;
     }
 
-    /**
-     * The "Info" section: attributes the user picked from the library.
-     *
-     * @return list<array<string, mixed>>
-     */
+    /** @return list<array<string, mixed>> */
     private function serializeInfo(Profile $profile): array
     {
         $rows = [];
@@ -83,15 +66,12 @@ final readonly class ProfileSerializer
             $rows[] = $this->describe($value->getAttribute(), $value);
         }
 
-        // Stable, readable order; the collection itself has none.
         usort($rows, static fn (array $a, array $b): int => strcmp($a['name'], $b['name']));
 
         return $rows;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function describe(Attribute $attribute, ?AttributeValue $value): array
     {
         return [
@@ -108,9 +88,7 @@ final readonly class ProfileSerializer
         ];
     }
 
-    /**
-     * @return mixed scalar, or {from,to} for a period
-     */
+    /** @return mixed scalar, or {from,to} for a period */
     private function readValue(AttributeValue $value): mixed
     {
         if ($value->isEmpty()) {
@@ -121,8 +99,6 @@ final readonly class ProfileSerializer
             AttributeType::String  => $value->getValueString(),
             AttributeType::Text    => $value->getValueText(),
             AttributeType::Image   => $value->getValueImageUrl(),
-            // Kept as a string: a decimal(20,6) does not survive a float
-            // round-trip, and the client only ever displays or echoes it back.
             AttributeType::Numeric => $value->getValueNumber(),
             AttributeType::Date    => $value->getValueDate()?->format('Y-m-d'),
             AttributeType::Boolean => $value->getValueBool(),
@@ -134,9 +110,7 @@ final readonly class ProfileSerializer
         };
     }
 
-    /**
-     * @return list<array<string, mixed>>
-     */
+    /** @return list<array<string, mixed>> */
     private function serializeProjects(Profile $profile): array
     {
         $projects = [];
@@ -148,9 +122,7 @@ final readonly class ProfileSerializer
         return $projects;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function serializeProject(Project $project): array
     {
         $tags = [];
@@ -173,19 +145,13 @@ final readonly class ProfileSerializer
         ];
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function serializeTag(Tag $tag): array
     {
         return ['id' => $tag->getId(), 'name' => $tag->getName()];
     }
 
-    /**
-     * The "CVs" section: one row per CV, each linking to its position.
-     *
-     * @return list<array<string, mixed>>
-     */
+    /** @return list<array<string, mixed>> */
     private function serializeCvs(Profile $profile): array
     {
         $rows = [];
@@ -199,9 +165,7 @@ final readonly class ProfileSerializer
         return $rows;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function serializeCv(Cv $cv): array
     {
         $position = $cv->getPosition();

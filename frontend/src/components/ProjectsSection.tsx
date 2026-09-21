@@ -7,14 +7,11 @@ import { useDateFormat } from '../i18n/useDateFormat'
 import { TagInput } from './TagInput'
 import { useErrorText } from '../i18n/useErrorText'
 
-// Рендерер Markdown весит больше, чем всё остальное приложение, и нужен
-// только здесь — грузим его отдельным чанком, а не в общем бандле.
 const Markdown = lazy(() => import('react-markdown'))
 
 interface Props {
   projects: ProfileProject[]
   onChanged: () => void
-  /** Чей профиль правим: свой или чужой (админом). По умолчанию свой. */
   target?: ProfileTarget
 }
 
@@ -41,16 +38,8 @@ function formatPeriod(
   return `${from} — ${to}`
 }
 
-/**
- * Раздел «Проекты»: список с Markdown-описанием и тегами, плюс форма
- * добавления и редактирования.
- *
- * Проекты сохраняются явно, а не автосохранением: у них своя форма с
- * подтверждением, и удалять проект по таймеру было бы опасно.
- */
 export function ProjectsSection({ projects, onChanged, target = 'me' }: Props) {
   const t = useTranslation()
-  // null — форма закрыта, число — правим проект, 'new' — создаём.
   const [editing, setEditing] = useState<number | 'new' | null>(null)
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [busy, setBusy] = useState(false)
@@ -91,7 +80,9 @@ export function ProjectsSection({ projects, onChanged, target = 'me' }: Props) {
       <div className="panel__head">
         <div>
           <h2 className="h2">{t('projects.title')}</h2>
+
           <p className="panel__hint muted-3">{t('projects.hint')}</p>
+
         </div>
 
         {editing === null && (
@@ -99,11 +90,10 @@ export function ProjectsSection({ projects, onChanged, target = 'me' }: Props) {
             <PlusIcon size={14} aria-hidden="true" />
             {t('projects.add')}
           </button>
+
         )}
       </div>
 
-      {/* Форма живёт над списком: карточка остаётся записью, которую
-          открывают, а не превращается в редактор на месте. */}
       {editing === 'new' && (
         <ProjectForm
           initial={EMPTY}
@@ -114,6 +104,7 @@ export function ProjectsSection({ projects, onChanged, target = 'me' }: Props) {
             onChanged()
           }}
         />
+
       )}
 
       {editTarget && (
@@ -134,14 +125,14 @@ export function ProjectsSection({ projects, onChanged, target = 'me' }: Props) {
             onChanged()
           }}
         />
+
       )}
 
       {projects.length === 0 && editing !== 'new' ? (
         <p className="muted table__empty">{t('projects.empty')}</p>
+
       ) : (
         <>
-          {/* Действия — в панели над списком, а не кнопками в каждой карточке:
-              задание снимает 20% за N кнопок в N записях. */}
           <ProjectToolbar
             count={selected.size}
             busy={busy}
@@ -159,17 +150,18 @@ export function ProjectsSection({ projects, onChanged, target = 'me' }: Props) {
                 onToggle={() => toggle(project.id)}
                 onOpen={() => setEditing(project.id)}
               />
+
             ))}
           </div>
+
         </>
+
       )}
     </section>
+
   )
 }
 
-/**
- * Панель действий над выделенными проектами — вместо кнопок в каждой карточке.
- */
 function ProjectToolbar({
   count,
   busy,
@@ -219,6 +211,7 @@ function ProjectToolbar({
         <button type="button" className="btn btn--ghost" onClick={onClear} disabled={busy}>
           {t('projects.clear')}
         </button>
+
       </div>
 
       {confirming && (
@@ -226,10 +219,12 @@ function ProjectToolbar({
           <span>
             {count === 1 ? t('projects.confirmOne') : t('projects.confirmMany', { count })}
           </span>
+
           <div className="row g2">
             <button type="button" className="btn btn--ghost" onClick={() => setConfirming(false)}>
               {t('projects.cancel')}
             </button>
+
             <button
               type="button"
               className="btn btn--primary"
@@ -241,10 +236,14 @@ function ProjectToolbar({
             >
               {t('projects.confirmRemove')}
             </button>
+
           </div>
+
         </div>
+
       )}
     </div>
+
   )
 }
 
@@ -270,8 +269,6 @@ function ProjectCard({
       aria-selected={checked}
     >
       <div className="project__head">
-        {/* Флажок не должен открывать карточку — иначе выделить её мышью
-            было бы нечем. */}
         <label className="project__pick" onClick={(event) => event.stopPropagation()}>
           <input
             type="checkbox"
@@ -279,22 +276,28 @@ function ProjectCard({
             onChange={onToggle}
             aria-label={t('projects.pick', { name: project.name })}
           />
+
         </label>
 
         <div className="col g1" style={{ flex: 1, minWidth: 0 }}>
           <h3 className="project__title">{project.name}</h3>
+
           {period && <span className="t-xs muted-3">{period}</span>}
+
         </div>
+
       </div>
 
       {project.description && (
         <div className="prose prose--md">
-          {/* Пока чанк грузится, показываем исходный текст: он читаем и без
-              разметки, так что подмена спиннером только мигала бы. */}
           <Suspense fallback={<p>{project.description}</p>}>
+
             <Markdown>{project.description}</Markdown>
+
           </Suspense>
+
         </div>
+
       )}
 
       {project.tags.length > 0 && (
@@ -303,10 +306,13 @@ function ProjectCard({
             <span key={tag.id} className="chip">
               {tag.name}
             </span>
+
           ))}
         </div>
+
       )}
     </article>
+
   )
 }
 function ProjectForm({
@@ -360,6 +366,7 @@ function ProjectForm({
         <label className="label" htmlFor="project-name">
           {t('projects.name')}
         </label>
+
         <input
           id="project-name"
           className="input"
@@ -368,6 +375,7 @@ function ProjectForm({
           value={form.name}
           onChange={(event) => setForm({ ...form, name: event.target.value })}
         />
+
       </div>
 
       <div className="period">
@@ -375,6 +383,7 @@ function ProjectForm({
           <label className="label" htmlFor="project-from">
             {t('projects.from')}
           </label>
+
           <input
             id="project-from"
             type="date"
@@ -382,12 +391,14 @@ function ProjectForm({
             value={form.periodFrom ?? ''}
             onChange={(event) => setForm({ ...form, periodFrom: event.target.value || null })}
           />
+
         </div>
 
         <div className="field">
           <label className="label" htmlFor="project-to">
             {t('projects.to')}
           </label>
+
           <input
             id="project-to"
             type="date"
@@ -395,14 +406,18 @@ function ProjectForm({
             value={form.periodTo ?? ''}
             onChange={(event) => setForm({ ...form, periodTo: event.target.value || null })}
           />
+
           <span className="t-xs muted-3">{t('projects.toHint')}</span>
+
         </div>
+
       </div>
 
       <div className="field">
         <label className="label" htmlFor="project-description">
           {t('projects.description')}
         </label>
+
         <textarea
           id="project-description"
           className="input input--area"
@@ -411,27 +426,36 @@ function ProjectForm({
           value={form.description ?? ''}
           onChange={(event) => setForm({ ...form, description: event.target.value })}
         />
+
       </div>
 
       <div className="field">
         <span className="label">{t('projects.tech')}</span>
+
         <TagInput tags={form.tags} onChange={(tags) => setForm({ ...form, tags })} />
+
       </div>
 
       {error && (
         <div className="notice notice--error" role="alert">
           <span>{error}</span>
+
         </div>
+
       )}
 
       <div className="row g2">
         <button type="submit" className="btn btn--primary" disabled={busy}>
           {busy ? t('projects.saving') : t('projects.save')}
         </button>
+
         <button type="button" className="btn btn--ghost" onClick={onCancel} disabled={busy}>
           {t('projects.cancel')}
         </button>
+
       </div>
+
     </form>
+
   )
 }

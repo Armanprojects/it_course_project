@@ -8,12 +8,6 @@ use App\Enum\Locale;
 use App\Enum\Theme;
 use Symfony\Component\Validator\Constraints as Assert;
 
-/**
- * Language and theme of the interface.
- *
- * Both fields are optional: the settings switcher changes one at a time, and
- * an absent field means "leave as is" rather than "reset to default".
- */
 final class UpdateSettingsRequest
 {
     public function __construct(
@@ -25,17 +19,13 @@ final class UpdateSettingsRequest
     ) {
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     public static function locales(): array
     {
         return array_column(Locale::cases(), 'value');
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     public static function themes(): array
     {
         return array_column(Theme::cases(), 'value');

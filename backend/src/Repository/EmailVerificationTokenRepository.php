@@ -9,9 +9,7 @@ use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-/**
- * @extends ServiceEntityRepository<EmailVerificationToken>
- */
+/** @extends ServiceEntityRepository<EmailVerificationToken> */
 class EmailVerificationTokenRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -19,10 +17,6 @@ class EmailVerificationTokenRepository extends ServiceEntityRepository
         parent::__construct($registry, EmailVerificationToken::class);
     }
 
-    /**
-     * Looks the token up by hash and loads its user in the same query: the
-     * caller always needs both, and a lazy proxy would cost a second round trip.
-     */
     public function findOneByPlainToken(string $plainToken): ?EmailVerificationToken
     {
         return $this->createQueryBuilder('t')
@@ -34,10 +28,6 @@ class EmailVerificationTokenRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
-    /**
-     * Invalidates every outstanding token of a user, so that requesting a new
-     * link silently retires the previous one instead of leaving several valid.
-     */
     public function invalidateAllFor(User $user): void
     {
         $this->createQueryBuilder('t')
@@ -51,10 +41,6 @@ class EmailVerificationTokenRepository extends ServiceEntityRepository
             ->execute();
     }
 
-    /**
-     * How many links the user asked for since the given moment — the input for
-     * the resend rate limit.
-     */
     public function countIssuedSince(User $user, \DateTimeImmutable $since): int
     {
         return (int) $this->createQueryBuilder('t')
@@ -67,10 +53,6 @@ class EmailVerificationTokenRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
-    /**
-     * Housekeeping for a cron job: used and expired rows have no purpose once
-     * they can no longer be redeemed.
-     */
     public function deleteObsolete(\DateTimeImmutable $before): int
     {
         return (int) $this->createQueryBuilder('t')

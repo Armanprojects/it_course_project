@@ -19,13 +19,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\OptimisticLockException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
-/**
- * Write side of the position catalogue.
- *
- * There is deliberately no ownership check anywhere here: the brief is explicit
- * that all recruiters share one set of positions and any of them may edit any
- * position. The only gate is the role, enforced at the controller.
- */
 final readonly class PositionService
 {
     public function __construct(
@@ -56,12 +49,6 @@ final readonly class PositionService
         return $this->flush($position);
     }
 
-    /**
-     * Copies a position with its whole template — attributes, rules and tags.
-     *
-     * The copy starts as a draft that is not public: duplicating a restricted
-     * position and silently publishing the copy would widen access by accident.
-     */
     public function duplicate(Position $source, User $author): Position
     {
         $copy = new Position($this->copyTitle($source->getTitle()), $author);
@@ -91,11 +78,6 @@ final readonly class PositionService
         return $copy;
     }
 
-    /**
-     * Deleting a position takes its CVs and discussion with it — both are
-     * meaningless without the template they were built from, and the schema
-     * cascades accordingly.
-     */
     public function delete(Position $position): void
     {
         foreach ($position->getProjectTags() as $tag) {
@@ -126,15 +108,7 @@ final readonly class PositionService
         $position->touch();
     }
 
-    /**
-     * Brings the template in line with the submitted list.
-     *
-     * Dropped attributes are soft-removed rather than deleted: CVs already
-     * generated from this position keep rendering them, they just stop being
-     * offered for new ones.
-     *
-     * @param list<array{attributeId: int, required: bool, section: ?string, sortOrder: int}> $rows
-     */
+    /** @param list<array{attributeId: int, required: bool, section: ?string, sortOrder: int}> $rows */
     private function syncAttributes(Position $position, array $rows): void
     {
         $wanted     = [];
@@ -164,13 +138,7 @@ final readonly class PositionService
         }
     }
 
-    /**
-     * Rules are replaced wholesale: they are a small, unordered set, and
-     * matching submitted rows to existing rows would need an identity the
-     * client does not have.
-     *
-     * @param list<array{attributeId: int, operator: string, value: mixed}> $rows
-     */
+    /** @param list<array{attributeId: int, operator: string, value: mixed}> $rows */
     private function syncRules(Position $position, array $rows): void
     {
         foreach ($position->getAccessRules()->toArray() as $existing) {
@@ -212,8 +180,6 @@ final readonly class PositionService
         mixed $value,
     ): void {
         try {
-            // The constructor rejects an operator the attribute type does not
-            // support — "contains" on a checkbox, say.
             $rule = new PositionAccessRule($position, $attribute, $operator);
 
             if (FilterOperator::IsSet !== $operator) {
@@ -278,9 +244,7 @@ final readonly class PositionService
         return trim((string) $value);
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     private function toStringList(mixed $value): array
     {
         if (!\is_array($value)) {
@@ -290,9 +254,7 @@ final readonly class PositionService
         return array_values(array_map($this->toStringValue(...), $value));
     }
 
-    /**
-     * @param list<string> $names
-     */
+    /** @param list<string> $names */
     private function syncTags(Position $position, array $names): void
     {
         $wanted = [];
@@ -321,7 +283,6 @@ final readonly class PositionService
 
     /**
      * @param list<int> $ids
-     *
      * @return array<int, Attribute>
      */
     private function loadAttributes(array $ids): array

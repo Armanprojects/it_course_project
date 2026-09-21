@@ -7,13 +7,6 @@ namespace App\Service\Export;
 use App\Entity\Cv;
 use App\Entity\Profile;
 
-/**
- * The candidate's display name, built from the built-in name attributes.
- *
- * Shared by the CV tables, the spreadsheet export and the printed document, so
- * that one person is called the same thing everywhere — and so that a file name
- * can be derived from it without duplicating the fallback rules.
- */
 final readonly class CandidateNaming
 {
     private const FIRST_NAME = 'first name';
@@ -24,10 +17,6 @@ final readonly class CandidateNaming
         return $this->forProfile($cv->getProfile());
     }
 
-    /**
-     * Falls back to the address: a row with no name at all would be unusable in
-     * a recruiter's table.
-     */
     public function forProfile(Profile $profile): string
     {
         $parts = [];
@@ -45,11 +34,6 @@ final readonly class CandidateNaming
         return '' !== $full ? $full : $profile->getUser()->getEmail();
     }
 
-    /**
-     * A name safe to put in a Content-Disposition header: transliteration is
-     * deliberately skipped, since the header carries the real name UTF-8
-     * encoded and this is only the ASCII fallback for older clients.
-     */
     public function toFileName(string $name): string
     {
         $ascii = preg_replace('/[^A-Za-z0-9]+/', '-', $name) ?? '';

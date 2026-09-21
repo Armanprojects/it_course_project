@@ -17,16 +17,7 @@ type Draft = Record<number, AttributeValue>
 const EMPTY_DRAFT: Draft = {}
 const isDraftEmpty = (draft: Draft) => Object.keys(draft).length === 0
 
-/**
- * Персональный профиль: четыре раздела задания — «Обо мне», «Информация»,
- * «Проекты» и «Резюме».
- *
- * Значения атрибутов сохраняются автоматически раз в несколько секунд с
- * оптимистичной блокировкой; проекты — своей формой.
- */
 export function ProfilePage() {
-  // Без токена на страницу заходить незачем — уводим на вход, не дожидаясь
-  // 401 от сервера. Проверка при рендере: она не зависит от загрузки данных.
   if (!tokenStorage.isValid()) {
     return <Navigate to="/login" replace />
   }
@@ -35,9 +26,6 @@ export function ProfilePage() {
 }
 
 function ProfileView() {
-  // /profile — свой профиль, /profiles/:id — чужой. Второй маршрут сервер
-  // отдаёт только администратору, поэтому здесь роль не проверяется: чужой
-  // id у обычного пользователя упрётся в 403 при загрузке.
   const { id } = useParams<{ id: string }>()
   const target: ProfileTarget = id === undefined ? 'me' : Number(id)
   const t = useTranslation()
@@ -47,12 +35,8 @@ function ProfileView() {
   const [error, setError] = useState<string | null>(null)
   const [picking, setPicking] = useState(false)
 
-  // Локальные правки поверх серверных данных: пока тик не ушёл, показываем
-  // то, что человек набрал, а не то, что лежит на сервере.
   const [draft, setDraft] = useState<Draft>({})
 
-  // Версия нужна обработчику сохранения, который живёт в таймере и не должен
-  // пересоздаваться на каждое нажатие клавиши.
   const versionRef = useRef(0)
 
   const load = useCallback(async () => {
@@ -75,8 +59,6 @@ function ProfileView() {
     }
   }, [navigate, errorText])
 
-  // Загрузка профиля — синхронизация с сервером, это ровно то, для чего
-  // эффект и нужен.
   useEffect(() => {
     void load()
   }, [load])
@@ -85,8 +67,6 @@ function ProfileView() {
     const data = await profileApi.save(versionRef.current, changes, target)
     versionRef.current = data.version
     setProfile(data)
-    // Правки уехали на сервер и вернулись в его ответе — локальную копию
-    // чистим, иначе она перекроет то, что сервер мог поправить.
     setDraft({})
 
     return true
@@ -98,8 +78,6 @@ function ProfileView() {
         return await onSave(changes)
       } catch (requestError: unknown) {
         if (requestError instanceof RequestError && requestError.isConflict) {
-          // Кто-то сохранил профиль раньше нас. Перечитываем и показываем
-          // предупреждение: молча затирать чужие правки нельзя.
           await load()
           setDraft({})
 
@@ -123,12 +101,8 @@ function ProfileView() {
     [schedule],
   )
 
-  /** Добавление и удаление атрибута — сразу, не по таймеру: это структурная
-      правка, и ждать её пять секунд было бы странно. */
   const mutateAttributes = useCallback(
     async (run: (version: number) => Promise<ProfileData>) => {
-      // Незасохранённые значения сначала отправляем, иначе структурная правка
-      // поднимет версию и они улетят в конфликт.
       await flush()
       reset()
 
@@ -172,9 +146,13 @@ function ProfileView() {
         <main className="page">
           <div className="notice notice--error" role="alert">
             <span>{error}</span>
+
           </div>
+
         </main>
+
       </>
+
     )
   }
 
@@ -186,8 +164,11 @@ function ProfileView() {
           <p className="muted" role="status">
             {t('common.loading')}
           </p>
+
         </main>
+
       </>
+
     )
   }
 
@@ -198,31 +179,37 @@ function ProfileView() {
       <main className="page">
         <div className="panel__head">
           <div className="col g1">
-            {/* Заголовок честно называет, чья это страница: админ правит
-                чужой профиль тем же экраном, что и свой. */}
             <h1 className="h1">{t(target === 'me' ? 'profile.title' : 'profile.titleOther')}</h1>
+
             <p className="muted" style={{ margin: 0 }}>
               {profile.user.email}
             </p>
+
           </div>
 
           <SaveBadge state={autosave.state} />
+
         </div>
 
         {error && (
           <div className="notice notice--error" role="alert">
             <span>{error}</span>
+
           </div>
+
         )}
 
         <section className="panel">
           <div className="panel__head">
             <div>
               <h2 className="h2">{t('profile.about')}</h2>
+
               <p className="panel__hint muted-3">
                 {t('profile.aboutHint')}
               </p>
+
             </div>
+
           </div>
 
           <div className="attrgrid">
@@ -233,15 +220,19 @@ function ProfileView() {
                 value={valueOf(attribute)}
                 onChange={(value) => change(attribute.attributeId, value)}
               />
+
             ))}
           </div>
+
         </section>
 
         <section className="panel">
           <div className="panel__head">
             <div>
               <h2 className="h2">{t('profile.info')}</h2>
+
               <p className="panel__hint muted-3">{t('profile.infoHint')}</p>
+
             </div>
 
             {!picking && (
@@ -249,6 +240,7 @@ function ProfileView() {
                 <PlusIcon size={14} aria-hidden="true" />
                 {t('profile.addAttribute')}
               </button>
+
             )}
           </div>
 
@@ -263,12 +255,14 @@ function ProfileView() {
                 )
               }}
             />
+
           )}
 
           {profile.info.length === 0 ? (
             <p className="muted table__empty">
               {t('profile.infoEmpty')}
             </p>
+
           ) : (
             <div className="attrgrid">
               {profile.info.map((attribute) => (
@@ -283,20 +277,24 @@ function ProfileView() {
                     )
                   }
                 />
+
               ))}
             </div>
+
           )}
         </section>
 
         <ProjectsSection projects={profile.projects} onChanged={() => void load()} target={target} />
 
         <CvSection cvs={profile.cvs} />
+
       </main>
+
     </>
+
   )
 }
 
-/** Индикатор автосохранения: человек должен видеть, что правки не потеряны. */
 function SaveBadge({ state }: { state: SaveState }) {
   const t = useTranslation()
   if (state === 'idle') {
@@ -324,13 +322,10 @@ function SaveBadge({ state }: { state: SaveState }) {
       )}
       {text[state]}
     </span>
+
   )
 }
 
-/**
- * Раздел «Резюме»: таблица резюме кандидата — по одному на позицию.
- * Табличное представление здесь обязательно по заданию.
- */
 function CvSection({ cvs }: { cvs: ProfileData['cvs'] }) {
   const t = useTranslation()
   const formatDate = useDateFormat()
@@ -339,57 +334,76 @@ function CvSection({ cvs }: { cvs: ProfileData['cvs'] }) {
       <div className="panel__head">
         <div>
           <h2 className="h2">{t('profile.cvs')}</h2>
+
           <p className="panel__hint muted-3">{t('profile.cvsHint')}</p>
+
         </div>
 
         <Link to="/positions">{t('profile.findPosition')}</Link>
+
       </div>
 
       {cvs.length === 0 ? (
         <p className="muted table__empty">
           {t('profile.cvsEmpty')}
         </p>
+
       ) : (
         <div className="table__scroll">
           <table className="table">
             <thead>
               <tr>
                 <th scope="col">{t('positions.colTitle')}</th>
+
                 <th scope="col">{t('positions.colCompany')}</th>
+
                 <th scope="col">{t('cvTable.status')}</th>
+
                 <th scope="col" className="is-secondary">
                   {t('cvTable.likes')}
                 </th>
+
                 <th scope="col" className="is-secondary">
                   {t('cvTable.updated')}
                 </th>
+
               </tr>
+
             </thead>
+
             <tbody>
               {cvs.map((cv) => (
                 <tr key={cv.id}>
                   <td>
-                    {/* Ведём в само резюме, а не в позицию: со своей страницы
-                        кандидат правит поля и публикует, тогда как ссылка на
-                        позицию не давала открыть уже поданное резюме вовсе. */}
                     <Link className="table__link" to={`/cvs/${cv.id}`}>
                       {cv.position.title}
                     </Link>
+
                   </td>
+
                   <td>{cv.position.company ?? <span className="muted-3">—</span>}</td>
                   <td>
                     <span className={`chip${cv.status === 'published' ? ' chip--ok' : ''}`}>
                       {t(cv.status === 'published' ? 'cv.published' : 'cv.draft')}
                     </span>
+
                   </td>
+
                   <td className="is-secondary num">{cv.likesCount}</td>
+
                   <td className="is-secondary">{formatDate(cv.updatedAt)}</td>
+
                 </tr>
+
               ))}
             </tbody>
+
           </table>
+
         </div>
+
       )}
     </section>
+
   )
 }

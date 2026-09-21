@@ -1,4 +1,3 @@
-/** Роли из App\Enum\UserRole. Значения должны совпадать с бэкендом. */
 export const UserRole = {
   Candidate: 'ROLE_CANDIDATE',
   Recruiter: 'ROLE_RECRUITER',
@@ -7,7 +6,6 @@ export const UserRole = {
 
 export type UserRole = (typeof UserRole)[keyof typeof UserRole]
 
-/** Роль, которую пользователь выбирает на экране входа. */
 export type SelectableRole = typeof UserRole.Candidate | typeof UserRole.Recruiter
 
 export interface User {
@@ -25,7 +23,6 @@ export interface User {
   identities: string[]
 }
 
-/** Страница списка пользователей в админке. */
 export interface AdminUserPage {
   items: User[]
   total: number
@@ -38,14 +35,12 @@ export interface AuthResponse {
   user: User
 }
 
-/** Ответ на регистрацию и повторную отправку письма — токена здесь нет. */
 export interface RegistrationPending {
   status: 'verification_sent'
   email?: string
   message: string
 }
 
-/** Строка таблицы позиций. Совпадает с PositionRepository::toRow. */
 export interface PositionRow {
   id: number
   title: string
@@ -59,7 +54,6 @@ export interface PositionRow {
   updatedAt: string
 }
 
-/** Колонки, по которым бэкенд разрешает сортировать. */
 export type PositionSort = 'title' | 'company' | 'level' | 'createdAt' | 'updatedAt'
 
 export type SortDirection = 'asc' | 'desc'
@@ -98,7 +92,6 @@ export interface PositionDetail {
   projectTags: { id: number; name: string }[]
 }
 
-/** Публичная статистика: только агрегаты, ничьих персональных данных. */
 export interface PublicStats {
   positions: number
   cvs: number
@@ -114,7 +107,6 @@ export interface TagCloudEntry {
   usageCount: number
 }
 
-/** Всё, что рисует главная страница, одним ответом. */
 export interface HomeData {
   stats: PublicStats
   latestPositions: PositionRow[]
@@ -122,7 +114,6 @@ export interface HomeData {
   tagCloud: TagCloudEntry[]
 }
 
-/** Типы атрибутов из App\Enum\AttributeType. */
 export type AttributeType =
   | 'string'
   | 'text'
@@ -133,7 +124,6 @@ export type AttributeType =
   | 'boolean'
   | 'select'
 
-/** Значение периода — единственный не-скалярный тип. */
 export interface PeriodValue {
   from: string | null
   to: string | null
@@ -141,7 +131,6 @@ export interface PeriodValue {
 
 export type AttributeValue = string | number | boolean | PeriodValue | null
 
-/** Атрибут вместе со значением в профиле. */
 export interface ProfileAttribute {
   attributeId: number
   name: string
@@ -155,7 +144,6 @@ export interface ProfileAttribute {
   version: number | null
 }
 
-/** Атрибут в библиотеке — без значения. */
 export interface LibraryAttribute {
   id: number
   name: string
@@ -203,7 +191,6 @@ export interface ProfileCv {
   }
 }
 
-/** Профиль целиком: четыре раздела задания плюс версия для автосохранения. */
 export interface ProfileData {
   id: number
   version: number
@@ -225,7 +212,6 @@ export interface TagSuggestion {
   usageCount: number
 }
 
-/** Тело запроса на сохранение проекта. */
 export interface ProjectInput {
   name: string
   description: string | null
@@ -234,7 +220,6 @@ export interface ProjectInput {
   tags: string[]
 }
 
-/** Операторы фильтрации из App\Enum\FilterOperator. */
 export type FilterOperator =
   | 'eq'
   | 'neq'
@@ -246,7 +231,6 @@ export type FilterOperator =
   | 'in'
   | 'is_set'
 
-/** Атрибут в шаблоне позиции. */
 export interface TemplateAttribute {
   attributeId: number
   name: string
@@ -258,7 +242,6 @@ export interface TemplateAttribute {
   sortOrder: number
 }
 
-/** Правило доступа: атрибут + оператор + операнд. */
 export interface AccessRule {
   attributeId: number
   name?: string
@@ -268,7 +251,6 @@ export interface AccessRule {
   value: unknown
 }
 
-/** Позиция в режиме редактирования — с правилами и версией. */
 export interface PositionEditable {
   id: number
   title: string
@@ -285,7 +267,6 @@ export interface PositionEditable {
   projectTags: string[]
 }
 
-/** Тело запроса на сохранение позиции. */
 export interface PositionInput {
   title: string
   shortDescription: string | null
@@ -299,7 +280,6 @@ export interface PositionInput {
   version?: number
 }
 
-/** Строка в таблице резюме. */
 export interface CvRow {
   id: number
   status: 'draft' | 'published'
@@ -326,17 +306,14 @@ export interface CvSection {
   attributes: CvSectionAttribute[]
 }
 
-/** Сгенерированное резюме целиком. */
 export interface CvDetail {
   id: number
   status: 'draft' | 'published'
   complete: boolean
   likesCount: number
   likedByMe: boolean
-  /** Лайкать может рекрутер; публиковать — владелец. У админа есть оба. */
   canLike: boolean
   canEdit: boolean
-  /** Версия профиля: значения лежат там, по ней и идёт блокировка при правке. */
   profileVersion: number
   createdAt: string
   updatedAt: string
@@ -348,7 +325,6 @@ export interface CvDetail {
   missing: string[]
 }
 
-/** Атрибут в экране управления библиотекой. */
 export interface ManagedAttribute extends LibraryAttribute {
   version: number
   removed: boolean
@@ -361,7 +337,6 @@ export interface AttributeLibraryAdmin {
   types: AttributeType[]
 }
 
-/** Тело запроса на сохранение атрибута. */
 export interface AttributeInput {
   name: string
   description: string | null
@@ -371,7 +346,6 @@ export interface AttributeInput {
   version?: number
 }
 
-/** Сообщение в обсуждении позиции. */
 export interface DiscussionMessage {
   id: number
   content: string
@@ -380,12 +354,10 @@ export interface DiscussionMessage {
   author: { email: string; profileId: number | null }
 }
 
-/** Конверт ошибок из ApiExceptionSubscriber. */
 export interface ApiError {
   error: string
   message: string
   violations?: Record<string, string>
-  /** Приходит только с version_conflict: версия, которая сейчас на сервере. */
   currentVersion?: number
 }
 

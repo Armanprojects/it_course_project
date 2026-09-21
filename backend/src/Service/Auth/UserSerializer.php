@@ -7,15 +7,9 @@ namespace App\Service\Auth;
 use App\Entity\User;
 use App\Entity\UserIdentity;
 
-/**
- * The single definition of what a User looks like over the wire, so that /login,
- * /register and /me can never drift apart.
- */
 final readonly class UserSerializer
 {
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function serialize(User $user): array
     {
         return [
@@ -28,8 +22,6 @@ final readonly class UserSerializer
             'createdAt'   => $user->getCreatedAt()->format(\DATE_ATOM),
             'lastLoginAt' => $user->getLastLoginAt()?->format(\DATE_ATOM),
             'profileId'   => $user->getProfile()?->getId(),
-            // Lets the UI show which providers are linked and offer to add the
-            // missing ones, and tells it whether a password is set at all.
             'hasPassword' => null !== $user->getPassword(),
             'emailVerifiedAt' => $user->getEmailVerifiedAt()?->format(\DATE_ATOM),
             'identities'  => array_values(array_map(

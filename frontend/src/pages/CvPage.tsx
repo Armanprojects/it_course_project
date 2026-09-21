@@ -21,13 +21,6 @@ const Markdown = lazy(() => import('react-markdown'))
 
 type Translate = (key: MessageKey, params?: Record<string, string | number>) => string
 
-/**
- * Сгенерированное резюме.
- *
- * Значения не хранятся в резюме — они читаются из профиля кандидата через
- * шаблон позиции. Рекрутер видит страницу только для чтения, владелец может
- * публиковать и снимать с публикации.
- */
 export function CvPage() {
   if (!tokenStorage.isValid()) {
     return <Navigate to="/login" replace />
@@ -45,7 +38,6 @@ function CvView() {
   const [cv, setCv] = useState<CvDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  // Отдельный флаг: сборка PDF не мешает ни публикации, ни лайку.
   const [downloading, setDownloading] = useState(false)
 
   useEffect(() => {
@@ -89,18 +81,6 @@ function CvView() {
     }
   }
 
-  /**
-   * Правка атрибута по месту. Значение уходит в профиль — там единственное
-   * эталонное значение, — а в ответ приходит пересобранное резюме: обновляется
-   * и подсветка пустых полей, и признак complete, от которого зависит кнопка
-   * публикации.
-   *
-   * Введённое значение показываем сразу, не дожидаясь ответа. Иначе поле
-   * закрывалось со старым — то есть пустым — значением и несколько сотен
-   * миллисекунд горело красным «Не заполнено», хотя пользователь только что
-   * его заполнил. Ответ сервера всё равно перетирает эту догадку целиком,
-   * а при ошибке мы возвращаем прежний снимок.
-   */
   const saveAttribute = async (attributeId: number, value: AttributeValue) => {
     if (cv === null) {
       return
@@ -116,16 +96,12 @@ function CvView() {
       setCv(await cvApi.editAttribute(cv.id, attributeId, value, cv.profileVersion))
     } catch (requestError: unknown) {
       if (requestError instanceof RequestError && requestError.isConflict) {
-        // Профиль изменили в другой вкладке: перечитываем, иначе следующая
-        // правка уйдёт со старой версией и снова упрётся в конфликт.
         setError(t('cv.conflict'))
         setCv(await cvApi.show(cv.id))
       } else {
         setError(
           errorText(requestError, 'cv.saveFailed'),
         )
-        // Сохранить не удалось — оптимистичная правка больше не отражает
-        // ничего реального, возвращаем то, что подтверждено сервером.
         setCv(previous)
       }
     } finally {
@@ -176,9 +152,13 @@ function CvView() {
         <main className="page">
           <div className="notice notice--error" role="alert">
             <span>{error}</span>
+
           </div>
+
         </main>
+
       </>
+
     )
   }
 
@@ -190,8 +170,11 @@ function CvView() {
           <p className="muted" role="status">
             {t('common.loading')}
           </p>
+
         </main>
+
       </>
+
     )
   }
 
@@ -208,17 +191,21 @@ function CvView() {
         {error && (
           <div className="notice notice--error" role="alert">
             <span>{error}</span>
+
           </div>
+
         )}
 
         <section className="panel cvsheet">
           <div className="panel__head">
             <div className="col g1">
               <h1 className="h1">{cv.candidate.name}</h1>
+
               <p className="muted" style={{ margin: 0 }}>
                 {cv.position.title}
                 {cv.position.company && ` · ${cv.position.company}`}
               </p>
+
             </div>
 
             <div className="row g2">
@@ -226,8 +213,6 @@ function CvView() {
                 {t(cv.status === 'published' ? 'cv.published' : 'cv.draft')}
               </span>
 
-              {/* Лайкать могут только рекрутеры — сервер решает, клиент лишь
-                  не показывает кнопку остальным. */}
               {cv.canLike && (
                 <button
                   type="button"
@@ -244,20 +229,21 @@ function CvView() {
                   )}
                   {cv.likesCount}
                 </button>
+
               )}
             </div>
+
           </div>
 
           {cv.missing.length > 0 && (
             <div className="notice notice--error">
               <span>{t('cv.notFilledMissing', { names: cv.missing.join(', ') })}</span>
+
             </div>
+
           )}
 
           {cv.sections.map((section) => {
-            // Фото выносим в колонку слева: в общей сетке оно занимало
-            // ячейку наравне с текстовым полем и ломало ряд по высоте.
-            // Остальные поля продолжают раскладываться сами.
             const photo = section.attributes.find((attribute) => attribute.type === 'image')
             const rest = photo
               ? section.attributes.filter((attribute) => attribute !== photo)
@@ -273,8 +259,10 @@ function CvView() {
                     busy={busy}
                     onSave={(value) => saveAttribute(attribute.attributeId, value)}
                   />
+
                 ))}
               </dl>
+
             )
 
             return (
@@ -292,14 +280,17 @@ function CvView() {
                         busy={busy}
                         onSave={(value) => saveAttribute(photo.attributeId, value)}
                       />
+
                     </dl>
 
                     {fields}
                   </div>
+
                 ) : (
                   fields
                 )}
               </div>
+
             )
           })}
 
@@ -311,6 +302,7 @@ function CvView() {
                 <article key={project.id} className="col g2">
                   <div className="col g1">
                     <h3 className="project__title">{project.name}</h3>
+
                     {(project.periodFrom || project.periodTo) && (
                       <span className="t-xs muted-3">
                         {project.periodFrom
@@ -321,15 +313,20 @@ function CvView() {
                           ? formatDate(project.periodTo)
                           : t('cv.ongoing')}
                       </span>
+
                     )}
                   </div>
 
                   {project.description && (
                     <div className="prose prose--md">
                       <Suspense fallback={<p>{project.description}</p>}>
+
                         <Markdown>{project.description}</Markdown>
+
                       </Suspense>
+
                     </div>
+
                   )}
 
                   {project.tags.length > 0 && (
@@ -338,19 +335,19 @@ function CvView() {
                         <span key={tag.id} className="chip">
                           {tag.name}
                         </span>
+
                       ))}
                     </div>
+
                   )}
                 </article>
+
               ))}
             </div>
+
           )}
         </section>
 
-        {/* Публикация — действие владельца (и админа от его имени). Сервер
-            присылает canEdit отдельно от canLike: у админа есть оба права.
-            Печать же доступна всем, кто это резюме видит, поэтому кнопка PDF
-            стоит вне этого условия. */}
         <div className="row g3">
           {cv.canEdit && (
             <>
@@ -366,7 +363,9 @@ function CvView() {
               <Link to="/profile" className="btn btn--ghost">
                 {t('cv.fillProfile')}
               </Link>
+
             </>
+
           )}
 
           <button
@@ -378,17 +377,16 @@ function CvView() {
             <FilePdfIcon size={14} aria-hidden="true" />
             {t('cv.downloadPdf')}
           </button>
+
         </div>
+
       </main>
+
     </>
+
   )
 }
 
-/**
- * Пусто ли значение — теми же правилами, что и AttributeValue::isEmpty() на
- * сервере: у периода достаточно одной из двух дат, а false у флага — это
- * заполненное значение, а не отсутствующее.
- */
 function isValueEmpty(value: AttributeValue): boolean {
   if (value === null || value === undefined || value === '') {
     return true
@@ -403,11 +401,6 @@ function isValueEmpty(value: AttributeValue): boolean {
   return false
 }
 
-/**
- * Снимок резюме с уже применённой правкой одного атрибута — чтобы показать
- * введённое значение, не дожидаясь ответа сервера. Признак complete тоже
- * пересчитываем: от него зависит доступность кнопки публикации.
- */
 function applyAttribute(cv: CvDetail, attributeId: number, value: AttributeValue): CvDetail {
   let name: string | null = null
 
@@ -424,8 +417,6 @@ function applyAttribute(cv: CvDetail, attributeId: number, value: AttributeValue
     }),
   }))
 
-  // Список незаполненных обязательных полей ведём сами: сервер пришлёт свой,
-  // но до ответа шапка не должна противоречить тому, что видно в таблице.
   const missing = isValueEmpty(value)
     ? cv.missing
     : cv.missing.filter((item) => item !== name)
@@ -433,13 +424,6 @@ function applyAttribute(cv: CvDetail, attributeId: number, value: AttributeValue
   return { ...cv, sections, missing, complete: missing.length === 0 }
 }
 
-/**
- * Одно поле резюме. Пустое значение подсвечиваем красным — прямое требование
- * задания, — а владельцу (и админу) поле открывается на правку по клику.
- *
- * Читающий рекрутер получает тот же компонент без editable: разметка одна,
- * различается только интерактивность.
- */
 function CvValue({
   attribute,
   editable,
@@ -463,7 +447,6 @@ function CvValue({
   const commit = () => {
     setEditing(false)
 
-    // Ничего не трогали — незачем гонять запрос и поднимать версию профиля.
     if (draft !== attribute.value) {
       void onSave(draft)
     }
@@ -471,12 +454,11 @@ function CvValue({
 
   if (editing) {
     return (
-      // is-editing снимает с фото квадратную рамку: загрузчику нужны своя
-      // высота под зону перетаскивания, поле ссылки и кнопки.
       <div className={`cvsheet__row is-editing${attribute.empty ? ' is-empty' : ''}`}>
         <dt className="label" id={`cvattr-${attribute.attributeId}-label`}>
           {attribute.name}
         </dt>
+
         <dd className="cvsheet__value">
           <AttributeInput
             id={`cvattr-${attribute.attributeId}`}
@@ -484,8 +466,6 @@ function CvValue({
             value={draft}
             onChange={setDraft}
             autoFocus
-            // Картинка и период сохраняются кнопкой: у загрузчика свой blur,
-            // а у периода два поля, и уход с первого не значит конец правки.
             onBlur={
               attribute.type === 'image' || attribute.type === 'period' ? undefined : commit
             }
@@ -496,19 +476,25 @@ function CvValue({
               <button type="button" className="btn btn--primary" onClick={commit} disabled={busy}>
                 {t('common.save')}
               </button>
+
               <button type="button" className="btn btn--ghost" onClick={() => setEditing(false)}>
                 {t('common.cancel')}
               </button>
+
             </div>
+
           )}
         </dd>
+
       </div>
+
     )
   }
 
   return (
     <div className={`cvsheet__row${attribute.empty ? ' is-empty' : ''}`}>
       <dt className="label">{attribute.name}</dt>
+
       <dd className="cvsheet__value">
         {editable ? (
           <button
@@ -520,25 +506,26 @@ function CvValue({
           >
             {attribute.empty ? (
               <span className="cvsheet__blank">{t('common.notFilled')}</span>
+
             ) : (
               renderValue(attribute.value, attribute.type, t)
             )}
             <PencilSimpleIcon size={13} aria-hidden="true" className="cvsheet__pencil" />
           </button>
+
         ) : attribute.empty ? (
           <span className="cvsheet__blank">{t('common.notFilled')}</span>
+
         ) : (
           renderValue(attribute.value, attribute.type, t)
         )}
       </dd>
+
     </div>
+
   )
 }
 
-/**
- * Отрисовка значения атрибута только для чтения. Переводчик передаётся
- * аргументом: функция не компонент, свой хук здесь вызвать нельзя.
- */
 function renderValue(value: AttributeValue, type: string, t: Translate) {
   if (value === null) {
     return null
@@ -559,7 +546,6 @@ function renderValue(value: AttributeValue, type: string, t: Translate) {
   }
 
   if (type === 'numeric' && typeof value === 'string') {
-    // decimal(20,6) приходит строкой — незначащие нули не показываем.
     return value.includes('.') ? value.replace(/\.?0+$/, '') : value
   }
 

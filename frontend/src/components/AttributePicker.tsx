@@ -7,19 +7,11 @@ import { useTranslation } from '../i18n/context'
 import { useErrorText } from '../i18n/useErrorText'
 
 interface Props {
-  /** Уже добавленные — их прячем из выдачи. */
   ownedIds: Set<number>
   onPick: (attribute: LibraryAttribute) => void
   onClose: () => void
 }
 
-/**
- * Выбор атрибута из библиотеки.
- *
- * Задание требует три вещи, потому что библиотека может стать большой: поиск
- * по префиксу, недавно использованные и фильтр по категории. Всё три делает
- * сервер — фильтровать полную выдачу на клиенте значило бы сначала её выкачать.
- */
 export function AttributePicker({ ownedIds, onPick, onClose }: Props) {
   const t = useTranslation()
   const errorText = useErrorText()
@@ -29,7 +21,6 @@ export function AttributePicker({ ownedIds, onPick, onClose }: Props) {
   const [library, setLibrary] = useState<AttributeLibrary | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // Ввод не дёргает сервер на каждую букву: ждём паузу в наборе.
   const [query, setQuery] = useState('')
 
   useEffect(() => {
@@ -69,9 +60,11 @@ export function AttributePicker({ ownedIds, onPick, onClose }: Props) {
     <div className="picker">
       <div className="picker__head">
         <h3 className="h2">{t('picker.title')}</h3>
+
         <button type="button" className="attr__remove" onClick={onClose} aria-label={t('picker.close')}>
           <XIcon size={16} aria-hidden="true" />
         </button>
+
       </div>
 
       <div className="picker__filters">
@@ -85,6 +78,7 @@ export function AttributePicker({ ownedIds, onPick, onClose }: Props) {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
+
         </div>
 
         <select
@@ -94,25 +88,29 @@ export function AttributePicker({ ownedIds, onPick, onClose }: Props) {
           onChange={(event) => setCategory(event.target.value)}
         >
           <option value="">{t('picker.allCategories')}</option>
+
           {(library?.categories ?? []).map((value) => (
             <option key={value} value={value}>
               {categoryLabel(value)}
             </option>
+
           ))}
         </select>
+
       </div>
 
       {error && (
         <div className="notice notice--error" role="alert">
           <span>{error}</span>
+
         </div>
+
       )}
 
-      {/* Недавние показываем только когда человек ещё не начал искать —
-          иначе они спорят с выдачей по запросу. */}
       {!query && !category && recent.length > 0 && (
         <div className="col g2">
           <p className="section__title">{t('picker.recent')}</p>
+
           <div className="cloud">
             {recent.map((attribute) => (
               <button
@@ -124,9 +122,12 @@ export function AttributePicker({ ownedIds, onPick, onClose }: Props) {
                 <PlusIcon size={12} aria-hidden="true" />
                 {attribute.name}
               </button>
+
             ))}
           </div>
+
         </div>
+
       )}
 
       <div className="picker__list">
@@ -134,6 +135,7 @@ export function AttributePicker({ ownedIds, onPick, onClose }: Props) {
           <p className="muted table__empty">
             {t(library === null ? 'common.loading' : 'picker.nothing')}
           </p>
+
         ) : (
           available.map((attribute) => (
             <button
@@ -144,16 +146,22 @@ export function AttributePicker({ ownedIds, onPick, onClose }: Props) {
             >
               <span className="col g1">
                 <span className="picker__name">{attribute.name}</span>
+
                 <span className="t-xs muted-3">
                   {categoryLabel(attribute.category)} ·{' '}
                   {typeLabel(attribute.type)}
                 </span>
+
               </span>
+
               <PlusIcon size={14} aria-hidden="true" />
             </button>
+
           ))
         )}
       </div>
+
     </div>
+
   )
 }

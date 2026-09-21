@@ -11,13 +11,6 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
-/**
- * Everything the landing page renders, in one public request.
- *
- * Four separate endpoints would mean four round trips for a page that is
- * always shown as a whole, and the home page is the first thing an anonymous
- * visitor loads — so it is served as a single payload.
- */
 final class HomeController extends AbstractController
 {
     private const LATEST_LIMIT   = 8;

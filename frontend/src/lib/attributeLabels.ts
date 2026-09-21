@@ -1,10 +1,5 @@
 import type { MessageKey } from '../i18n/messages'
 
-/**
- * Типы и категории атрибутов приходят с сервера кодами из App\Enum.
- * Здесь только соответствие «код → ключ словаря»; сам перевод берётся через
- * t() в месте отрисовки, иначе строки застыли бы на языке загрузки страницы.
- */
 export const TYPE_LABEL_KEYS: Record<string, MessageKey> = {
   string: 'type.string',
   text: 'type.text',

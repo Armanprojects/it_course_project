@@ -18,32 +18,42 @@ function App() {
     <SettingsProvider>
       <BrowserRouter>
         <Routes>
-          {/* Каталог открыт анонимно: по заданию гость просматривает позиции
-              в режиме чтения, а вход нужен только для резюме и профиля. */}
           <Route path="/" element={<HomePage />} />
+
           <Route path="/positions" element={<PositionsPage />} />
-          {/* Раньше конкретного /positions/:id — иначе "new" уйдёт в просмотр. */}
+
           <Route path="/positions/new" element={<PositionEditPage />} />
+
           <Route path="/positions/:id/edit" element={<PositionEditPage />} />
+
           <Route path="/positions/:id" element={<PositionDetailPage />} />
 
-          {/* Всё ниже закрыто входом; сами страницы уводят на /login без токена. */}
           <Route path="/profile" element={<ProfilePage />} />
-          {/* Чужой профиль: сервер отдаёт его только администратору.
-              Тот же компонент — админ правит страницу как её владелец. */}
+
           <Route path="/profiles/:id" element={<ProfilePage />} />
+
           <Route path="/admin/users" element={<UsersAdminPage />} />
+
           <Route path="/cvs/search" element={<CvSearchPage />} />
+
           <Route path="/cvs/:id" element={<CvPage />} />
+
           <Route path="/attributes" element={<AttributeLibraryPage />} />
 
           <Route path="/login" element={<LoginPage />} />
+
           <Route path="/auth/callback" element={<OAuthCallbackPage />} />
+
           <Route path="/auth/verify" element={<VerifyEmailPage />} />
+
           <Route path="*" element={<Navigate to="/" replace />} />
+
         </Routes>
+
       </BrowserRouter>
+
     </SettingsProvider>
+
   )
 }
 

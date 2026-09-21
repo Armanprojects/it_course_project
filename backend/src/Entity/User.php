@@ -15,7 +15,6 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
-
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
 #[ORM\UniqueConstraint(name: 'uniq_user_email', columns: ['email'])]
@@ -29,7 +28,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(length: 180)]
     private string $email;
-
 
     #[ORM\Column(nullable: true)]
     private ?string $password = null;
@@ -59,16 +57,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'integer')]
     private int $version = 1;
 
-
     #[ORM\OneToOne(mappedBy: 'user', targetEntity: Profile::class, cascade: ['persist', 'remove'])]
     private ?Profile $profile = null;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: UserIdentity::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $identities;
 
-    /**
-     * @var Collection<int, EmailVerificationToken>
-     */
+    /** @var Collection<int, EmailVerificationToken> */
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: EmailVerificationToken::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $verificationTokens;
 
@@ -114,7 +109,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getRoles(): array
     {
-
         return array_values(array_unique([...$this->roles, 'ROLE_USER']));
     }
 
@@ -129,7 +123,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->roles[] = $role->value;
         }
     }
-
 
     public function revokeRole(UserRole $role): void
     {
@@ -163,11 +156,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return UserStatus::Pending === $this->status;
     }
 
-    /**
-     * Parks a freshly registered account until its address is confirmed.
-     * Not the field default: accounts created through a provider are usable at
-     * once, and a default of Pending would silently lock them out.
-     */
     public function markPending(): void
     {
         $this->status = UserStatus::Pending;
@@ -183,10 +171,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->emailVerifiedAt;
     }
 
-    /**
-     * Confirming the address is what turns a pending signup into a usable
-     * account. A blocked user stays blocked: an admin ban outranks the link.
-     */
     public function verifyEmail(): void
     {
         $this->emailVerifiedAt ??= new \DateTimeImmutable();
@@ -196,9 +180,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
     }
 
-    /**
-     * @return Collection<int, EmailVerificationToken>
-     */
+    /** @return Collection<int, EmailVerificationToken> */
     public function getVerificationTokens(): Collection
     {
         return $this->verificationTokens;

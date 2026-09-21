@@ -24,18 +24,9 @@ type State =
   | { kind: 'ready'; position: PositionDetail }
   | { kind: 'error'; message: string }
 
-/**
- * Позиция в режиме чтения — то, что доступно гостю.
- *
- * Показываем структуру шаблона: какие поля попадут в резюме. Сами резюме,
- * обсуждение и правила доступа остаются за входом, поэтому здесь их нет.
- */
 export function PositionDetailPage() {
   const { id } = useParams<{ id: string }>()
 
-  // key на id: переход с одной позиции на другую должен начинаться с чистого
-  // состояния, иначе на экране на мгновение осталась бы предыдущая позиция.
-  // Сброс через эффект стоил бы лишнего рендера.
   return <PositionView key={id} id={id} />
 }
 
@@ -95,20 +86,26 @@ function PositionView({ id }: { id: string | undefined }) {
           <p className="muted" role="status">
             {t('common.loading')}
           </p>
+
         )}
 
         {state.kind === 'error' && (
           <div className="notice notice--error" role="alert">
             <span>{state.message}</span>
+
           </div>
+
         )}
 
         {state.kind === 'ready' && (
           <PositionBody position={state.position} authenticated={authenticated} />
+
         )}
 
       </main>
+
     </>
+
   )
 }
 
@@ -122,8 +119,6 @@ function PositionBody({
   const t = useTranslation()
   const formatDate = useDateFormat()
   const { categoryLabel } = useAttributeLabels()
-  // Группируем по секции: сгенерированное резюме будет разбито так же,
-  // и структура шаблона должна быть видна заранее.
   const sections = new Map<string, PositionAttribute[]>()
 
   for (const attribute of position.attributes) {
@@ -137,10 +132,12 @@ function PositionBody({
         <div className="panel__head">
           <div className="col g2">
             <h1 className="h1">{position.title}</h1>
+
             <p className="muted" style={{ margin: 0 }}>
               {position.company ?? t('position.noCompany')}
               {position.level && ` · ${position.level}`}
             </p>
+
           </div>
 
           <div className="row g2">
@@ -149,10 +146,13 @@ function PositionBody({
                 <LockSimpleIcon size={12} aria-hidden="true" />
                 {t('position.restricted')}
               </span>
+
             )}
 
             <PositionActions position={position} authenticated={authenticated} />
+
           </div>
+
         </div>
 
         {position.shortDescription && <p className="prose">{position.shortDescription}</p>}
@@ -163,8 +163,10 @@ function PositionBody({
               <span key={tag.id} className="chip">
                 {tag.name}
               </span>
+
             ))}
           </div>
+
         )}
 
         <p className="t-xs muted-3" style={{ margin: 0 }}>
@@ -173,26 +175,27 @@ function PositionBody({
             count: position.maxProjects,
           })}
         </p>
+
       </section>
 
       <section className="panel">
         <div className="panel__head">
           <div>
             <h2 className="h2">{t('position.templateTitle')}</h2>
+
           </div>
+
         </div>
 
         {position.attributes.length === 0 ? (
           <p className="muted table__empty">{t('position.noFields')}</p>
+
         ) : (
           <div className="col g4">
             {[...sections].map(([section, attributes]) => (
               <div key={section} className="col g2">
                 <h3 className="section__title">{categoryLabel(section)}</h3>
 
-                {/* Тип поля и слово «обязательное» кандидату ничего не
-                    говорят: он видит готовую анкету, а не её схему. Остаётся
-                    название, а обязательность — привычной звёздочкой. */}
                 <ul className="fieldlist">
                   {attributes.map((attribute) => (
                     <li key={attribute.id} className="fieldlist__item">
@@ -201,13 +204,18 @@ function PositionBody({
                         <abbr className="fieldlist__req" title={t('position.requiredTitle')}>
                           *
                         </abbr>
+
                       )}
                     </li>
+
                   ))}
                 </ul>
+
               </div>
+
             ))}
           </div>
+
         )}
       </section>
 
@@ -216,21 +224,20 @@ function PositionBody({
           <span>
             {t('position.signInPrompt')}
             <Link to="/login">{t('position.signInLink')}</Link>.
+
           </span>
+
         </div>
+
       )}
 
       {authenticated && <PositionTabs positionId={position.id} />}
+
     </div>
+
   )
 }
 
-/**
- * Панель действий над позицией.
- *
- * Кнопки живут здесь, а не в строках таблицы каталога: за кнопки в строках
- * задание снимает оценку.
- */
 function PositionActions({
   position,
   authenticated,
@@ -287,6 +294,7 @@ function PositionActions({
               <PencilSimpleIcon size={14} aria-hidden="true" />
               {t('position.edit')}
             </Link>
+
             <button
               type="button"
               className="btn btn--outline"
@@ -296,7 +304,9 @@ function PositionActions({
               <CopyIcon size={14} aria-hidden="true" />
               {t('position.duplicate')}
             </button>
+
           </>
+
         )}
 
         {isCandidate && !isRecruiter && (
@@ -308,6 +318,7 @@ function PositionActions({
           >
             {t(busy ? 'position.creating' : 'position.composeCv')}
           </button>
+
         )}
       </div>
 
@@ -315,15 +326,13 @@ function PositionActions({
         <span className="field__error" role="alert">
           {error}
         </span>
+
       )}
     </div>
+
   )
 }
 
-/**
- * Вкладки позиции: обсуждение доступно всем вошедшим, список резюме — только
- * рекрутерам и админам.
- */
 function PositionTabs({ positionId }: { positionId: number }) {
   const t = useTranslation()
   const { isRecruiter } = useCurrentUser()
@@ -378,33 +387,34 @@ function PositionTabs({ positionId }: { positionId: number }) {
           >
             {t('position.cvs')}
           </button>
+
         )}
       </div>
 
       {tab === 'discussion' ? (
         <DiscussionPanel positionId={positionId} />
+
       ) : cvs === null ? (
         <p className="muted table__empty">{t('common.loading')}</p>
+
       ) : (
         <>
           <CvExport positionId={positionId} disabled={cvs.length === 0} />
+
           <CvTable
             rows={cvs}
             showPosition={false}
             emptyMessage={t('position.noCvs')}
           />
+
         </>
+
       )}
     </section>
+
   )
 }
 
-/**
- * Выгрузка резюме позиции в таблицу.
- *
- * Скачивание идёт запросом, а не ссылкой: токен живёт в localStorage и уходит
- * заголовком, которого у обычного <a href> нет.
- */
 function CvExport({ positionId, disabled }: { positionId: number; disabled: boolean }) {
   const t = useTranslation()
   const errorText = useErrorText()
@@ -448,13 +458,17 @@ function CvExport({ positionId, disabled }: { positionId: number; disabled: bool
           <FileXlsIcon size={14} aria-hidden="true" />
           {t('position.exportExcel')}
         </button>
+
       </div>
 
       {error !== null && (
         <div className="notice notice--error" role="alert">
           <span>{error}</span>
+
         </div>
+
       )}
     </div>
+
   )
 }

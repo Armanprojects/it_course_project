@@ -23,11 +23,6 @@ final class RegisterRequest
         )]
         public readonly string $password = '',
 
-        /**
-         * Checked on the server too, not only in the browser: the client-side
-         * comparison is a convenience, and the API must not accept a signup
-         * whose password the user may have mistyped.
-         */
         #[Assert\NotBlank(message: 'Confirm your password.')]
         #[Assert\EqualTo(
             propertyPath: 'password',
@@ -39,16 +34,11 @@ final class RegisterRequest
             callback: [SignupRole::class, 'values'],
             message: 'Choose either "ROLE_CANDIDATE" or "ROLE_RECRUITER".',
         )]
-        // Literal, not SignupRole::Candidate->value: a property default has to
-        // be a constant expression, and an enum case access is not one.
+
         public readonly string $role = 'ROLE_CANDIDATE',
     ) {
     }
 
-    /**
-     * Safe after validation: Choice has already rejected anything that is not
-     * one of the two signup roles.
-     */
     public function signupRole(): SignupRole
     {
         return SignupRole::tryFrom($this->role) ?? SignupRole::Candidate;

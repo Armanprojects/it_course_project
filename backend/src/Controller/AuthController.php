@@ -36,11 +36,6 @@ final class AuthController extends AbstractController
     ) {
     }
 
-    /**
-     * Creates the account and mails the confirmation link. Deliberately returns
-     * no token: the address is unproven until the link is opened, so there is
-     * nothing to sign the user in with yet.
-     */
     #[Route('/register', name: 'api_auth_register', methods: ['POST'])]
     public function register(#[MapRequestPayload] RegisterRequest $payload): JsonResponse
     {
@@ -55,10 +50,6 @@ final class AuthController extends AbstractController
         ], Response::HTTP_ACCEPTED);
     }
 
-    /**
-     * Opens the emailed link. Returns a token so that confirming the address
-     * lands the user straight in the app instead of asking them to log in again.
-     */
     #[Route('/verify', name: 'api_auth_verify', methods: ['POST'])]
     public function verify(#[MapRequestPayload] VerifyEmailRequest $payload): JsonResponse
     {
@@ -67,11 +58,6 @@ final class AuthController extends AbstractController
         return $this->tokenResponse($user);
     }
 
-    /**
-     * Always answers the same way, whether or not the address is registered:
-     * a different response would turn this endpoint into a way to enumerate
-     * which emails have accounts.
-     */
     #[Route('/verify/resend', name: 'api_auth_verify_resend', methods: ['POST'])]
     public function resendVerification(#[MapRequestPayload] ResendVerificationRequest $payload): JsonResponse
     {
@@ -81,8 +67,6 @@ final class AuthController extends AbstractController
             try {
                 $this->verification->sendVerificationLink($user);
             } catch (AuthException $e) {
-                // Rate limiting is the one thing worth reporting: staying silent
-                // would leave the user retrying a button that cannot work yet.
                 if ('too_many_verification_requests' === $e->getErrorCode()) {
                     throw $e;
                 }
@@ -109,13 +93,6 @@ final class AuthController extends AbstractController
         return $this->json($this->serializer->serialize($user));
     }
 
-    /**
-     * Language and theme of the interface.
-     *
-     * Kept on the user rather than only in the browser so the choice follows
-     * the account to another device, which is what the brief asks for. The
-     * client applies it optimistically, so the response only has to confirm.
-     */
     #[Route('/settings', name: 'api_auth_settings', methods: ['PATCH'])]
     public function updateSettings(
         #[CurrentUser] User $user,
@@ -125,7 +102,6 @@ final class AuthController extends AbstractController
         $locale = $payload->localeEnum();
         $theme  = $payload->themeEnum();
 
-        // Absent means "unchanged": the switcher sends one field at a time.
         if (null !== $locale) {
             $user->setLocale($locale);
         }
@@ -139,11 +115,6 @@ final class AuthController extends AbstractController
         return $this->json($this->serializer->serialize($user));
     }
 
-    /**
-     * Stateless JWT cannot be revoked server-side, so logging out is the client
-     * dropping its token. The endpoint exists so the SPA has one thing to call,
-     * and so a future refresh-token blacklist has a place to live.
-     */
     #[Route('/logout', name: 'api_auth_logout', methods: ['POST'])]
     public function logout(): JsonResponse
     {

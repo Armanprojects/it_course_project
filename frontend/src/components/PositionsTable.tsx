@@ -7,10 +7,8 @@ import { useDateFormat } from '../i18n/useDateFormat'
 
 interface Column {
   key: PositionSort | 'attributeCount' | 'cvCount'
-  /** Ключ словаря, а не готовая строка: заголовок зависит от языка. */
   label: MessageKey
   sortable: boolean
-  /** Узкие числовые колонки прячем на телефоне: там важны название и компания. */
   hideOnMobile?: boolean
 }
 
@@ -28,18 +26,10 @@ interface Props {
   sort?: PositionSort
   direction?: SortDirection
   onSort?: (column: PositionSort) => void
-  /** Колонки со счётчиками не нужны на компактной таблице главной страницы. */
   compact?: boolean
   emptyMessage?: string
 }
 
-/**
- * Таблица позиций — единственное представление каталога: задание прямо
- * запрещает плитки и галереи.
- *
- * Кнопок в строках тоже нет (за них снимают 20%): строка сама по себе ссылка
- * на позицию, а групповые действия для рекрутёра встанут в панель над таблицей.
- */
 export function PositionsTable({
   rows,
   sort,
@@ -58,6 +48,7 @@ export function PositionsTable({
       <p className="muted table__empty" role="status">
         {emptyMessage ?? t('positions.notFound')}
       </p>
+
     )
   }
 
@@ -93,13 +84,16 @@ export function PositionsTable({
                           <CaretDownIcon size={12} weight="bold" aria-hidden="true" />
                         ))}
                     </button>
+
                   ) : (
                     t(column.label)
                   )}
                 </th>
+
               )
             })}
           </tr>
+
         </thead>
 
         <tbody>
@@ -110,8 +104,6 @@ export function PositionsTable({
               onClick={() => navigate(`/positions/${row.id}`)}
             >
               <td>
-                {/* Ссылка настоящая, а не onClick на строке: так работают
-                    клавиатура, «открыть в новой вкладке» и скринридер. */}
                 <a
                   className="table__link"
                   href={`/positions/${row.id}`}
@@ -125,6 +117,7 @@ export function PositionsTable({
 
                 {row.shortDescription && !compact && (
                   <span className="table__sub">{row.shortDescription}</span>
+
                 )}
               </td>
 
@@ -133,22 +126,32 @@ export function PositionsTable({
               <td>
                 {row.level ? (
                   <span className="chip">{row.level}</span>
+
                 ) : (
                   <span className="muted-3">—</span>
+
                 )}
               </td>
 
               {!compact && (
                 <>
                   <td className="is-secondary num">{row.attributeCount}</td>
+
                   <td className="is-secondary num">{row.cvCount}</td>
+
                   <td className="is-secondary">{formatDate(row.updatedAt)}</td>
+
                 </>
+
               )}
             </tr>
+
           ))}
         </tbody>
+
       </table>
+
     </div>
+
   )
 }

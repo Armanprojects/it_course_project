@@ -7,7 +7,6 @@ namespace App\Entity;
 use App\Enum\OAuthProvider;
 use Doctrine\ORM\Mapping as ORM;
 
-
 #[ORM\Entity]
 #[ORM\Table(name: 'user_identity')]
 #[ORM\UniqueConstraint(name: 'uniq_identity_provider_external', columns: ['provider', 'external_id'])]
@@ -25,7 +24,6 @@ class UserIdentity
 
     #[ORM\Column(length: 32, enumType: OAuthProvider::class)]
     private OAuthProvider $provider;
-
 
     #[ORM\Column(length: 191)]
     private string $externalId;

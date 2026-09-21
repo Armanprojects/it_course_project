@@ -8,7 +8,6 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-
 #[ORM\Entity]
 #[ORM\Table(name: 'project')]
 #[ORM\Index(name: 'idx_project_profile_order', columns: ['profile_id', 'sort_order'])]
@@ -29,15 +28,9 @@ class Project
     #[ORM\Column(type: 'date_immutable', nullable: true)]
     private ?\DateTimeImmutable $periodFrom = null;
 
-    /**
-     * Null means the project is still running.
-     */
     #[ORM\Column(type: 'date_immutable', nullable: true)]
     private ?\DateTimeImmutable $periodTo = null;
 
-    /**
-     * Markdown-formatted.
-     */
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $description = null;
 
@@ -50,9 +43,7 @@ class Project
     #[ORM\Column]
     private \DateTimeImmutable $updatedAt;
 
-    /**
-     * @var Collection<int, Tag>
-     */
+    /** @var Collection<int, Tag> */
     #[ORM\ManyToMany(targetEntity: Tag::class)]
     #[ORM\JoinTable(name: 'project_tag')]
     private Collection $tags;
@@ -154,17 +145,12 @@ class Project
         $this->updatedAt = new \DateTimeImmutable();
     }
 
-    /**
-     * @return Collection<int, Tag>
-     */
+    /** @return Collection<int, Tag> */
     public function getTags(): Collection
     {
         return $this->tags;
     }
 
-    /**
-     * Usage counters are maintained by the caller, the entity only owns the link.
-     */
     public function addTag(Tag $tag): bool
     {
         if ($this->tags->contains($tag)) {
@@ -193,11 +179,7 @@ class Project
         return $this->tags->contains($tag);
     }
 
-    /**
-     * True when the project matches any of the tags a position is interested in.
-     *
-     * @param list<int> $tagIds
-     */
+    /** @param list<int> $tagIds */
     public function matchesAnyTag(array $tagIds): bool
     {
         foreach ($this->tags as $tag) {

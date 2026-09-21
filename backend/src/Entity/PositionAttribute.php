@@ -6,7 +6,6 @@ namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
-
 #[ORM\Entity]
 #[ORM\Table(name: 'position_attribute')]
 #[ORM\UniqueConstraint(name: 'uniq_position_attribute', columns: ['position_id', 'attribute_id'])]
@@ -21,9 +20,6 @@ class PositionAttribute
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private Position $position;
 
-    /**
-     * No onDelete: the database must refuse to drop an attribute still in use.
-     */
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
     private Attribute $attribute;
@@ -31,22 +27,12 @@ class PositionAttribute
     #[ORM\Column]
     private int $sortOrder = 0;
 
-    /**
-     * Section heading in the generated CV, falls back to the attribute category.
-     */
     #[ORM\Column(length: 120, nullable: true)]
     private ?string $section = null;
 
-    /**
-     * Required attributes must be filled before the CV can be published.
-     */
     #[ORM\Column]
     private bool $required = false;
 
-    /**
-     * Soft delete: CVs already generated from this position keep rendering the
-     * attribute, it just stops being offered for new ones.
-     */
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $removedAt = null;
 

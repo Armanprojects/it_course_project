@@ -10,13 +10,6 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-
-/**
- * A CV is a candidate profile rendered through a position template.
- *
- * Attribute values are deliberately NOT stored here: the profile holds the only
- * master value, editing an attribute in a CV updates the profile itself.
- */
 #[ORM\Entity(repositoryClass: CvRepository::class)]
 #[ORM\Table(name: 'cv')]
 #[ORM\UniqueConstraint(name: 'uniq_cv_profile_position', columns: ['profile_id', 'position_id'])]
@@ -43,10 +36,6 @@ class Cv
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $publishedAt = null;
 
-    /**
-     * Denormalised like counter: the CV tables and search results show it on
-     * every row, counting per row would mean a query inside a loop.
-     */
     #[ORM\Column]
     private int $likesCount = 0;
 
@@ -60,9 +49,7 @@ class Cv
     #[ORM\Column(type: 'integer')]
     private int $version = 1;
 
-    /**
-     * @var Collection<int, CvLike>
-     */
+    /** @var Collection<int, CvLike> */
     #[ORM\OneToMany(mappedBy: 'cv', targetEntity: CvLike::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $likes;
 
@@ -105,10 +92,6 @@ class Cv
         return CvStatus::Published === $this->status;
     }
 
-    /**
-     * Publishing is what makes the CV visible to recruiters, so it is only
-     * allowed once every required attribute of the position carries a value.
-     */
     public function publish(): void
     {
         if ($this->isPublished()) {
@@ -131,9 +114,7 @@ class Cv
         $this->touch();
     }
 
-    /**
-     * @return list<Attribute> attributes of the position left empty in the profile
-     */
+    /** @return list<Attribute> attributes of the position left empty in the profile */
     public function getMissingAttributes(): array
     {
         $missing = [];
@@ -185,9 +166,7 @@ class Cv
         return $this->version;
     }
 
-    /**
-     * @return Collection<int, CvLike>
-     */
+    /** @return Collection<int, CvLike> */
     public function getLikes(): Collection
     {
         return $this->likes;
@@ -231,12 +210,7 @@ class Cv
         return false;
     }
 
-    /**
-     * Projects of the candidate relevant to this position, trimmed to the limit
-     * the position sets. An empty tag list on the position means "any project".
-     *
-     * @return list<Project>
-     */
+    /** @return list<Project> */
     public function getRelevantProjects(): array
     {
         $tagIds = array_values(array_filter(

@@ -7,7 +7,6 @@ interface Props {
   attribute: ProfileAttribute
   value: AttributeValue
   onChange: (value: AttributeValue) => void
-  /** Встроенные атрибуты удалять нельзя — для них кнопки не будет. */
   onRemove?: () => void
 }
 
@@ -19,11 +18,6 @@ function asText(value: AttributeValue): string {
   return String(value)
 }
 
-/**
- * Числа приходят строкой из decimal(20,6) — «7.500000». Показывать хвост нулей
- * в поле ввода незачем, а float-ом их гонять нельзя: точность decimal тогда
- * теряется. Поэтому обрезаем незначащие нули строкой.
- */
 function asNumberText(value: AttributeValue): string {
   const text = asText(value)
 
@@ -38,13 +32,6 @@ function asPeriod(value: AttributeValue): PeriodValue {
   return value !== null && typeof value === 'object' ? value : { from: null, to: null }
 }
 
-/**
- * Редактор одного атрибута профиля. Восемь типов из библиотеки — восемь
- * элементов ввода, но снаружи у всех один интерфейс: value/onChange.
- *
- * Пустое значение подсвечиваем — по заданию незаполненные атрибуты должны
- * быть видны сразу, и та же подсветка понадобится в резюме.
- */
 export function AttributeField({ attribute, value, onChange, onRemove }: Props) {
   const t = useTranslation()
   const inputId = `attr-${attribute.attributeId}`
@@ -56,6 +43,7 @@ export function AttributeField({ attribute, value, onChange, onRemove }: Props) 
         <label className="label" htmlFor={inputId}>
           {attribute.name}
           {isEmpty && <span className="attr__flag">{t('common.notFilled')}</span>}
+
         </label>
 
         {onRemove && (
@@ -68,21 +56,19 @@ export function AttributeField({ attribute, value, onChange, onRemove }: Props) 
           >
             <TrashIcon size={14} aria-hidden="true" />
           </button>
+
         )}
       </div>
 
       {attribute.description && <p className="attr__hint muted-3">{attribute.description}</p>}
 
       <AttributeInput id={inputId} attribute={attribute} value={value} onChange={onChange} />
+
     </div>
+
   )
 }
 
-/**
- * Сам элемент ввода, без обвязки с подписью и кнопкой удаления. Экспортируется
- * ради резюме: там атрибут правится по месту, и повторять восемь типов ввода
- * второй раз означало бы гарантированно их рассинхронизировать.
- */
 export function AttributeInput({
   id,
   attribute,
@@ -112,6 +98,7 @@ export function AttributeInput({
           value={asText(value)}
           onChange={(event) => onChange(event.target.value)}
         />
+
       )
 
     case 'numeric':
@@ -124,9 +111,9 @@ export function AttributeInput({
           autoFocus={autoFocus}
           onBlur={onBlur}
           value={asNumberText(value)}
-          // Пустое поле — это очищенное значение, а не ноль.
           onChange={(event) => onChange(event.target.value === '' ? null : event.target.value)}
         />
+
       )
 
     case 'date':
@@ -140,6 +127,7 @@ export function AttributeInput({
           value={asText(value)}
           onChange={(event) => onChange(event.target.value || null)}
         />
+
       )
 
     case 'boolean':
@@ -153,8 +141,11 @@ export function AttributeInput({
             checked={value === true}
             onChange={(event) => onChange(event.target.checked)}
           />
+
           <span className="t-sm">{t(value === true ? 'common.yes' : 'common.no')}</span>
+
         </label>
+
       )
 
     case 'select':
@@ -168,12 +159,15 @@ export function AttributeInput({
           onChange={(event) => onChange(event.target.value || null)}
         >
           <option value="">{t('attr.notSelected')}</option>
+
           {attribute.options.map((option) => (
             <option key={option} value={option}>
               {option}
             </option>
+
           ))}
         </select>
+
       )
 
     case 'period': {
@@ -190,9 +184,11 @@ export function AttributeInput({
             value={period.from ?? ''}
             onChange={(event) => onChange({ ...period, from: event.target.value || null })}
           />
+
           <span className="muted-3" aria-hidden="true">
             —
           </span>
+
           <input
             type="date"
             className="input"
@@ -200,7 +196,9 @@ export function AttributeInput({
             value={period.to ?? ''}
             onChange={(event) => onChange({ ...period, to: event.target.value || null })}
           />
+
         </div>
+
       )
     }
 
@@ -218,6 +216,7 @@ export function AttributeInput({
           value={asText(value)}
           onChange={(event) => onChange(event.target.value)}
         />
+
       )
   }
 }

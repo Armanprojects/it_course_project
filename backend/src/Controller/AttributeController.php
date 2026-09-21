@@ -20,12 +20,6 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-/**
- * The attribute library, as the profile's picker needs it.
- *
- * The brief calls for prefix search, recently-used shortcuts and a category
- * filter, because the library is expected to grow large.
- */
 #[Route('/api/attributes')]
 final class AttributeController extends AbstractController
 {
@@ -49,8 +43,6 @@ final class AttributeController extends AbstractController
 
         $profile = $user->getProfile();
 
-        // "Recently used" only makes sense against a profile: the list is
-        // what other people picked lately, minus what this one already has.
         $recent = null === $profile
             ? []
             : $this->attributes->findRecentlyUsed($profile, self::RECENT_LIMIT);
@@ -65,10 +57,6 @@ final class AttributeController extends AbstractController
         ]);
     }
 
-    /**
-     * The library as recruiters manage it: includes soft-removed attributes so
-     * they can be restored, and reports where each one is in use.
-     */
     #[Route('/manage', name: 'api_attributes_manage', methods: ['GET'])]
     #[IsGranted('ROLE_RECRUITER')]
     public function manage(Request $request, AttributeLibraryService $library): JsonResponse
@@ -156,9 +144,7 @@ final class AttributeController extends AbstractController
         return $attribute;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function serialize(Attribute $attribute): array
     {
         return [

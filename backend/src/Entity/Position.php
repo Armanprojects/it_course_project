@@ -9,7 +9,6 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-
 #[ORM\Entity(repositoryClass: PositionRepository::class)]
 #[ORM\Table(name: '`position`')]
 #[ORM\Index(name: 'idx_position_public', columns: ['is_public'])]
@@ -34,19 +33,10 @@ class Position
     #[ORM\Column(length: 32, nullable: true)]
     private ?string $level = null;
 
-    /**
-     * Public positions are open to every authenticated user,
-     * otherwise access is decided by the rules below.
-     */
     #[ORM\Column(name: 'is_public')]
     private bool $public = true;
 
-    /**
-     * Tags used to pick relevant candidate projects for the generated CV.
-     * Empty means "any project qualifies".
-     *
-     * @var Collection<int, Tag>
-     */
+    /** @var Collection<int, Tag> */
     #[ORM\ManyToMany(targetEntity: Tag::class)]
     #[ORM\JoinTable(name: 'position_tag')]
     private Collection $projectTags;
@@ -68,14 +58,6 @@ class Position
     #[ORM\Column(type: 'integer')]
     private int $version = 1;
 
-    /**
-     * Full-text index over title, company and description.
-     *
-     * A generated column: PostgreSQL recomputes it on every write, so the
-     * search index can never drift out of sync with the row the way an
-     * application-maintained column would. Never written from PHP, hence
-     * insertable/updatable false.
-     */
     #[ORM\Column(
         name: 'search_vector',
         type: 'text',
@@ -86,30 +68,20 @@ class Position
     )]
     private ?string $searchVector = null;
 
-    /**
-     * Links are soft-deleted, so no orphanRemoval here.
-     *
-     * @var Collection<int, PositionAttribute>
-     */
+    /** @var Collection<int, PositionAttribute> */
     #[ORM\OneToMany(mappedBy: 'position', targetEntity: PositionAttribute::class, cascade: ['persist', 'remove'])]
     #[ORM\OrderBy(['sortOrder' => 'ASC'])]
     private Collection $attributes;
 
-    /**
-     * @var Collection<int, PositionAccessRule>
-     */
+    /** @var Collection<int, PositionAccessRule> */
     #[ORM\OneToMany(mappedBy: 'position', targetEntity: PositionAccessRule::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $accessRules;
 
-    /**
-     * @var Collection<int, Cv>
-     */
+    /** @var Collection<int, Cv> */
     #[ORM\OneToMany(mappedBy: 'position', targetEntity: Cv::class)]
     private Collection $cvs;
 
-    /**
-     * @var Collection<int, DiscussionPost>
-     */
+    /** @var Collection<int, DiscussionPost> */
     #[ORM\OneToMany(mappedBy: 'position', targetEntity: DiscussionPost::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\OrderBy(['id' => 'ASC'])]
     private Collection $posts;
@@ -182,9 +154,7 @@ class Position
         $this->public = $public;
     }
 
-    /**
-     * @return Collection<int, Tag>
-     */
+    /** @return Collection<int, Tag> */
     public function getProjectTags(): Collection
     {
         return $this->projectTags;
@@ -241,11 +211,7 @@ class Position
         return $this->version;
     }
 
-    /**
-     * Active links only; soft-deleted ones stay readable via getAllAttributes().
-     *
-     * @return Collection<int, PositionAttribute>
-     */
+    /** @return Collection<int, PositionAttribute> */
     public function getAttributes(): Collection
     {
         return $this->attributes->filter(
@@ -253,9 +219,7 @@ class Position
         );
     }
 
-    /**
-     * @return Collection<int, PositionAttribute>
-     */
+    /** @return Collection<int, PositionAttribute> */
     public function getAllAttributes(): Collection
     {
         return $this->attributes;
@@ -300,9 +264,7 @@ class Position
         return null !== $link && !$link->isRemoved();
     }
 
-    /**
-     * @return Collection<int, PositionAccessRule>
-     */
+    /** @return Collection<int, PositionAccessRule> */
     public function getAccessRules(): Collection
     {
         return $this->accessRules;
@@ -320,20 +282,13 @@ class Position
         $this->accessRules->removeElement($rule);
     }
 
-    /**
-     * Lazy by design: the CV list of a position is paginated in its repository,
-     * never walked through this collection.
-     *
-     * @return Collection<int, Cv>
-     */
+    /** @return Collection<int, Cv> */
     public function getCvs(): Collection
     {
         return $this->cvs;
     }
 
-    /**
-     * @return Collection<int, DiscussionPost>
-     */
+    /** @return Collection<int, DiscussionPost> */
     public function getPosts(): Collection
     {
         return $this->posts;

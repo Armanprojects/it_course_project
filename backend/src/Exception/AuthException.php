@@ -7,10 +7,6 @@ namespace App\Exception;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
-/**
- * Carries an HTTP status alongside a machine-readable code so the SPA can tell
- * "email taken" from "wrong password" without parsing prose.
- */
 class AuthException extends HttpException
 {
     public function __construct(

@@ -6,18 +6,10 @@ import { useSettings } from '../i18n/context'
 import { LOCALES } from '../i18n/settings'
 import { clearUserCache, useCurrentUser } from '../lib/useCurrentUser'
 
-/**
- * Шапка есть на каждой странице, и поиск в ней — тоже: требование задания.
- * Отправка всегда уводит на каталог, потому что результат — это таблица
- * позиций, а не отдельный экран выдачи.
- */
 export function AppHeader() {
   const [params] = useSearchParams()
   const searchParam = params.get('search') ?? ''
 
-  // key сбрасывает состояние поля при смене запроса в URL — переход «назад»
-  // должен вернуть и текст в поле, иначе шапка покажет одно, а таблица
-  // отфильтрует по другому. Через эффект это стоило бы лишнего рендера.
   return <HeaderBar key={searchParam} initialQuery={searchParam} />
 }
 
@@ -49,7 +41,9 @@ function HeaderBar({ initialQuery }: { initialQuery: string }) {
           <span className="apphead__logo" aria-hidden="true">
             CV
           </span>
+
           <span>{t('app.name')}</span>
+
         </Link>
 
         <form className="apphead__search" role="search" onSubmit={submit}>
@@ -62,6 +56,7 @@ function HeaderBar({ initialQuery }: { initialQuery: string }) {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
+
         </form>
 
         <nav className="apphead__nav">
@@ -71,41 +66,44 @@ function HeaderBar({ initialQuery }: { initialQuery: string }) {
 
           {authenticated ? (
             <>
-              {/* Поиск по резюме и библиотека — инструменты рекрутера, в
-                  навигации кандидата им делать нечего. */}
               {isRecruiter && (
                 <>
                   <Link to="/cvs/search" className="btn btn--ghost">
                     {t('header.cvs')}
                   </Link>
+
                   <Link to="/attributes" className="btn btn--ghost">
                     {t('header.attributes')}
                   </Link>
+
                 </>
+
               )}
 
-              {/* Управление пользователями — только администратору. */}
               {isAdmin && (
                 <Link to="/admin/users" className="btn btn--ghost">
                   {t('header.users')}
                 </Link>
+
               )}
 
               <Link to="/profile" className="btn btn--ghost">
                 {t('header.profile')}
               </Link>
+
               <button type="button" className="btn btn--outline" onClick={logout}>
                 {t('header.logout')}
               </button>
+
             </>
+
           ) : (
             <Link to="/login" className="btn btn--primary">
               {t('header.login')}
             </Link>
+
           )}
 
-          {/* Переключатели темы и языка доступны и гостю: выбор хранится
-              в localStorage, а вошедшему ещё и синхронизируется с профилем. */}
           <div className="apphead__prefs">
             <button
               type="button"
@@ -132,11 +130,17 @@ function HeaderBar({ initialQuery }: { initialQuery: string }) {
                 <option key={code} value={code}>
                   {code.toUpperCase()}
                 </option>
+
               ))}
             </select>
+
           </div>
+
         </nav>
+
       </div>
+
     </header>
+
   )
 }

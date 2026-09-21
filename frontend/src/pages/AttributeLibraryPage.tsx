@@ -17,12 +17,6 @@ const BLANK: AttributeInput = {
   options: [],
 }
 
-/**
- * Библиотека атрибутов — общий пул, которым управляют все рекрутеры.
- *
- * Удаление мягкое: значения в профилях и ссылки из позиций остаются, атрибут
- * просто перестаёт предлагаться. Поэтому здесь же можно и восстановить.
- */
 export function AttributeLibraryPage() {
   if (!tokenStorage.isValid()) {
     return <Navigate to="/login" replace />
@@ -43,8 +37,11 @@ function LibraryGate() {
           <p className="muted" role="status">
             {t('common.loading')}
           </p>
+
         </main>
+
       </>
+
     )
   }
 
@@ -113,8 +110,6 @@ function LibraryManager() {
     setSelected((current) => {
       const next = new Set(current)
 
-      // delete возвращает, был ли элемент — так снятие и добавление
-      // укладываются в одну проверку.
       if (!next.delete(id)) {
         next.add(id)
       }
@@ -123,10 +118,6 @@ function LibraryManager() {
     })
   }
 
-  /**
-   * Действие тулбара над всем выделением. Запросы идут последовательно:
-   * у атрибутов версионирование, и параллельные записи гонялись бы за него.
-   */
   const bulk = async (run: (id: number) => Promise<unknown>) => {
     setError(null)
 
@@ -153,9 +144,11 @@ function LibraryManager() {
         <div className="panel__head">
           <div className="col g1">
             <h1 className="h1">{t('lib.title')}</h1>
+
             <p className="muted" style={{ margin: 0 }}>
               {t('lib.subtitle')}
             </p>
+
           </div>
 
           {editing === null && (
@@ -163,17 +156,18 @@ function LibraryManager() {
               <PlusIcon size={14} aria-hidden="true" />
               {t('lib.newAttribute')}
             </button>
+
           )}
         </div>
 
         {error && (
           <div className="notice notice--error" role="alert">
             <span>{error}</span>
+
           </div>
+
         )}
 
-        {/* Форма — над таблицей, а не внутри строки: строка остаётся записью,
-            которую открывают, и не превращается в редактор. */}
         {editing === 'new' && (
           <AttributeForm
             initial={BLANK}
@@ -185,6 +179,7 @@ function LibraryManager() {
               setEditing(null)
             }}
           />
+
         )}
 
         {typeof editing === 'number' && (() => {
@@ -214,6 +209,7 @@ function LibraryManager() {
                 setEditing(null)
               }}
             />
+
           )
         })()}
 
@@ -229,6 +225,7 @@ function LibraryManager() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
+
             </div>
 
             <select
@@ -238,16 +235,17 @@ function LibraryManager() {
               onChange={(event) => setCategory(event.target.value)}
             >
               <option value="">{t('lib.allCategories')}</option>
+
               {categories.map((value) => (
                 <option key={value} value={value}>
                   {categoryLabel(value)}
                 </option>
+
               ))}
             </select>
+
           </div>
 
-          {/* Действия — в панели над таблицей и работают над выделенным.
-              Кнопки в каждой строке задание прямо запрещает. */}
           <SelectionToolbar
             selected={selected}
             items={items}
@@ -259,8 +257,10 @@ function LibraryManager() {
 
           {!loaded ? (
             <p className="muted table__empty">{t('common.loading')}</p>
+
           ) : items.length === 0 ? (
             <p className="muted table__empty">{t('lib.nothingFound')}</p>
+
           ) : (
             <div className="table__scroll">
               <table className="table">
@@ -285,14 +285,21 @@ function LibraryManager() {
                           )
                         }
                       />
+
                     </th>
+
                     <th scope="col">{t('lib.colName')}</th>
+
                     <th scope="col">{t('lib.colCategory')}</th>
+
                     <th scope="col">{t('lib.colType')}</th>
+
                     <th scope="col" className="is-secondary">
                       {t('lib.colUsage')}
                     </th>
+
                   </tr>
+
                 </thead>
 
                 <tbody>
@@ -304,14 +311,21 @@ function LibraryManager() {
                       onToggle={() => toggle(attribute.id)}
                       onOpen={() => setEditing(attribute.id)}
                     />
+
                   ))}
                 </tbody>
+
               </table>
+
             </div>
+
           )}
         </section>
+
       </main>
+
     </>
+
   )
 }
 
@@ -336,8 +350,6 @@ function AttributeRow({
       onClick={onOpen}
       aria-selected={checked}
     >
-      {/* Клик по ячейке с флажком не должен открывать запись — иначе
-          выделить строку мышью будет невозможно. */}
       <td className="table__pick" onClick={(event) => event.stopPropagation()}>
         <input
           type="checkbox"
@@ -345,13 +357,18 @@ function AttributeRow({
           onChange={onToggle}
           aria-label={t('lib.selectOne', { name: attribute.name })}
         />
+
       </td>
 
       <td>
         <span className="table__link">{attribute.name}</span>
+
         {attribute.system && <span className="chip chip--muted">{t('lib.builtIn')}</span>}
+
         {attribute.removed && <span className="chip chip--muted">{t('lib.removedChip')}</span>}
+
         {attribute.description && <span className="table__sub">{attribute.description}</span>}
+
       </td>
 
       <td className="muted">{categoryLabel(attribute.category)}</td>
@@ -360,6 +377,7 @@ function AttributeRow({
         {typeLabel(attribute.type)}
         {attribute.options.length > 0 && (
           <span className="table__sub">{attribute.options.join(' · ')}</span>
+
         )}
       </td>
 
@@ -372,17 +390,12 @@ function AttributeRow({
               rules: attribute.usage.rules,
             })}
       </td>
+
     </tr>
+
   )
 }
 
-/**
- * Панель действий над выделенными записями — то, что задание предлагает
- * взамен кнопок в каждой строке.
- *
- * Редактирование включается только для одной записи: форма правит один
- * атрибут. Удаление и восстановление работают над всем выделением.
- */
 function SelectionToolbar({
   selected,
   items,
@@ -407,11 +420,10 @@ function SelectionToolbar({
       <p className="muted t-sm toolbar__hint">
         {t('lib.toolbarHint')}
       </p>
+
     )
   }
 
-  // Встроенные атрибуты удалять нельзя — сервер откажет, поэтому и кнопку
-  // не предлагаем, если в выделении есть хоть один такой.
   const deletable = chosen.filter((item) => !item.system && !item.removed)
   const restorable = chosen.filter((item) => item.removed)
   const used = deletable.reduce(
@@ -440,6 +452,7 @@ function SelectionToolbar({
             <ArrowCounterClockwiseIcon size={14} aria-hidden="true" />
             {t('lib.restoreCount', { count: restorable.length })}
           </button>
+
         )}
 
         {deletable.length > 0 && (
@@ -451,11 +464,13 @@ function SelectionToolbar({
             <TrashIcon size={14} aria-hidden="true" />
             {t('lib.deleteCount', { count: deletable.length })}
           </button>
+
         )}
 
         <button type="button" className="btn btn--ghost" onClick={onClear}>
           {t('lib.clearSelection')}
         </button>
+
       </div>
 
       {confirming && (
@@ -465,10 +480,12 @@ function SelectionToolbar({
               ? t('lib.confirmUsed', { count: used })
               : t('lib.confirmDelete', { count: deletable.length })}
           </span>
+
           <div className="row g2">
             <button type="button" className="btn btn--ghost" onClick={() => setConfirming(false)}>
               {t('common.cancel')}
             </button>
+
             <button
               type="button"
               className="btn btn--primary"
@@ -479,10 +496,14 @@ function SelectionToolbar({
             >
               {t('lib.delete')}
             </button>
+
           </div>
+
         </div>
+
       )}
     </div>
+
   )
 }
 function AttributeForm({
@@ -524,6 +545,7 @@ function AttributeForm({
         <label className="label" htmlFor="attr-name">
           {t('lib.formName')}
         </label>
+
         <input
           id="attr-name"
           className="input"
@@ -532,7 +554,9 @@ function AttributeForm({
           value={form.name}
           onChange={(event) => setForm({ ...form, name: event.target.value })}
         />
+
         <span className="t-xs muted-3">{t('lib.formNameHint')}</span>
+
       </div>
 
       <div className="period">
@@ -540,6 +564,7 @@ function AttributeForm({
           <label className="label" htmlFor="attr-category">
             {t('lib.category')}
           </label>
+
           <select
             id="attr-category"
             className="input"
@@ -550,14 +575,17 @@ function AttributeForm({
               <option key={value} value={value}>
                 {categoryLabel(value)}
               </option>
+
             ))}
           </select>
+
         </div>
 
         <div className="field">
           <label className="label" htmlFor="attr-type">
             {t('lib.colType')}
           </label>
+
           <select
             id="attr-type"
             className="input"
@@ -571,20 +599,25 @@ function AttributeForm({
               <option key={value} value={value}>
                 {typeLabel(value)}
               </option>
+
             ))}
           </select>
+
           {lockType && (
             <span className="t-xs muted-3">
               {t('lib.formTypeLocked')}
             </span>
+
           )}
         </div>
+
       </div>
 
       <div className="field">
         <label className="label" htmlFor="attr-description">
           {t('lib.formDescription')}
         </label>
+
         <textarea
           id="attr-description"
           className="input input--area"
@@ -592,6 +625,7 @@ function AttributeForm({
           value={form.description ?? ''}
           onChange={(event) => setForm({ ...form, description: event.target.value })}
         />
+
       </div>
 
       {form.type === 'select' && (
@@ -599,6 +633,7 @@ function AttributeForm({
           <label className="label" htmlFor="attr-options">
             {t('lib.formOptions')}
           </label>
+
           <textarea
             id="attr-options"
             className="input input--area"
@@ -609,17 +644,23 @@ function AttributeForm({
               setForm({ ...form, options: event.target.value.split('\n') })
             }
           />
+
         </div>
+
       )}
 
       <div className="row g2">
         <button type="submit" className="btn btn--primary" disabled={busy}>
           {busy ? t('lib.saving') : t('common.save')}
         </button>
+
         <button type="button" className="btn btn--ghost" onClick={onCancel} disabled={busy}>
           {t('common.cancel')}
         </button>
+
       </div>
+
     </form>
+
   )
 }

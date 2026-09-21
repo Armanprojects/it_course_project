@@ -8,7 +8,6 @@ import { useErrorText } from '../i18n/useErrorText'
 
 const Markdown = lazy(() => import('react-markdown'))
 
-/** Задание требует, чтобы новые сообщения появлялись у всех за 2–5 секунд. */
 const POLL_MS = 4000
 
 const timeFormat = new Intl.DateTimeFormat('ru-RU', {
@@ -20,13 +19,6 @@ interface Props {
   positionId: number
 }
 
-/**
- * Вкладка «Обсуждение» позиции.
- *
- * Обновления — опросом: сервер отдаёт только сообщения новее последнего
- * известного id, поэтому опрос раз в 4 секунды почти ничего не стоит и не
- * требует поднимать websocket-сервер.
- */
 export function DiscussionPanel({ positionId }: Props) {
   const t = useTranslation()
   const errorText = useErrorText()
@@ -35,8 +27,6 @@ export function DiscussionPanel({ positionId }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
 
-  // Курсор опроса в ref: он меняется в интервале, и обновлять из-за него
-  // компонент незачем — перерисовку вызывает только новый список сообщений.
   const lastId = useRef<number | null>(null)
 
   useEffect(() => {
@@ -51,10 +41,8 @@ export function DiscussionPanel({ positionId }: Props) {
         }
 
         lastId.current = result.lastId
-        // Только дописываем в конец: вставлять между существующими нельзя.
         setMessages((current) => [...current, ...result.items])
       } catch {
-        // Молча: сорванный опрос не должен закрывать уже прочитанный тред.
       }
     }
 
@@ -82,8 +70,6 @@ export function DiscussionPanel({ positionId }: Props) {
     try {
       const post = await discussionApi.post(positionId, content)
 
-      // Своё сообщение показываем сразу, а курсор двигаем, чтобы опрос не
-      // принёс его второй раз.
       setMessages((current) => [...current, post])
       lastId.current = post.id
       setDraft('')
@@ -100,33 +86,41 @@ export function DiscussionPanel({ positionId }: Props) {
     <div className="col g4">
       {messages.length === 0 ? (
         <p className="muted table__empty">{t('discussion.empty')}</p>
+
       ) : (
         <ol className="thread">
           {messages.map((message) => (
             <li key={message.id} className={`thread__item${message.mine ? ' is-mine' : ''}`}>
               <div className="thread__meta">
-                {/* Ссылка на профиль автора — только для рекрутеров: сервер
-                    отдаёт profileId лишь им. */}
                 {message.author.profileId !== null ? (
                   <Link to={`/profiles/${message.author.profileId}`} className="thread__author">
                     {message.author.email}
                   </Link>
+
                 ) : (
                   <span className="thread__author">{message.author.email}</span>
+
                 )}
                 <time className="t-xs muted-3" dateTime={message.createdAt}>
                   {timeFormat.format(new Date(message.createdAt))}
                 </time>
+
               </div>
 
               <div className="prose prose--md t-sm">
                 <Suspense fallback={<p>{message.content}</p>}>
+
                   <Markdown>{message.content}</Markdown>
+
                 </Suspense>
+
               </div>
+
             </li>
+
           ))}
         </ol>
+
       )}
 
       <form className="col g2" onSubmit={send}>
@@ -142,7 +136,9 @@ export function DiscussionPanel({ positionId }: Props) {
         {error && (
           <div className="notice notice--error" role="alert">
             <span>{error}</span>
+
           </div>
+
         )}
 
         <button
@@ -154,7 +150,10 @@ export function DiscussionPanel({ positionId }: Props) {
           <PaperPlaneRightIcon size={14} aria-hidden="true" />
           {t(sending ? 'discussion.sending' : 'discussion.send')}
         </button>
+
       </form>
+
     </div>
+
   )
 }

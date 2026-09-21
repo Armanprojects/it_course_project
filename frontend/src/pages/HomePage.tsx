@@ -22,11 +22,6 @@ const STAT_LABELS: { key: keyof PublicStats; label: MessageKey }[] = [
   { key: 'recruiters', label: 'home.statRecruiters' },
 ]
 
-/**
- * Главная страница. Открыта без авторизации: по заданию гость должен видеть
- * каталог позиций и публичную статистику, и только резюме, профили и
- * обсуждения закрыты входом.
- */
 export function HomePage() {
   const t = useTranslation()
   const errorText = useErrorText()
@@ -51,8 +46,6 @@ export function HomePage() {
         }
       })
 
-    // Ответ может прийти после размонтирования — например, если гость сразу
-    // ушёл на вход. setState в этот момент ничего не чинит, только шумит.
     return () => {
       active = false
     }
@@ -65,34 +58,40 @@ export function HomePage() {
       <main className="page">
         <section className="hero">
           <h1 className="h1">{t('home.title')}</h1>
+
           <p className="hero__text muted">{t('home.lead')}</p>
 
-          {/* Кнопки «Создать аккаунт» здесь нет: вход и регистрация живут
-              в шапке, а главная ведёт в каталог — по заданию он открыт
-              гостю, и упираться в регистрацию на первом экране незачем. */}
           <div className="hero__actions">
             <Link to="/positions" className="btn btn--primary btn--lg">
               {t('home.browse')}
               <ArrowRightIcon size={16} aria-hidden="true" />
             </Link>
+
           </div>
+
         </section>
 
         {state.kind === 'loading' && (
           <p className="muted" role="status">
             {t('common.loading')}
           </p>
+
         )}
 
         {state.kind === 'error' && (
           <div className="notice notice--error" role="alert">
             <span>{state.message}</span>
+
           </div>
+
         )}
 
         {state.kind === 'ready' && <HomeContent data={state.data} />}
+
       </main>
+
     </>
+
   )
 }
 
@@ -106,8 +105,10 @@ function HomeContent({ data }: { data: HomeData }) {
         title={t('home.latest')}
         hint={t('home.latestHint')}
         action={<Link to="/positions">{t('home.allPositions')}</Link>}
+
       >
         <PositionsTable rows={data.latestPositions} />
+
       </Panel>
 
       <div className="home__split">
@@ -117,13 +118,18 @@ function HomeContent({ data }: { data: HomeData }) {
             compact
             emptyMessage={t('home.popularEmpty')}
           />
+
         </Panel>
 
         <Panel title={t('home.tags')} hint={t('home.tagsHint')}>
           <TagCloud tags={data.tagCloud} />
+
         </Panel>
+
       </div>
+
     </div>
+
   )
 }
 
@@ -134,17 +140,17 @@ function StatsBar({ stats }: { stats: PublicStats }) {
       {STAT_LABELS.map(({ key, label }) => (
         <div key={key} className="stats__item">
           <dt className="stats__label">{t(label)}</dt>
+
           <dd className="stats__value">{stats[key]}</dd>
+
         </div>
+
       ))}
     </dl>
+
   )
 }
 
-/**
- * Облако тегов. Вес показываем размером и насыщенностью, но рядом всегда
- * стоит число — размер шрифта сам по себе слишком неточная шкала.
- */
 function TagCloud({ tags }: { tags: TagCloudEntry[] }) {
   const t = useTranslation()
   const navigate = useNavigate()
@@ -173,10 +179,13 @@ function TagCloud({ tags }: { tags: TagCloudEntry[] }) {
           >
             {tag.name}
             <span className="cloud__count">{tag.usageCount}</span>
+
           </button>
+
         )
       })}
     </div>
+
   )
 }
 
@@ -193,12 +202,16 @@ function Panel({ title, hint, action, children }: PanelProps) {
       <div className="panel__head">
         <div>
           <h2 className="h2">{title}</h2>
+
           {hint && <p className="panel__hint muted-3">{hint}</p>}
+
         </div>
+
         {action}
       </div>
 
       {children}
     </section>
+
   )
 }

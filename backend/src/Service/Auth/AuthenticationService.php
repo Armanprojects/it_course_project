@@ -16,10 +16,6 @@ use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-/**
- * Owns every way an account can come into existence or be signed into, so that
- * controllers stay thin and the "one profile per user" rule lives in one place.
- */
 final readonly class AuthenticationService
 {
     public function __construct(
@@ -30,13 +26,6 @@ final readonly class AuthenticationService
     ) {
     }
 
-    /**
-     * Registers a password account in the pending state: the row reserves the
-     * address straight away, but no token is issued until the confirmation link
-     * is opened. Every user gets a profile immediately — the profile page must
-     * exist from the first login, and creating it lazily would mean guarding
-     * against a missing profile in every other service.
-     */
     public function register(
         string $email,
         string $plainPassword,
@@ -59,25 +48,17 @@ final readonly class AuthenticationService
         try {
             $this->em->flush();
         } catch (UniqueConstraintViolationException) {
-            // Two registrations for the same address can pass the check above
-            // concurrently; the unique index is what actually decides.
             throw AuthException::emailAlreadyUsed();
         }
 
         return $user;
     }
 
-    /**
-     * Verifies credentials for the login endpoint. The firewall does not do this
-     * for us: /api/auth/login is deliberately outside the JWT firewall.
-     */
     public function authenticate(string $email, string $plainPassword): User
     {
         $user = $this->users->findOneByEmail($this->normalizeEmail($email));
 
         if (null === $user) {
-            // Hash anyway so that a missing account and a wrong password take
-            // about the same time and cannot be told apart from the outside.
             $this->hasher->hashPassword(new User('timing@example.com'), $plainPassword);
 
             throw AuthException::invalidCredentials();
@@ -99,16 +80,6 @@ final readonly class AuthenticationService
         return $user;
     }
 
-    /**
-     * Resolves the account behind a social login, creating or linking as needed.
-     *
-     * Three cases, in order:
-     *   1. the identity is known — sign that user in;
-     *   2. the email belongs to an existing account — link the identity to it,
-     *      which is what lets someone register by password and later use Google;
-     *   3. neither — create a fresh account without a password, with the role
-     *      the visitor picked before leaving for the provider.
-     */
     public function authenticateWithProvider(
         OAuthProvider $provider,
         string $externalId,
@@ -136,14 +107,11 @@ final readonly class AuthenticationService
 
         if (null === $user) {
             $user = new User($email, $role->toUserRole());
-            // The provider already proved the address belongs to this person,
-            // so there is nothing left for a confirmation link to establish.
+
             $user->verifyEmail();
             new Profile($user);
             $this->em->persist($user);
         } else {
-            // The role only applies to a brand new account: signing into an
-            // existing one through a provider must not change its privileges.
             $this->assertUsable($user);
         }
 
@@ -159,11 +127,6 @@ final readonly class AuthenticationService
         return $user;
     }
 
-    /**
-     * Blocked accounts must not get a token: the ban has to bite at sign-in,
-     * not only on the next request. An unconfirmed signup is told apart from a
-     * ban so the UI can offer to resend the link instead of a dead end.
-     */
     private function assertUsable(User $user): void
     {
         if ($user->isPending()) {

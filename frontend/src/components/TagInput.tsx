@@ -9,12 +9,6 @@ interface Props {
   onChange: (tags: string[]) => void
 }
 
-/**
- * Ввод технологических тегов с автодополнением по уже введённым.
- *
- * Подсказки берём с сервера, отсортированные по частоте: набирая «re», человек
- * должен получить общий React, а не чей-то разовый тег.
- */
 export function TagInput({ tags, onChange }: Props) {
   const t = useTranslation()
   const [draft, setDraft] = useState('')
@@ -39,8 +33,6 @@ export function TagInput({ tags, onChange }: Props) {
             setSuggestions(result.items)
           }
         })
-        // Подсказки — вспомогательная вещь: если сервер не ответил, ввод
-        // руками всё равно работает, поэтому ошибку не показываем.
         .catch(() => {
           if (active) {
             setSuggestions([])
@@ -54,13 +46,10 @@ export function TagInput({ tags, onChange }: Props) {
     }
   }, [query])
 
-  // Отфильтровываем при рендере, а не в эффекте: пустой ввод и уже добавленные
-  // теги — это производные от текущих пропсов, отдельное состояние им не нужно.
   const owned = new Set(tags.map((tag) => tag.toLowerCase()))
   const visible =
     query === '' ? [] : suggestions.filter((item) => !owned.has(item.name.toLowerCase()))
 
-  // Клик мимо закрывает список подсказок.
   useEffect(() => {
     const onClickOutside = (event: MouseEvent) => {
       if (wrap.current && !wrap.current.contains(event.target as Node)) {
@@ -80,7 +69,6 @@ export function TagInput({ tags, onChange }: Props) {
       return
     }
 
-    // Регистр не должен плодить дубли — сервер их всё равно схлопнет.
     if (!tags.some((tag) => tag.toLowerCase() === clean.toLowerCase())) {
       onChange([...tags, clean])
     }
@@ -97,8 +85,6 @@ export function TagInput({ tags, onChange }: Props) {
       return
     }
 
-    // Backspace в пустом поле снимает последний тег — привычное поведение
-    // для такого ввода.
     if (event.key === 'Backspace' && draft === '' && tags.length > 0) {
       onChange(tags.slice(0, -1))
     }
@@ -118,7 +104,9 @@ export function TagInput({ tags, onChange }: Props) {
             >
               <XIcon size={10} weight="bold" aria-hidden="true" />
             </button>
+
           </span>
+
         ))}
 
         <input
@@ -136,6 +124,7 @@ export function TagInput({ tags, onChange }: Props) {
           onKeyDown={onKeyDown}
           onFocus={() => setOpen(true)}
         />
+
       </div>
 
       {open && visible.length > 0 && (
@@ -145,11 +134,16 @@ export function TagInput({ tags, onChange }: Props) {
               <button type="button" className="taginput__option" onClick={() => add(item.name)}>
                 {item.name}
                 <span className="cloud__count">{item.usageCount}</span>
+
               </button>
+
             </li>
+
           ))}
         </ul>
+
       )}
     </div>
+
   )
 }

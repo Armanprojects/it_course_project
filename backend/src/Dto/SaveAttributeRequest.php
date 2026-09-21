@@ -8,18 +8,9 @@ use App\Enum\AttributeCategory;
 use App\Enum\AttributeType;
 use Symfony\Component\Validator\Constraints as Assert;
 
-/**
- * Create or edit one library attribute.
- *
- * The type is only read on create: changing it later would invalidate every
- * value already stored against the attribute, so the entity has no setter for
- * it and the update path ignores the field.
- */
 final class SaveAttributeRequest
 {
-    /**
-     * @param list<string> $options
-     */
+    /** @param list<string> $options */
     public function __construct(
         #[Assert\NotBlank(message: 'Укажите название атрибута.')]
         #[Assert\Length(max: 120, maxMessage: 'Название не длиннее {{ limit }} символов.')]
@@ -51,9 +42,7 @@ final class SaveAttributeRequest
     ) {
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     public static function categories(): array
     {
         return array_map(
@@ -62,9 +51,7 @@ final class SaveAttributeRequest
         );
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     public static function types(): array
     {
         return array_map(
@@ -83,12 +70,7 @@ final class SaveAttributeRequest
         return AttributeType::from($this->type);
     }
 
-    /**
-     * Trimmed and de-duplicated; a dropdown with two identical choices is a
-     * data-entry slip, not a configuration.
-     *
-     * @return list<string>
-     */
+    /** @return list<string> */
     public function cleanOptions(): array
     {
         $seen = [];

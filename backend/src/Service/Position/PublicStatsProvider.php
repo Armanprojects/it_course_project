@@ -9,12 +9,6 @@ use App\Repository\CvRepository;
 use App\Repository\PositionRepository;
 use App\Repository\UserRepository;
 
-/**
- * The figures the home page shows to everyone, signed in or not.
- *
- * Only aggregates leave this class: counting CVs is public information,
- * the CVs themselves are not.
- */
 final readonly class PublicStatsProvider
 {
     private const RECENT_WINDOW = '-24 hours';
@@ -26,9 +20,7 @@ final readonly class PublicStatsProvider
     ) {
     }
 
-    /**
-     * @return array<string, int>
-     */
+    /** @return array<string, int> */
     public function collect(): array
     {
         return [

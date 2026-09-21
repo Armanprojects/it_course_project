@@ -12,12 +12,6 @@ use Dompdf\Dompdf;
 use Dompdf\Options;
 use Twig\Environment;
 
-/**
- * Renders a CV as a printable PDF carrying a QR code back to the application.
- *
- * The document is built from the same template the position defines, in the
- * same order the screen shows it, so a printed copy and the page agree.
- */
 final readonly class CvPdfGenerator
 {
     private const SECTION_TITLES = [
@@ -60,9 +54,7 @@ final readonly class CvPdfGenerator
 
         $options = new Options();
         $options->setDefaultFont('DejaVu Sans');
-        // The document is built entirely from our own markup, so nothing should
-        // be fetched over the network while rendering it: a slow or dead remote
-        // host would otherwise hold the request open.
+
         $options->setIsRemoteEnabled(false);
         $options->setIsHtml5ParserEnabled(true);
 
@@ -83,12 +75,7 @@ final readonly class CvPdfGenerator
         );
     }
 
-    /**
-     * Mirrors CvSerializer: personal information opens the document, the rest
-     * keeps the order the position gave its attributes.
-     *
-     * @return list<array{title: string, attributes: list<array{name: string, value: string, empty: bool, isUrl: bool}>}>
-     */
+    /** @return list<array{title: string, attributes: list<array{name: string, value: string, empty: bool, isUrl: bool}>}> */
     private function sections(Cv $cv): array
     {
         $profile  = $cv->getProfile();
@@ -122,9 +109,7 @@ final readonly class CvPdfGenerator
         return $ordered;
     }
 
-    /**
-     * @return list<array{name: string, period: string, description: ?string, tags: list<string>}>
-     */
+    /** @return list<array{name: string, period: string, description: ?string, tags: list<string>}> */
     private function projects(Cv $cv): array
     {
         $projects = [];
@@ -133,8 +118,6 @@ final readonly class CvPdfGenerator
             $projects[] = [
                 'name'        => $project->getName(),
                 'period'      => $this->period($project->getPeriodFrom(), $project->getPeriodTo(), $project->isOngoing()),
-                // Markdown is printed as written: rendering it would mean
-                // pulling a parser in just for the few projects that use it.
                 'description' => $project->getDescription(),
                 'tags'        => array_map(
                     static fn ($tag): string => $tag->getName(),
@@ -164,10 +147,6 @@ final readonly class CvPdfGenerator
         return !$empty && AttributeType::Image === $link->getAttribute()->getType();
     }
 
-    /**
-     * A recruiter may name a section freely in the template; only the built-in
-     * category codes get a translated title.
-     */
     private function sectionTitle(string $section): string
     {
         return self::SECTION_TITLES[$section] ?? $section;

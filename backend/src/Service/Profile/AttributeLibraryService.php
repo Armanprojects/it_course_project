@@ -18,12 +18,6 @@ use Doctrine\ORM\OptimisticLockException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
-/**
- * Write side of the shared attribute library.
- *
- * Recruiters manage one common pool, so there is no ownership here either —
- * only the role gate at the controller.
- */
 final readonly class AttributeLibraryService
 {
     public function __construct(
@@ -50,10 +44,6 @@ final readonly class AttributeLibraryService
         return $attribute;
     }
 
-    /**
-     * The type is deliberately not editable: every stored value lives in a
-     * column chosen by it, so changing it would orphan all of them.
-     */
     public function update(Attribute $attribute, SaveAttributeRequest $request): Attribute
     {
         $this->assertVersion($attribute, $request->version);
@@ -68,12 +58,6 @@ final readonly class AttributeLibraryService
         return $attribute;
     }
 
-    /**
-     * Soft delete: stored values and position links survive, the attribute just
-     * leaves the library and stops being offered.
-     *
-     * Built-ins refuse outright — the brief says the "Me" section always exists.
-     */
     public function remove(Attribute $attribute): void
     {
         try {
@@ -91,13 +75,7 @@ final readonly class AttributeLibraryService
         $this->em->flush();
     }
 
-    /**
-     * Where an attribute is in use, so the UI can warn before removing it.
-     *
-     * Three counting queries, never a walk over the collections.
-     *
-     * @return array{profiles: int, positions: int, rules: int}
-     */
+    /** @return array{profiles: int, positions: int, rules: int} */
     public function usage(Attribute $attribute): array
     {
         return [
@@ -107,9 +85,7 @@ final readonly class AttributeLibraryService
         ];
     }
 
-    /**
-     * @param class-string $entity
-     */
+    /** @param class-string $entity */
     private function countBy(string $entity, Attribute $attribute): int
     {
         return (int) $this->em->createQueryBuilder()
@@ -133,8 +109,6 @@ final readonly class AttributeLibraryService
             throw new BadRequestHttpException('Для типа «выбор из списка» нужен хотя бы один вариант.');
         }
 
-        // Dropping an option that profiles already store would leave those
-        // values pointing at a choice that no longer exists.
         $removed = array_diff($attribute->getOptions(), $options);
 
         if ([] !== $removed && $this->optionsInUse($attribute, $removed)) {
@@ -147,9 +121,7 @@ final readonly class AttributeLibraryService
         $attribute->setOptions($options);
     }
 
-    /**
-     * @param list<string> $options
-     */
+    /** @param list<string> $options */
     private function optionsInUse(Attribute $attribute, array $options): bool
     {
         return (int) $this->em->createQueryBuilder()
@@ -175,8 +147,6 @@ final readonly class AttributeLibraryService
         try {
             $this->em->flush();
         } catch (UniqueConstraintViolationException) {
-            // Names are globally unique, case-insensitively; the index is what
-            // actually decides when two recruiters add the same one at once.
             throw new ConflictHttpException('Атрибут с таким названием уже существует.');
         } catch (OptimisticLockException) {
             if (null !== $attribute) {

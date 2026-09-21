@@ -9,19 +9,6 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Mailer\Event\MessageEvent;
 use Symfony\Component\Mime\Message;
 
-/**
- * Записывает отправленные письма на диск, чтобы в dev можно было открыть
- * ссылку подтверждения без настройки SMTP.
- *
- * Symfony Mailer не умеет транспорт вида filesystem://, а null-транспорт
- * молча выбрасывает письмо, поэтому содержимое сохраняется здесь.
- * Подписчик регистрируется только в dev (см. services.yaml).
- *
- * Рядом с .eml кладётся .txt: тело письма закодировано в quoted-printable,
- * где «=» записан как «=3D», а длинные строки разорваны знаком «=» в конце.
- * Скопировать ссылку из .eml глазами нельзя — токен приходится склеивать
- * вручную, поэтому готовые ссылки выносятся в отдельный читаемый файл.
- */
 final readonly class MailArchiveSubscriber implements EventSubscriberInterface
 {
     public function __construct(private string $archiveDir)
@@ -30,9 +17,6 @@ final readonly class MailArchiveSubscriber implements EventSubscriberInterface
 
     public static function getSubscribedEvents(): array
     {
-        // MessageEvent, а не SentMessageEvent: null-транспорт письмо
-        // никуда не отправляет, и события об отправке не будет.
-        // MessageEvent срабатывает до передачи транспорту — при любом DSN.
         return [MessageEvent::class => ['onMessage', -1000]];
     }
 
@@ -68,11 +52,6 @@ final readonly class MailArchiveSubscriber implements EventSubscriberInterface
         return $addresses[0]?->getAddress() ?? 'unknown';
     }
 
-    /**
-     * Человекочитаемая выжимка: кому, тема и ссылки одной строкой каждая.
-     * Разбор письма переиспользуется из команды, чтобы правила декодирования
-     * жили в одном месте.
-     */
     private function summarize(string $raw, string $recipient): string
     {
         $links = ShowLastMailCommand::extractLinks($raw);

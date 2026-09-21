@@ -1,16 +1,4 @@
-/**
- * Словарь интерфейса.
- *
- * Плоские ключи вида `раздел.смысл` вместо вложенных объектов: так строку
- * видно целиком в месте использования, а пропущенный перевод ловится типом.
- * Русский словарь объявлен первым и задаёт форму — английский обязан
- * повторить её ключ в ключ, иначе сборка не пройдёт.
- *
- * Переводится только интерфейс: названия позиций, описания проектов и теги
- * остаются как их ввёл пользователь — прямое требование задания.
- */
 export const ru = {
-  // --- общее ---
   "app.name": "Hiring Platform",
   "common.loading": "Загружаем…",
   "common.save": "Сохранить",
@@ -19,7 +7,6 @@ export const ru = {
   "common.yes": "Да",
   "common.no": "Нет",
   "common.notFilled": "не заполнено",
-  // --- шапка ---
   "header.searchPlaceholder": "Поиск позиций…",
   "header.searchLabel": "Поиск по позициям",
   "header.positions": "Позиции",
@@ -32,7 +19,6 @@ export const ru = {
   "header.themeLight": "Светлая тема",
   "header.themeDark": "Тёмная тема",
   "header.language": "Язык интерфейса",
-  // --- главная ---
   "home.title": "Позиции и резюме в одном месте",
   "home.statPositions": "Позиций",
   "home.statSubmitted": "Резюме подано",
@@ -48,7 +34,6 @@ export const ru = {
   "home.tags": "Технологии",
   "home.tagsHint": "Теги проектов и позиций",
   "home.tagsEmpty": "Тегов пока нет.",
-  // --- каталог позиций ---
   "positions.title": "Позиции",
   "positions.guestHint": "Каталог открыт без входа — подать резюме можно после регистрации.",
   "positions.empty": "Позиций пока нет.",
@@ -61,7 +46,6 @@ export const ru = {
   "positions.colCvs": "Резюме",
   "positions.colUpdated": "Обновлена",
   "positions.notFound": "Позиции не найдены.",
-  // --- резюме: таблица ---
   "cvTable.candidate": "Кандидат",
   "cvTable.position": "Позиция",
   "cvTable.status": "Статус",
@@ -70,13 +54,11 @@ export const ru = {
   "cvTable.empty": "Резюме не найдены.",
   "cv.published": "Опубликовано",
   "cv.draft": "Черновик",
-  // --- поиск по резюме ---
   "cvSearch.title": "Поиск по резюме",
   "cvSearch.placeholder": "Например: kubernetes, Berlin, аналитика…",
   "cvSearch.label": "Запрос",
   "cvSearch.prompt": "Введите запрос, чтобы найти кандидатов.",
   "cvSearch.failed": "Поиск не удался.",
-  // --- страница резюме ---
   "cv.unavailable": "Резюме вам недоступно.",
   "cv.publish": "Опубликовать",
   "cv.unpublish": "Снять с публикации",
@@ -92,7 +74,6 @@ export const ru = {
   "cv.saveFailed": "Не удалось сохранить.",
   "cv.conflict": "Профиль изменился в другой вкладке. Данные перезагружены — повторите правку.",
   "cv.editAttribute": "Изменить «{name}»",
-  // --- поле изображения ---
   "image.uploading": "Загружаем…",
   "image.dropHere": "Перетащите файл сюда или",
   "image.choose": "выберите",
@@ -100,14 +81,11 @@ export const ru = {
   "image.linkLabel": "Ссылка на изображение",
   "image.uploadFailed": "Не удалось загрузить файл.",
   "image.brokenLink": "Ссылка не открывается как изображение.",
-  // --- теги ---
   "tags.placeholder": "React, Docker…",
   "tags.add": "Добавить тег",
   "tags.remove": "Убрать тег {tag}",
-  // --- пароль ---
   "password.show": "Показать пароль",
   "password.hide": "Скрыть пароль",
-  // --- категории и типы атрибутов ---
   "category.personal_information": "Личные данные",
   "category.certification": "Сертификаты",
   "category.domain_knowledge": "Профессиональные знания",
@@ -426,11 +404,9 @@ export const ru = {
 
 export type MessageKey = keyof typeof ru
 
-/** Английский обязан покрыть ровно те же ключи — за этим следит Record. */
 export type Messages = Record<MessageKey, string>
 
 export const en: Messages = {
-  // --- общее ---
   "app.name": "Hiring Platform",
   "common.loading": "Loading…",
   "common.save": "Save",
@@ -439,7 +415,6 @@ export const en: Messages = {
   "common.yes": "Yes",
   "common.no": "No",
   "common.notFilled": "not filled in",
-  // --- шапка ---
   "header.searchPlaceholder": "Search positions…",
   "header.searchLabel": "Search positions",
   "header.positions": "Positions",
@@ -452,7 +427,6 @@ export const en: Messages = {
   "header.themeLight": "Light theme",
   "header.themeDark": "Dark theme",
   "header.language": "Interface language",
-  // --- главная ---
   "home.title": "Positions and CVs in one place",
   "home.statPositions": "Positions",
   "home.statSubmitted": "CVs submitted",
@@ -468,7 +442,6 @@ export const en: Messages = {
   "home.tags": "Technologies",
   "home.tagsHint": "Project and position tags",
   "home.tagsEmpty": "No tags yet.",
-  // --- каталог позиций ---
   "positions.title": "Positions",
   "positions.guestHint": "The catalogue is open to everyone — sign up to submit a CV.",
   "positions.empty": "No positions yet.",
@@ -481,7 +454,6 @@ export const en: Messages = {
   "positions.colCvs": "CVs",
   "positions.colUpdated": "Updated",
   "positions.notFound": "No positions found.",
-  // --- резюме: таблица ---
   "cvTable.candidate": "Candidate",
   "cvTable.position": "Position",
   "cvTable.status": "Status",
@@ -490,13 +462,11 @@ export const en: Messages = {
   "cvTable.empty": "No CVs found.",
   "cv.published": "Published",
   "cv.draft": "Draft",
-  // --- поиск по резюме ---
   "cvSearch.title": "Search CVs",
   "cvSearch.placeholder": "For example: kubernetes, Berlin, analytics…",
   "cvSearch.label": "Query",
   "cvSearch.prompt": "Enter a query to find candidates.",
   "cvSearch.failed": "Search failed.",
-  // --- страница резюме ---
   "cv.unavailable": "This CV is not available to you.",
   "cv.publish": "Publish",
   "cv.unpublish": "Unpublish",
@@ -512,7 +482,6 @@ export const en: Messages = {
   "cv.saveFailed": "Could not save.",
   "cv.conflict": "The profile changed in another tab. Data reloaded — please repeat the edit.",
   "cv.editAttribute": "Edit “{name}”",
-  // --- поле изображения ---
   "image.uploading": "Uploading…",
   "image.dropHere": "Drop a file here or",
   "image.choose": "choose one",
@@ -520,14 +489,11 @@ export const en: Messages = {
   "image.linkLabel": "Image link",
   "image.uploadFailed": "Could not upload the file.",
   "image.brokenLink": "The link does not open as an image.",
-  // --- теги ---
   "tags.placeholder": "React, Docker…",
   "tags.add": "Add tag",
   "tags.remove": "Remove tag {tag}",
-  // --- пароль ---
   "password.show": "Show password",
   "password.hide": "Hide password",
-  // --- категории и типы атрибутов ---
   "category.personal_information": "Personal information",
   "category.certification": "Certification",
   "category.domain_knowledge": "Domain knowledge",

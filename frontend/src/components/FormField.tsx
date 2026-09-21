@@ -13,14 +13,9 @@ interface Props {
   autoComplete: string
   placeholder?: string
   disabled?: boolean
-  /** Показывать индикатор надёжности — только при создании пароля. */
   showStrength?: boolean
 }
 
-/**
- * Поле с видимой меткой (не placeholder-only) и ошибкой под ним, связанной
- * через aria-describedby: скринридер читает её вместе с полем, а не отдельно.
- */
 export function FormField({
   label,
   type,
@@ -43,8 +38,6 @@ export function FormField({
   const inputType = isPassword && revealed ? 'text' : type
   const strength = showStrength ? evaluatePassword(value) : null
 
-  // Подсказку про требования показываем всегда, ошибку — поверх неё:
-  // две записи в describedby читались бы подряд и путали.
   const describedBy = error ? errorId : strength ? hintId : undefined
 
   const input = (
@@ -55,14 +48,13 @@ export function FormField({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onBlur={onBlur}
-      // Менеджеры паролей должны работать, вставка не блокируется —
-      // требование WCAG 2.2 к доступной аутентификации.
       autoComplete={autoComplete}
       placeholder={placeholder}
       disabled={disabled}
       aria-invalid={error ? true : undefined}
       aria-describedby={describedBy}
     />
+
   )
 
   return (
@@ -87,39 +79,42 @@ export function FormField({
               <EyeIcon size={17} aria-hidden="true" />
             )}
           </button>
+
         </div>
+
       ) : (
         input
       )}
 
       {strength && (
         <>
-          {/* Полоски — только визуальная подсказка, смысл несёт текст ниже:
-              по одному цвету состояние не определить при дальтонизме. */}
           <div className="pwmeter" aria-hidden="true">
             {[1, 2, 3].map((segment) => (
               <span
                 key={segment}
                 className={segment <= strength.score ? `is-${strength.level}` : undefined}
               />
+
             ))}
           </div>
 
-          {/* aria-live не ставим: индикатор меняется на каждый символ, и
-              озвучивание каждого шага мешало бы вводу. */}
           <span id={hintId} className="t-xs muted-3">
             {strength.label
               ? `${t(strength.label)} · ${t(strength.hint, strength.hintParams)}`
               : t(strength.hint, strength.hintParams)}
           </span>
+
         </>
+
       )}
 
       {error && (
         <span id={errorId} className="field__error">
           {error}
         </span>
+
       )}
     </div>
+
   )
 }

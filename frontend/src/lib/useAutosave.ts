@@ -2,39 +2,21 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 export type SaveState = 'idle' | 'pending' | 'saving' | 'saved' | 'conflict' | 'error'
 
-/** Интервал по заданию: сохранять раз в 5–10 секунд, а не на каждое нажатие. */
 const SAVE_DELAY_MS = 5000
 
 interface Options<T> {
-  /** Отправка накопленных изменений. Возвращает true, если сохранение прошло. */
   onSave: (changes: T) => Promise<boolean>
-  /** Пусты ли изменения — чтобы не слать тик впустую. */
   isEmpty: (changes: T) => boolean
-  /** Пустой набор изменений: с него начинаем и к нему возвращаемся. */
   empty: T
 }
 
-/**
- * Автосохранение с накоплением изменений.
- *
- * Правки копятся в ref, а таймер отсчитывает от первой из них — то есть
- * непрерывный набор текста не откладывает сохранение бесконечно, но и не шлёт
- * запрос на каждую букву. Ref, а не state: он нужен обработчику таймера и
- * размонтированию, а лишний рендер на каждое нажатие тут ни к чему.
- */
 export function useAutosave<T>({ onSave, isEmpty, empty }: Options<T>) {
   const [state, setState] = useState<SaveState>('idle')
 
   const pending = useRef<T>(empty)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // Сохранение уже летит: второй запрос параллельно отправлять нельзя, иначе
-  // они гонятся за одну и ту же версию и второй гарантированно конфликтует.
   const inFlight = useRef(false)
 
-  // Колбэк держим в ref: он пересоздаётся на каждый рендер вместе с данными
-  // страницы, а таймер должен вызывать самую свежую версию, не перезапускаясь.
-  // Присваиваем в эффекте, а не прямо в теле: запись в ref во время рендера
-  // ломается при конкурентном рендеринге, когда рендер могут отменить.
   const saveRef = useRef(onSave)
 
   useEffect(() => {
@@ -51,8 +33,6 @@ export function useAutosave<T>({ onSave, isEmpty, empty }: Options<T>) {
       return
     }
 
-    // Забираем изменения до запроса: правки, сделанные пока он летит, попадут
-    // в следующий тик, а не потеряются при очистке после ответа.
     const changes = pending.current
     pending.current = empty
     inFlight.current = true
@@ -68,7 +48,6 @@ export function useAutosave<T>({ onSave, isEmpty, empty }: Options<T>) {
     }
   }, [empty, isEmpty])
 
-  /** Зарегистрировать изменение и запустить отсчёт, если он ещё не идёт. */
   const schedule = useCallback(
     (merge: (current: T) => T) => {
       pending.current = merge(pending.current)
@@ -82,7 +61,6 @@ export function useAutosave<T>({ onSave, isEmpty, empty }: Options<T>) {
     [flush],
   )
 
-  /** Сбросить накопленное — после конфликта, когда данные перечитаны. */
   const reset = useCallback(() => {
     if (timer.current) {
       clearTimeout(timer.current)
@@ -93,8 +71,6 @@ export function useAutosave<T>({ onSave, isEmpty, empty }: Options<T>) {
     setState('idle')
   }, [empty])
 
-  // Несохранённые правки не должны утекать при уходе со страницы: браузер
-  // покажет стандартное предупреждение, а таймер снимаем при размонтировании.
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
       if (!isEmpty(pending.current)) {

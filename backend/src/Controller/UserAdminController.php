@@ -19,17 +19,6 @@ use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-/**
- * User management: the one thing an administrator can do that nobody else can.
- *
- * Every other admin power in the brief — editing any profile, CV or position,
- * acting as recruiter or candidate — is expressed as an exemption inside the
- * existing endpoints, not as a separate admin API. Only the account list has
- * no counterpart for ordinary users, so it lives here.
- *
- * The whole prefix is already behind ROLE_ADMIN in security.yaml; the
- * attribute below repeats it so the guard travels with the code.
- */
 #[Route('/api/admin/users')]
 #[IsGranted('ROLE_ADMIN')]
 final class UserAdminController extends AbstractController
@@ -90,11 +79,6 @@ final class UserAdminController extends AbstractController
         ));
     }
 
-    /**
-     * Revoking a role. The role is in the body rather than the path because
-     * DELETE carries one here for the same reason POST does: it is a value to
-     * validate against the enum, not a route segment.
-     */
     #[Route('/{id<\d+>}/roles', name: 'api_admin_users_revoke_role', methods: ['DELETE'])]
     public function revokeRole(
         int $id,

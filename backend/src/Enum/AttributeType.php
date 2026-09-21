@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Enum;
 
-
 enum AttributeType: string
 {
     case String  = 'string';
@@ -21,9 +20,7 @@ enum AttributeType: string
         return self::Select === $this;
     }
 
-    /**
-     * @return list<FilterOperator>
-     */
+    /** @return list<FilterOperator> */
     public function supportedOperators(): array
     {
         return match ($this) {

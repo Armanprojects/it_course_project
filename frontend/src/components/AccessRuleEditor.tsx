@@ -3,7 +3,6 @@ import type { AccessRule, AttributeType, FilterOperator, LibraryAttribute } from
 import { useTranslation } from '../i18n/context'
 import type { MessageKey } from '../i18n/messages'
 
-/** Подписи операторов из App\Enum\FilterOperator. */
 const OPERATOR_LABELS: Record<FilterOperator, MessageKey> = {
   eq: 'rule.op.eq',
   neq: 'rule.op.neq',
@@ -18,20 +17,11 @@ const OPERATOR_LABELS: Record<FilterOperator, MessageKey> = {
 
 interface Props {
   rules: AccessRule[]
-  /** Атрибуты, по которым можно строить правило. */
   attributes: LibraryAttribute[]
-  /** Какие операторы допускает каждый тип — приходит с сервера. */
   operators: Record<AttributeType, FilterOperator[]>
   onChange: (rules: AccessRule[]) => void
 }
 
-/**
- * Редактор правил доступа к позиции.
- *
- * Правила складываются по И: кандидат видит позицию, только если проходит
- * все. Набор операторов зависит от типа атрибута — это ограничение приходит
- * с сервера, чтобы клиент не мог предложить «содержит» для флажка.
- */
 export function AccessRuleEditor({ rules, attributes, operators, onChange }: Props) {
   const t = useTranslation()
   const byId = new Map(attributes.map((attribute) => [attribute.id, attribute]))
@@ -57,6 +47,7 @@ export function AccessRuleEditor({ rules, attributes, operators, onChange }: Pro
         <p className="muted t-sm" style={{ margin: 0 }}>
           {t('rule.empty')}
         </p>
+
       ) : (
         rules.map((rule, index) => {
           const attribute = byId.get(rule.attributeId)
@@ -73,8 +64,6 @@ export function AccessRuleEditor({ rules, attributes, operators, onChange }: Pro
                   const next = byId.get(Number(event.target.value))
                   const nextAllowed = next ? (operators[next.type] ?? ['is_set']) : ['is_set']
 
-                  // Тип сменился — старый оператор и операнд могут быть
-                  // невалидны, поэтому сбрасываем их вместе с атрибутом.
                   update(index, {
                     attributeId: Number(event.target.value),
                     operator: nextAllowed[0] as FilterOperator,
@@ -86,6 +75,7 @@ export function AccessRuleEditor({ rules, attributes, operators, onChange }: Pro
                   <option key={option.id} value={option.id}>
                     {option.name}
                   </option>
+
                 ))}
               </select>
 
@@ -101,6 +91,7 @@ export function AccessRuleEditor({ rules, attributes, operators, onChange }: Pro
                   <option key={operator} value={operator}>
                     {t(OPERATOR_LABELS[operator])}
                   </option>
+
                 ))}
               </select>
 
@@ -120,7 +111,9 @@ export function AccessRuleEditor({ rules, attributes, operators, onChange }: Pro
               >
                 <TrashIcon size={14} aria-hidden="true" />
               </button>
+
             </div>
+
           )
         })
       )}
@@ -134,11 +127,12 @@ export function AccessRuleEditor({ rules, attributes, operators, onChange }: Pro
       >
         {t('rule.add')}
       </button>
+
     </div>
+
   )
 }
 
-/** Поле операнда: его вид определяет тип атрибута, а не оператор. */
 function OperandInput({
   type,
   operator,
@@ -154,7 +148,6 @@ function OperandInput({
 }) {
   const t = useTranslation()
 
-  // «Заполнено» проверяет наличие значения, сравнивать не с чем.
   if (operator === 'is_set') {
     return <span className="muted-3 t-sm rulerow__none">{t('rule.noValue')}</span>
   }
@@ -168,8 +161,11 @@ function OperandInput({
         onChange={(event) => onChange(event.target.value === 'true')}
       >
         <option value="true">{t('rule.checked')}</option>
+
         <option value="false">{t('rule.unchecked')}</option>
+
       </select>
+
     )
   }
 
@@ -191,10 +187,13 @@ function OperandInput({
                 )
               }
             />
+
             {option}
           </label>
+
         ))}
       </div>
+
     )
   }
 
@@ -207,12 +206,15 @@ function OperandInput({
         onChange={(event) => onChange(event.target.value)}
       >
         <option value="">{t('rule.choose')}</option>
+
         {options.map((option) => (
           <option key={option} value={option}>
             {option}
           </option>
+
         ))}
       </select>
+
     )
   }
 
@@ -224,10 +226,9 @@ function OperandInput({
       aria-label={t('rule.value')}
       type={type === 'numeric' ? 'number' : type === 'date' ? 'date' : 'text'}
       step={type === 'numeric' ? 'any' : undefined}
-      // Операнд приходит из decimal(20,6) строкой «5.000000»: показывать
-      // хвост нулей незачем, а числом его гонять нельзя — потеряется точность.
       value={type === 'numeric' && text.includes('.') ? text.replace(/\.?0+$/, '') : text}
       onChange={(event) => onChange(event.target.value)}
     />
+
   )
 }

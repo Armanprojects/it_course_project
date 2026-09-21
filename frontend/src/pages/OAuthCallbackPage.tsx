@@ -5,7 +5,6 @@ import { tokenStorage } from '../api/client'
 import { useTranslation } from '../i18n/context'
 import type { MessageKey } from '../i18n/messages'
 
-/** Коды ошибок из App\Exception\AuthException и OAuthController. */
 const ERROR_KEYS: Record<string, MessageKey> = {
   access_denied: 'oauth.accessDenied',
   missing_code: 'oauth.missingCode',
@@ -16,14 +15,6 @@ const ERROR_KEYS: Record<string, MessageKey> = {
   unknown_provider: 'oauth.unknownProvider',
 }
 
-/**
- * Разбирается один раз на модуле, а не в эффекте: фрагмент URL — это входные
- * данные навигации, они известны до первого рендера и не меняются.
- */
-/**
- * Возвращает ключ ошибки, а не текст: функция вызывается вне React, языка
- * ещё не знает — переводит компонент.
- */
 function consumeCallback(): { redirecting: boolean; error: MessageKey | null } {
   const params = new URLSearchParams(window.location.hash.slice(1))
   const token = params.get('token')
@@ -31,8 +22,6 @@ function consumeCallback(): { redirecting: boolean; error: MessageKey | null } {
   if (token) {
     tokenStorage.set(token)
 
-    // replace, а не push: возврат «назад» не должен вести на колбэк
-    // с уже израсходованным токеном в адресе.
     window.location.replace('/')
 
     return { redirecting: true, error: null }
@@ -46,10 +35,6 @@ function consumeCallback(): { redirecting: boolean; error: MessageKey | null } {
   }
 }
 
-/**
- * Бэкенд возвращает браузер сюда с токеном во фрагменте URL.
- * Фрагмент не уходит на сервер — не попадает в логи nginx и в Referer.
- */
 export function OAuthCallbackPage() {
   const t = useTranslation()
   const [{ error }] = useState(consumeCallback)
@@ -61,7 +46,9 @@ export function OAuthCallbackPage() {
           <span className="auth__logo" aria-hidden="true">
             C
           </span>
+
           <span>CVMatch</span>
+
         </div>
 
         <div className="auth__box">
@@ -69,6 +56,7 @@ export function OAuthCallbackPage() {
             <p className="muted" style={{ margin: 0 }} role="status">
               {t('oauth.finishing')}
             </p>
+
           ) : (
             <div className="col g4">
               <WarningCircleIcon
@@ -77,11 +65,14 @@ export function OAuthCallbackPage() {
                 aria-hidden="true"
                 style={{ color: 'var(--err-fg)' }}
               />
+
               <div>
                 <h1 className="h2">{t('oauth.failedTitle')}</h1>
+
                 <p className="muted mt3" style={{ margin: 0 }}>
                   {t(error)}
                 </p>
+
               </div>
 
               <Link
@@ -91,14 +82,19 @@ export function OAuthCallbackPage() {
               >
                 {t('verify.backToLogin')}
               </Link>
+
             </div>
+
           )}
         </div>
 
         <p className="auth__foot" style={{ margin: 0 }}>
           © {new Date().getFullYear()} CVMatch
         </p>
+
       </div>
+
     </div>
+
   )
 }

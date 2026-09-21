@@ -7,14 +7,9 @@ export interface RoleOption {
   title: MessageKey
   text: MessageKey
   Icon: typeof BriefcaseIcon
-  /** Модификатор цвета плитки: r — рекрутёр, c — кандидат. */
   mod: 'r' | 'c'
 }
 
-/**
- * Описания ролей вынесены из компонента: иначе экспорт констант рядом с
- * компонентом ломает hot reload — Vite перезагружает модуль целиком.
- */
 export const ROLE_OPTIONS: RoleOption[] = [
   {
     value: UserRole.Candidate,
@@ -32,7 +27,6 @@ export const ROLE_OPTIONS: RoleOption[] = [
   },
 ]
 
-/** Короткая подпись для плашки выбранной роли. */
 export const ROLE_PILL: Record<SelectableRole, MessageKey> = {
   [UserRole.Candidate]: 'role.candidate',
   [UserRole.Recruiter]: 'role.recruiter',

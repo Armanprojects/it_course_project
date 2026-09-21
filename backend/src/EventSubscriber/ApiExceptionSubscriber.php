@@ -14,10 +14,6 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
-/**
- * Everything under /api answers with the same error envelope, so the SPA has one
- * shape to handle instead of Symfony's HTML error pages.
- */
 final readonly class ApiExceptionSubscriber implements EventSubscriberInterface
 {
     public function __construct(private bool $debug)
@@ -45,10 +41,6 @@ final readonly class ApiExceptionSubscriber implements EventSubscriberInterface
         });
     }
 
-    /**
-     * The version travels with the error: without it the client can only tell
-     * the user "reload", instead of merging against what the server now holds.
-     */
     private function conflictResponse(ConflictException $exception): JsonResponse
     {
         return new JsonResponse([
@@ -82,12 +74,7 @@ final readonly class ApiExceptionSubscriber implements EventSubscriberInterface
         return new JsonResponse($payload, $exception->getStatusCode(), $exception->getHeaders());
     }
 
-    /**
-     * #[MapRequestPayload] wraps validation failures in an HTTP exception; dig
-     * the field errors out so the client can highlight the offending inputs.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     private function extractViolations(HttpExceptionInterface $exception): array
     {
         $previous = $exception->getPrevious();
@@ -112,8 +99,6 @@ final readonly class ApiExceptionSubscriber implements EventSubscriberInterface
             'message' => 'An unexpected error occurred.',
         ];
 
-        // Never leak internals in production; in dev the message is what makes
-        // the failure debuggable from the browser's network tab.
         if ($this->debug) {
             $payload['message']   = $exception->getMessage();
             $payload['exception'] = $exception::class;

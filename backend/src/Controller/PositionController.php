@@ -13,14 +13,6 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
-/**
- * Read-only view of the position catalogue.
- *
- * Open to anonymous visitors on purpose: browsing positions without an account
- * is what the brief asks for. Everything that could identify a candidate — the
- * CVs submitted to a position, its discussion, its access rules — stays out of
- * these payloads and lives behind the authenticated endpoints.
- */
 #[Route('/api/positions')]
 final class PositionController extends AbstractController
 {
@@ -28,9 +20,6 @@ final class PositionController extends AbstractController
     {
     }
 
-    /**
-     * Paginated, sortable, searchable positions table.
-     */
     #[Route('', name: 'api_positions_index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
@@ -45,10 +34,6 @@ final class PositionController extends AbstractController
         ));
     }
 
-    /**
-     * Read-only detail of one position: what a CV built from this template
-     * would ask for. Anonymous visitors see the shape, not anybody's answers.
-     */
     #[Route('/{id<\d+>}', name: 'api_positions_show', methods: ['GET'])]
     public function show(int $id): JsonResponse
     {
@@ -61,9 +46,7 @@ final class PositionController extends AbstractController
         return $this->json($this->serialize($position));
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function serialize(Position $position): array
     {
         $attributes = [];
@@ -93,9 +76,7 @@ final class PositionController extends AbstractController
         ];
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function serializeAttribute(PositionAttribute $link): array
     {
         $attribute = $link->getAttribute();
@@ -113,9 +94,7 @@ final class PositionController extends AbstractController
         ];
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function serializeTag(Tag $tag): array
     {
         return [

@@ -12,21 +12,14 @@ use App\Enum\AttributeType;
 use App\Enum\UserRole;
 use App\Service\Export\CandidateNaming;
 
-/**
- * Renders a CV: the candidate's profile seen through a position's template.
- *
- * Nothing here is stored — the values are read live from the profile, which is
- * what makes editing an attribute in a CV change the profile itself.
- */
+
 final readonly class CvSerializer
 {
     public function __construct(private CandidateNaming $naming)
     {
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function serialize(Cv $cv, ?User $viewer = null): array
     {
         $profile  = $cv->getProfile();
@@ -47,19 +40,19 @@ final readonly class CvSerializer
                 'options'     => $attribute->getOptions(),
                 'required'    => $link->isRequired(),
                 'value'       => null === $value ? null : $this->readValue($value),
-                // Empty values are highlighted in red by the brief, in both
-                // the candidate's editor and the recruiter's read-only view.
+
+
                 'empty'       => null === $value || $value->isEmpty(),
             ];
         }
 
-        // A CV shows exactly what the position asked for — built-in attributes
-        // included. Photo and the rest of the personal data appear only when
-        // the recruiter put them in the template, so a position that does not
-        // ask for a photo gets a CV without one, and without the block.
-        //
-        // Personal information still opens the CV when it is there: it is who
-        // the candidate is. The remaining sections keep the position's order.
+
+
+
+
+
+
+
         $rendered = [];
         $personal = AttributeCategory::PersonalInformation->value;
 
@@ -79,13 +72,13 @@ final readonly class CvSerializer
             'likesCount'  => $cv->getLikesCount(),
             'likedByMe'   => null !== $viewer && $cv->isLikedBy($viewer),
             'canLike'     => $this->canLike($viewer),
-            // Publishing belongs to the owner (and to an admin acting as one),
-            // never to a recruiter — the client must not infer this from
-            // canLike, since an admin has both.
+
+
+
             'canEdit'     => null !== $viewer
                 && ($cv->getCandidate() === $viewer || $viewer->hasRole(UserRole::Admin)),
-            // The values live in the profile, so in-place editing locks against
-            // the profile's version, not the CV's.
+
+
             'profileVersion' => $profile->getVersion(),
             'createdAt'   => $cv->getCreatedAt()->format(\DATE_ATOM),
             'updatedAt'   => $cv->getUpdatedAt()->format(\DATE_ATOM),
@@ -114,12 +107,7 @@ final readonly class CvSerializer
         ];
     }
 
-    /**
-     * A compact row for the CV tables: position lists, search results and the
-     * candidate's own CV list.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function serializeRow(Cv $cv, ?User $viewer = null): array
     {
         return [
@@ -152,9 +140,7 @@ final readonly class CvSerializer
             && ($viewer->hasRole(UserRole::Recruiter) || $viewer->hasRole(UserRole::Admin));
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function serializeProject(Project $project): array
     {
         return [

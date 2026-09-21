@@ -7,13 +7,6 @@ namespace App\Dto;
 use App\Entity\Position;
 use Symfony\Component\Validator\Constraints as Assert;
 
-/**
- * The whole position as the editor holds it: basics, template attributes,
- * access rules and project tags in one payload.
- *
- * Sent as a whole rather than as a diff so that the server never has to guess
- * what "removed" means — anything absent from the lists is gone.
- */
 final class SavePositionRequest
 {
     /**
@@ -34,7 +27,6 @@ final class SavePositionRequest
 
         #[Assert\Length(max: 32)]
         public readonly ?string $level = null,
-
         public readonly bool $public = true,
 
         #[Assert\PositiveOrZero(message: 'Число проектов не может быть отрицательным.')]
@@ -51,18 +43,12 @@ final class SavePositionRequest
         #[Assert\All([new Assert\Type('string'), new Assert\Length(max: 64)])]
         public readonly array $projectTags = [],
 
-        /**
-         * Optimistic locking. Absent on create, where there is nothing to
-         * conflict with yet.
-         */
         #[Assert\PositiveOrZero]
         public readonly ?int $version = null,
     ) {
     }
 
-    /**
-     * @return list<array{attributeId: int, required: bool, section: ?string, sortOrder: int}>
-     */
+    /** @return list<array{attributeId: int, required: bool, section: ?string, sortOrder: int}> */
     public function normalizedAttributes(): array
     {
         $rows = [];
@@ -89,9 +75,7 @@ final class SavePositionRequest
         return $rows;
     }
 
-    /**
-     * @return list<array{attributeId: int, operator: string, value: mixed}>
-     */
+    /** @return list<array{attributeId: int, operator: string, value: mixed}> */
     public function normalizedRules(): array
     {
         $rows = [];
@@ -115,9 +99,7 @@ final class SavePositionRequest
         return $rows;
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     public function cleanTags(): array
     {
         $seen = [];

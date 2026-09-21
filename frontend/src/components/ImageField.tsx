@@ -9,13 +9,6 @@ interface Props {
   onChange: (value: string | null) => void
 }
 
-/**
- * Поле для атрибута-изображения: перетаскивание или выбор файла, картинка
- * уходит в облако, у нас остаётся ссылка.
- *
- * Если ключи Cloudinary не заданы, остаётся ручной ввод ссылки — поле не
- * ломается, просто теряет загрузку.
- */
 export function ImageField({ id, value, onChange }: Props) {
   const t = useTranslation()
   const [busy, setBusy] = useState(false)
@@ -56,6 +49,7 @@ export function ImageField({ id, value, onChange }: Props) {
     <div className="col g2">
       {value && (
         <img className="attr__preview" src={value} alt="" onError={() => setError(t('image.brokenLink'))} />
+
       )}
 
       {cloudinaryConfigured && (
@@ -86,6 +80,7 @@ export function ImageField({ id, value, onChange }: Props) {
             >
               {t('image.choose')}
             </button>
+
           )}
 
           <input
@@ -95,11 +90,12 @@ export function ImageField({ id, value, onChange }: Props) {
             className="sr-only"
             onChange={(event) => {
               void upload(event.target.files?.[0])
-              // Сбрасываем, иначе повторный выбор того же файла не сработает.
               event.target.value = ''
             }}
           />
+
         </div>
+
       )}
 
       <label className="label" htmlFor={cloudinaryConfigured ? urlFieldId : id}>
@@ -119,6 +115,8 @@ export function ImageField({ id, value, onChange }: Props) {
       />
 
       {error && <p className="field__error">{error}</p>}
+
     </div>
+
   )
 }

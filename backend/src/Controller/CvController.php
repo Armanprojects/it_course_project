@@ -23,12 +23,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-/**
- * CVs: created by candidates, read by recruiters.
- *
- * Anonymous visitors get nothing here at all — the brief keeps CVs behind
- * authentication even though the position catalogue is open.
- */
+
 #[Route('/api/cvs')]
 #[IsGranted('IS_AUTHENTICATED_FULLY')]
 final class CvController extends AbstractController
@@ -40,10 +35,7 @@ final class CvController extends AbstractController
     ) {
     }
 
-    /**
-     * Full-text search over submitted CVs — one of the three ways the brief
-     * gives recruiters to reach a candidate's data.
-     */
+
     #[Route('/search', name: 'api_cvs_search', methods: ['GET'])]
     #[IsGranted('ROLE_RECRUITER')]
     public function search(Request $request, #[CurrentUser] User $user): JsonResponse
@@ -59,9 +51,7 @@ final class CvController extends AbstractController
         ]);
     }
 
-    /**
-     * Starts a CV for a position. Access is re-checked server-side.
-     */
+
     #[Route('/positions/{id<\d+>}', name: 'api_cvs_start', methods: ['POST'])]
     public function start(
         int $id,
@@ -97,12 +87,7 @@ final class CvController extends AbstractController
         return $this->json($this->serializer->serialize($cv, $user));
     }
 
-    /**
-     * The printable version, carrying a QR code back to this page.
-     *
-     * Same access rules as reading the CV on screen: a draft belongs to its
-     * owner, a published CV is open to recruiters.
-     */
+
     #[Route('/{id<\d+>}/pdf', name: 'api_cvs_pdf', methods: ['GET'])]
     public function pdf(int $id, #[CurrentUser] User $user, CvPdfGenerator $pdf): Response
     {
@@ -111,8 +96,8 @@ final class CvController extends AbstractController
 
         $response = new Response($pdf->generate($cv));
         $response->headers->set('Content-Type', 'application/pdf');
-        // inline: the browser opens it in its own viewer, from which printing
-        // and saving are one click away — this is a document to be read.
+
+
         $response->headers->set(
             'Content-Disposition',
             HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_INLINE, $pdf->fileName($cv)),
@@ -121,13 +106,7 @@ final class CvController extends AbstractController
         return $response;
     }
 
-    /**
-     * In-place editing of a single attribute from the CV sheet.
-     *
-     * Writes through to the candidate's profile — the CV stores no values of
-     * its own — and is restricted to the owner and administrators, exactly like
-     * publishing. Recruiters read CVs, they never change them.
-     */
+
     #[Route('/{id<\d+>}/attributes', name: 'api_cvs_attribute_edit', methods: ['PATCH'])]
     public function editAttribute(
         int $id,
@@ -211,10 +190,7 @@ final class CvController extends AbstractController
         return $this->cvs->findDetail((int) $cv->getId()) ?? $cv;
     }
 
-    /**
-     * The owner and admins see any CV of theirs; recruiters see published ones.
-     * A draft is the candidate's private work in progress.
-     */
+
     private function assertCanView(Cv $cv, User $user): void
     {
         if ($this->owns($cv, $user) || $user->hasRole(UserRole::Admin)) {
@@ -228,10 +204,7 @@ final class CvController extends AbstractController
         throw $this->createAccessDeniedException('Это резюме вам недоступно.');
     }
 
-    /**
-     * Recruiters explicitly may not change candidate CVs — administrators may,
-     * acting as the owner of any page.
-     */
+
     private function assertCanEdit(Cv $cv, User $user): void
     {
         if (!$this->owns($cv, $user) && !$user->hasRole(UserRole::Admin)) {

@@ -8,13 +8,6 @@ use App\Entity\Cv;
 use App\Entity\Position;
 use App\Repository\CvRepository;
 
-/**
- * Builds the summary table of the CVs submitted to one position.
- *
- * One row per candidate, one column per attribute of the position's template —
- * the shape a recruiter wants in a spreadsheet, where CVs can be sorted and
- * filtered side by side instead of opened one at a time.
- */
 final readonly class CvExporter
 {
     public function __construct(
@@ -24,13 +17,9 @@ final readonly class CvExporter
     ) {
     }
 
-    /**
-     * @return array{header: list<string>, rows: list<list<string>>}
-     */
+    /** @return array{header: list<string>, rows: list<list<string>>} */
     public function tableFor(Position $position, bool $includeDrafts = false): array
     {
-        // The template decides the columns, so a candidate who happens to hold
-        // extra attributes on their profile does not widen the table.
         $columns = [];
 
         foreach ($position->getAttributes() as $link) {
@@ -55,13 +44,10 @@ final readonly class CvExporter
 
     /**
      * @param list<array{id: int, name: string}> $columns
-     *
      * @return list<string>
      */
     private function row(Cv $cv, array $columns): array
     {
-        // Indexed once per CV: getValueFor() scans the collection, which would
-        // turn a wide template into a quadratic walk over every row.
         $values = [];
 
         foreach ($cv->getProfile()->getAttributeValues() as $value) {

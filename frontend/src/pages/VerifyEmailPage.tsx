@@ -10,7 +10,6 @@ type State =
   | { kind: 'done' }
   | { kind: 'failed'; code: string; message: string | null }
 
-/** Ключи под коды ошибок из App\Exception\AuthException. */
 const MESSAGE_KEYS: Record<string, MessageKey> = {
   invalid_verification_token: 'verify.invalidToken',
   verification_token_expired: 'verify.expiredToken',
@@ -26,15 +25,12 @@ export function VerifyEmailPage() {
 
   const token = params.get('token') ?? ''
 
-  // Отсутствие токена видно из URL до первого рендера — это начальное
-  // состояние, а не результат синхронизации, поэтому без эффекта.
   const [state, setState] = useState<State>(() =>
     token
       ? { kind: 'verifying' }
       : {
           kind: 'failed',
           code: 'invalid_verification_token',
-          // Текст берётся из MESSAGE_KEYS при отрисовке — здесь его нет.
           message: null,
         },
   )
@@ -53,12 +49,9 @@ export function VerifyEmailPage() {
           return
         }
 
-        // Подтверждение сразу логинит: заставлять вводить пароль после
-        // перехода по ссылке — лишний шаг, данные мы уже проверили.
         tokenStorage.set(response.token)
         setState({ kind: 'done' })
 
-        // Небольшая пауза, чтобы человек увидел подтверждение, а не мигание.
         setTimeout(() => navigate('/', { replace: true }), 1500)
       })
       .catch((error: unknown) => {
@@ -71,14 +64,10 @@ export function VerifyEmailPage() {
         setState({
           kind: 'failed',
           code,
-          // Сообщение сервера — запасной вариант: свой перевод есть не под
-          // каждый код, а показать что-то осмысленное надо всегда.
           message: error instanceof RequestError ? error.message : null,
         })
       })
 
-    // Клиент мог предзагрузить ссылку, а StrictMode в dev вызывает эффект
-    // дважды — флаг не даёт обработать ответ уже размонтированного экрана.
     return () => {
       cancelled = true
     }
@@ -97,7 +86,9 @@ export function VerifyEmailPage() {
           <span className="auth__logo" aria-hidden="true">
             C
           </span>
+
           <span>CVMatch</span>
+
         </div>
 
         <div className="auth__box">
@@ -105,6 +96,7 @@ export function VerifyEmailPage() {
             <p className="muted" style={{ margin: 0 }} role="status">
               {t('verify.verifying')}
             </p>
+
           )}
 
           {state.kind === 'done' && (
@@ -115,15 +107,20 @@ export function VerifyEmailPage() {
                 aria-hidden="true"
                 style={{ color: 'var(--ok-fg)' }}
               />
+
               <div>
                 <h1 ref={headingRef} tabIndex={-1} className="h2 app-step-title">
                   {t('verify.confirmed')}
                 </h1>
+
                 <p className="muted mt3" style={{ margin: 0 }}>
                   {t('verify.opening')}
                 </p>
+
               </div>
+
             </div>
+
           )}
 
           {state.kind === 'failed' && (
@@ -134,15 +131,18 @@ export function VerifyEmailPage() {
                 aria-hidden="true"
                 style={{ color: 'var(--err-fg)' }}
               />
+
               <div>
                 <h1 ref={headingRef} tabIndex={-1} className="h2 app-step-title">
                   {t('verify.failedTitle')}
                 </h1>
+
                 <p className="muted mt3" style={{ margin: 0 }}>
                   {MESSAGE_KEYS[state.code] !== undefined
                     ? t(MESSAGE_KEYS[state.code])
                     : (state.message ?? t('verify.failed'))}
                 </p>
+
               </div>
 
               <button
@@ -153,14 +153,19 @@ export function VerifyEmailPage() {
               >
                 {t('verify.goToLogin')}
               </button>
+
             </div>
+
           )}
         </div>
 
         <p className="auth__foot" style={{ margin: 0 }}>
           © {new Date().getFullYear()} CVMatch
         </p>
+
       </div>
+
     </div>
+
   )
 }

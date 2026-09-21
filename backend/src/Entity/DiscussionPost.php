@@ -8,12 +8,7 @@ use App\Repository\DiscussionPostRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 
-/**
- * A post in the discussion tab of a position.
- *
- * Posts are append-only and shown in chronological order, so the id doubles as
- * the ordering key and as the cursor clients poll with ("give me posts after N").
- */
+
 #[ORM\Entity(repositoryClass: DiscussionPostRepository::class)]
 #[ORM\Table(name: 'discussion_post')]
 #[ORM\Index(name: 'idx_post_position_id', columns: ['position_id', 'id'])]
@@ -28,16 +23,12 @@ class DiscussionPost
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private Position $position;
 
-    /**
-     * Kept nullable so that deleting a user does not tear holes in a discussion.
-     */
+
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?User $author = null;
 
-    /**
-     * Markdown-formatted.
-     */
+
     #[ORM\Column(type: 'text')]
     private string $content;
 

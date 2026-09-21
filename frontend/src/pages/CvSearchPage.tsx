@@ -9,14 +9,6 @@ import { useCurrentUser } from '../lib/useCurrentUser'
 import { useTranslation } from '../i18n/context'
 import { useErrorText } from '../i18n/useErrorText'
 
-/**
- * Полнотекстовый поиск по резюме — один из трёх путей к данным кандидата,
- * которые задание даёт рекрутеру (ещё через позицию и через персональные
- * страницы).
- *
- * Ищет по значениям атрибутов профиля, названиям и описаниям проектов,
- * названию позиции и адресу кандидата.
- */
 export function CvSearchPage() {
   if (!tokenStorage.isValid()) {
     return <Navigate to="/login" replace />
@@ -37,8 +29,11 @@ function SearchGate() {
           <p className="muted" role="status">
             {t('common.loading')}
           </p>
+
         </main>
+
       </>
+
     )
   }
 
@@ -55,8 +50,6 @@ function CvSearch() {
   const query = params.get('q') ?? ''
   const [draft, setDraft] = useState(query)
 
-  // Выводим при рендере: результат показываем, только если он отвечает
-  // текущему запросу. Иначе пришлось бы обнулять его прямо в эффекте.
   const rows = query.trim() === '' ? null : found?.query === query ? found.items : null
 
   useEffect(() => {
@@ -94,9 +87,11 @@ function CvSearch() {
       <main className="page">
         <div className="col g1">
           <h1 className="h1">{t('cvSearch.title')}</h1>
+
           <p className="muted" style={{ margin: 0 }}>
             {t('cvSearch.lead')}
           </p>
+
         </div>
 
         <form
@@ -116,39 +111,51 @@ function CvSearch() {
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
             />
+
           </div>
 
           <button type="submit" className="btn btn--primary">
             {t('cvSearch.submit')}
           </button>
+
         </form>
 
         {error && (
           <div className="notice notice--error" role="alert">
             <span>{error}</span>
+
           </div>
+
         )}
 
         <section className="panel">
           {query.trim() === '' ? (
             <p className="muted table__empty">{t('cvSearch.prompt')}</p>
+
           ) : rows === null ? (
             <p className="muted table__empty" role="status">
               {t('cvSearch.searching')}
             </p>
+
           ) : (
             <>
               <p className="panel__hint muted-3" style={{ margin: 0 }}>
                 {t('cvSearch.found', { count: rows.length })}
               </p>
+
               <CvTable
                 rows={rows}
                 emptyMessage={t('cvSearch.nothingFor', { query })}
               />
+
             </>
+
           )}
         </section>
+
       </main>
+
     </>
+
   )
 }

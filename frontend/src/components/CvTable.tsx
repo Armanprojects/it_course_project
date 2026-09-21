@@ -6,18 +6,10 @@ import { useDateFormat } from '../i18n/useDateFormat'
 
 interface Props {
   rows: CvRow[]
-  /** В списке по позиции колонка позиции лишняя — она и так известна. */
   showPosition?: boolean
-  /** Своё сообщение, если по умолчанию «резюме не найдены» не подходит. */
   emptyMessage?: string
 }
 
-/**
- * Таблица резюме: список по позиции и результаты поиска.
- *
- * Табличное представление обязательно по заданию, кнопок в строках нет —
- * кликается вся строка.
- */
 export function CvTable({ rows, showPosition = true, emptyMessage }: Props) {
   const navigate = useNavigate()
   const t = useTranslation()
@@ -28,6 +20,7 @@ export function CvTable({ rows, showPosition = true, emptyMessage }: Props) {
       <p className="muted table__empty" role="status">
         {emptyMessage ?? t('cvTable.empty')}
       </p>
+
     )
   }
 
@@ -37,15 +30,21 @@ export function CvTable({ rows, showPosition = true, emptyMessage }: Props) {
         <thead>
           <tr>
             <th scope="col">{t('cvTable.candidate')}</th>
+
             {showPosition && <th scope="col">{t('cvTable.position')}</th>}
+
             <th scope="col">{t('cvTable.status')}</th>
+
             <th scope="col" className="is-secondary">
               {t('cvTable.likes')}
             </th>
+
             <th scope="col" className="is-secondary">
               {t('cvTable.updated')}
             </th>
+
           </tr>
+
         </thead>
 
         <tbody>
@@ -62,7 +61,9 @@ export function CvTable({ rows, showPosition = true, emptyMessage }: Props) {
                 >
                   {row.candidate.name}
                 </a>
+
                 <span className="table__sub">{row.candidate.email}</span>
+
               </td>
 
               {showPosition && (
@@ -70,14 +71,17 @@ export function CvTable({ rows, showPosition = true, emptyMessage }: Props) {
                   {row.position.title}
                   {row.position.company && (
                     <span className="table__sub">{row.position.company}</span>
+
                   )}
                 </td>
+
               )}
 
               <td>
                 <span className={`chip${row.status === 'published' ? ' chip--ok' : ''}`}>
                   {t(row.status === 'published' ? 'cv.published' : 'cv.draft')}
                 </span>
+
               </td>
 
               <td className="is-secondary num">
@@ -89,13 +93,19 @@ export function CvTable({ rows, showPosition = true, emptyMessage }: Props) {
                   />
                   {row.likesCount}
                 </span>
+
               </td>
 
               <td className="is-secondary">{formatDate(row.updatedAt)}</td>
+
             </tr>
+
           ))}
         </tbody>
+
       </table>
+
     </div>
+
   )
 }

@@ -7,7 +7,6 @@ namespace App\Entity;
 use App\Enum\AttributeType;
 use Doctrine\ORM\Mapping as ORM;
 
-
 #[ORM\Entity]
 #[ORM\Table(name: 'attribute_value')]
 #[ORM\UniqueConstraint(name: 'uniq_value_profile_attribute', columns: ['profile_id', 'attribute_id'])]
@@ -25,9 +24,6 @@ class AttributeValue
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private Profile $profile;
 
-    /**
-     * No onDelete: the database must refuse to drop an attribute still in use.
-     */
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
     private Attribute $attribute;

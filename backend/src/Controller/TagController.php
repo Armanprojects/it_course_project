@@ -10,9 +10,6 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
-/**
- * Autocomplete for the project tag input.
- */
 #[Route('/api/tags')]
 final class TagController extends AbstractController
 {

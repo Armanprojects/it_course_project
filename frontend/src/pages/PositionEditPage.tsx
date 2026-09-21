@@ -37,12 +37,6 @@ const BLANK: PositionInput = {
   projectTags: [],
 }
 
-/**
- * Создание и редактирование позиции.
- *
- * Владения позицией нет — по заданию любой рекрутер правит любую, — поэтому
- * здесь нет проверки автора, только роль.
- */
 export function PositionEditPage() {
   if (!tokenStorage.isValid()) {
     return <Navigate to="/login" replace />
@@ -63,8 +57,11 @@ function EditorGate() {
           <p className="muted" role="status">
             {t('common.loading')}
           </p>
+
         </main>
+
       </>
+
     )
   }
 
@@ -96,8 +93,6 @@ function PositionEditor() {
   const [busy, setBusy] = useState(false)
   const [loaded, setLoaded] = useState(isNew)
 
-  // Библиотека и список операторов нужны всегда: по ним строятся и шаблон,
-  // и правила доступа.
   useEffect(() => {
     let active = true
 
@@ -238,8 +233,11 @@ function PositionEditor() {
           <p className="muted" role="status">
             {t('common.loading')}
           </p>
+
         </main>
+
       </>
+
     )
   }
 
@@ -260,13 +258,16 @@ function PositionEditor() {
 
           {!isNew && (
             <DangerButton busy={busy} onConfirm={remove} label={t('edit.deletePosition')} />
+
           )}
         </div>
 
         {error && (
           <div className="notice notice--error" role="alert">
             <span>{error}</span>
+
           </div>
+
         )}
 
         <section className="panel">
@@ -276,6 +277,7 @@ function PositionEditor() {
             <label className="label" htmlFor="pos-title">
               {t('edit.name')}
             </label>
+
             <input
               id="pos-title"
               className="input"
@@ -284,6 +286,7 @@ function PositionEditor() {
               value={form.title}
               onChange={(event) => setForm({ ...form, title: event.target.value })}
             />
+
           </div>
 
           <div className="period">
@@ -291,18 +294,21 @@ function PositionEditor() {
               <label className="label" htmlFor="pos-company">
                 {t('edit.company')}
               </label>
+
               <input
                 id="pos-company"
                 className="input"
                 value={form.company ?? ''}
                 onChange={(event) => setForm({ ...form, company: event.target.value })}
               />
+
             </div>
 
             <div className="field">
               <label className="label" htmlFor="pos-level">
                 {t('edit.level')}
               </label>
+
               <select
                 id="pos-level"
                 className="input"
@@ -310,19 +316,24 @@ function PositionEditor() {
                 onChange={(event) => setForm({ ...form, level: event.target.value })}
               >
                 <option value="">{t('edit.levelNone')}</option>
+
                 {LEVELS.map((level) => (
                   <option key={level} value={level}>
                     {level}
                   </option>
+
                 ))}
               </select>
+
             </div>
+
           </div>
 
           <div className="field">
             <label className="label" htmlFor="pos-description">
               {t('edit.shortDescription')}
             </label>
+
             <textarea
               id="pos-description"
               className="input input--area"
@@ -330,16 +341,20 @@ function PositionEditor() {
               value={form.shortDescription ?? ''}
               onChange={(event) => setForm({ ...form, shortDescription: event.target.value })}
             />
+
           </div>
+
         </section>
 
         <section className="panel">
           <div className="panel__head">
             <div>
               <h2 className="h2">{t('edit.template')}</h2>
+
               <p className="panel__hint muted-3">
                 {t('edit.templateHint')}
               </p>
+
             </div>
 
             {!picking && (
@@ -347,6 +362,7 @@ function PositionEditor() {
                 <PlusIcon size={14} aria-hidden="true" />
                 {t('edit.addField')}
               </button>
+
             )}
           </div>
 
@@ -371,20 +387,24 @@ function PositionEditor() {
                 ])
               }}
             />
+
           )}
 
           {attributes.length === 0 ? (
             <p className="muted table__empty">{t('edit.noFields')}</p>
+
           ) : (
             <div className="col g2">
               {attributes.map((attribute, index) => (
                 <div className="tmplrow" key={attribute.attributeId}>
                   <div className="col g1">
                     <span className="picker__name">{attribute.name}</span>
+
                     <span className="t-xs muted-3">
                       {categoryLabel(attribute.category)} ·{' '}
                       {typeLabel(attribute.type)}
                     </span>
+
                   </div>
 
                   <label className="checkline t-sm">
@@ -399,6 +419,7 @@ function PositionEditor() {
                         )
                       }
                     />
+
                     {t('edit.required')}
                   </label>
 
@@ -412,6 +433,7 @@ function PositionEditor() {
                     >
                       <ArrowUpIcon size={13} aria-hidden="true" />
                     </button>
+
                     <button
                       type="button"
                       className="attr__remove"
@@ -421,6 +443,7 @@ function PositionEditor() {
                     >
                       <ArrowDownIcon size={13} aria-hidden="true" />
                     </button>
+
                     <button
                       type="button"
                       className="attr__remove"
@@ -431,10 +454,14 @@ function PositionEditor() {
                     >
                       <TrashIcon size={13} aria-hidden="true" />
                     </button>
+
                   </div>
+
                 </div>
+
               ))}
             </div>
+
           )}
         </section>
 
@@ -442,10 +469,13 @@ function PositionEditor() {
           <div className="panel__head">
             <div>
               <h2 className="h2">{t('edit.access')}</h2>
+
               <p className="panel__hint muted-3">
                 {t('edit.accessHint')}
               </p>
+
             </div>
+
           </div>
 
           <label className="checkline">
@@ -454,21 +484,26 @@ function PositionEditor() {
               checked={form.public}
               onChange={(event) => setForm({ ...form, public: event.target.checked })}
             />
+
             <span className="t-sm">
               {t('edit.publicLabel')}
             </span>
+
           </label>
 
           {!form.public && (
             <>
               <p className="section__title">{t('edit.rulesTitle')}</p>
+
               <AccessRuleEditor
                 rules={rules}
                 attributes={library}
                 operators={operators}
                 onChange={setRules}
               />
+
             </>
+
           )}
         </section>
 
@@ -476,24 +511,30 @@ function PositionEditor() {
           <div className="panel__head">
             <div>
               <h2 className="h2">{t('edit.projectsTitle')}</h2>
+
               <p className="panel__hint muted-3">
                 {t('edit.projectsHint')}
               </p>
+
             </div>
+
           </div>
 
           <div className="field">
             <span className="label">{t('edit.projectTags')}</span>
+
             <TagInput
               tags={form.projectTags}
               onChange={(projectTags) => setForm({ ...form, projectTags })}
             />
+
           </div>
 
           <div className="field" style={{ maxWidth: 220 }}>
             <label className="label" htmlFor="pos-max">
               {t('edit.maxProjects')}
             </label>
+
             <input
               id="pos-max"
               type="number"
@@ -505,7 +546,9 @@ function PositionEditor() {
                 setForm({ ...form, maxProjects: Number(event.target.value) || 0 })
               }
             />
+
           </div>
+
         </section>
 
         <div className="row g3">
@@ -521,13 +564,16 @@ function PositionEditor() {
           <Link to={isNew ? '/positions' : `/positions/${id}`} className="btn btn--ghost btn--lg">
             {t('common.cancel')}
           </Link>
+
         </div>
+
       </main>
+
     </>
+
   )
 }
 
-/** Удаление в два шага: позиция уносит с собой резюме и обсуждение. */
 function DangerButton({
   busy,
   onConfirm,
@@ -546,20 +592,26 @@ function DangerButton({
         <TrashIcon size={14} aria-hidden="true" />
         {label}
       </button>
+
     )
   }
 
   return (
     <div className="notice notice--error" role="alert">
       <span>{t('edit.confirmDelete')}</span>
+
       <div className="row g2">
         <button type="button" className="btn btn--ghost" onClick={() => setConfirming(false)}>
           {t('common.cancel')}
         </button>
+
         <button type="button" className="btn btn--primary" disabled={busy} onClick={onConfirm}>
           {t('edit.delete')}
         </button>
+
       </div>
+
     </div>
+
   )
 }

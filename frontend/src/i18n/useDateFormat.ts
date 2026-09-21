@@ -1,12 +1,6 @@
 import { useMemo } from 'react'
 import { useSettings } from './context'
 
-/**
- * Форматирование дат по выбранному языку.
- *
- * Intl-форматтер дорого создавать на каждый рендер таблицы, поэтому он
- * запоминается на язык: строк в таблице сотни, языков два.
- */
 export function useDateFormat(options: Intl.DateTimeFormatOptions = { dateStyle: 'medium' }) {
   const { locale } = useSettings()
 
@@ -23,8 +17,5 @@ export function useDateFormat(options: Intl.DateTimeFormatOptions = { dateStyle:
 
       return Number.isNaN(date.getTime()) ? '' : format.format(date)
     }
-    // options — литерал на месте вызова, поэтому в зависимостях только язык:
-    // иначе форматтер пересоздавался бы каждый рендер и кеш терял смысл.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale])
 }

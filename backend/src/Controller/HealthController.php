@@ -10,12 +10,6 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
-/**
- * Проверка живости стека: nginx -> php-fpm -> Symfony -> PostgreSQL.
- *
- * Нужна на этапе 1, чтобы убедиться, что все четыре звена связаны,
- * и остаётся дальше как endpoint для healthcheck хостинга.
- */
 final class HealthController extends AbstractController
 {
     #[Route('/api/health', name: 'api_health', methods: ['GET'])]
@@ -30,10 +24,6 @@ final class HealthController extends AbstractController
         ]);
     }
 
-    /**
-     * Отдельный метод, потому что недоступность БД не должна ронять весь
-     * healthcheck 500-й ошибкой — приложение живо, БД отдельно помечена как down.
-     */
     private function checkDatabase(Connection $connection): array
     {
         try {

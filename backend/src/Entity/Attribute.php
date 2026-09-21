@@ -9,7 +9,6 @@ use App\Enum\AttributeType;
 use App\Repository\AttributeRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-
 #[ORM\Entity(repositoryClass: AttributeRepository::class)]
 #[ORM\Table(name: 'attribute')]
 #[ORM\UniqueConstraint(name: 'uniq_attribute_name_normalized', columns: ['name_normalized'])]
@@ -24,9 +23,6 @@ class Attribute
     #[ORM\Column(length: 120)]
     private string $name;
 
-    /**
-     * Lowercased name, keeps the "globally unique" rule case-insensitive.
-     */
     #[ORM\Column(length: 120)]
     private string $nameNormalized;
 
@@ -36,23 +32,13 @@ class Attribute
     #[ORM\Column(length: 32, enumType: AttributeCategory::class)]
     private AttributeCategory $category;
 
-    /**
-     * Immutable: changing it would invalidate every stored value.
-     */
     #[ORM\Column(length: 16, enumType: AttributeType::class)]
     private AttributeType $type;
 
-    /**
-     * Dropdown choices, only for AttributeType::Select.
-     *
-     * @var list<string>|null
-     */
+    /** @var list<string>|null */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $options = null;
 
-    /**
-     * Built-in attributes of the "Me" section, recruiters cannot delete them.
-     */
     #[ORM\Column(name: 'is_system')]
     private bool $system = false;
 
@@ -63,10 +49,6 @@ class Attribute
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
-    /**
-     * Soft delete: stored values and position links survive, the attribute just
-     * disappears from the library and cannot be picked any more.
-     */
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $removedAt = null;
 
@@ -134,17 +116,13 @@ class Attribute
         return $this->type;
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     public function getOptions(): array
     {
         return $this->options ?? [];
     }
 
-    /**
-     * @param list<string> $options
-     */
+    /** @param list<string> $options */
     public function setOptions(array $options): void
     {
         if (!$this->type->requiresOptions()) {

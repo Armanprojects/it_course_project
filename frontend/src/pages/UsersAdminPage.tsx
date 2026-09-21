@@ -17,11 +17,6 @@ const ROLE_LABEL = {
   [UserRole.Admin]: 'role.admin',
 } as const
 
-/**
- * Управление пользователями — единственная страница, доступная только
- * администратору. Остальные его права (править любой профиль, резюме,
- * позицию) живут внутри обычных страниц как послабления в проверках.
- */
 export function UsersAdminPage() {
   if (!tokenStorage.isValid()) {
     return <Navigate to="/login" replace />
@@ -42,8 +37,11 @@ function UsersGate() {
           <p className="muted" role="status">
             {t('common.loading')}
           </p>
+
         </main>
+
       </>
+
     )
   }
 
@@ -59,8 +57,6 @@ function UsersManager() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(25)
-  // Поле ввода и применённый запрос разделены: список перезагружается по
-  // отправке формы, а не на каждую букву.
   const [search, setSearch] = useState('')
   const [query, setQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
@@ -111,18 +107,6 @@ function UsersManager() {
     })
   }
 
-  /**
-   * Применяет действие ко всем выделенным строкам и перечитывает список.
-   *
-   * Запросы идут последовательно, а не через Promise.all: у сервера на каждый
-   * свой ответ об ошибке, и при пакете в двадцать пять человек важно
-   * остановиться на первом отказе, а не выяснять постфактум, что прошло.
-   *
-   * Отдельный случай — действия администратора над собой. По заданию он может
-   * снять с себя роль администратора; тогда страница ему больше недоступна,
-   * поэтому кэш текущего пользователя сбрасывается, а перезагрузка уводит
-   * туда, куда пускает новая роль.
-   */
   const apply = async (action: (user: User) => Promise<unknown>) => {
     const chosen = items.filter((user) => selected.has(user.id))
 
@@ -171,10 +155,13 @@ function UsersManager() {
           <div className="panel__head">
             <div>
               <h1 className="h2">{t('admin.usersTitle')}</h1>
+
               <p className="panel__hint muted-3">{t('admin.usersHint')}</p>
+
             </div>
 
             <span className="muted-3 t-sm">{t('admin.total', { count: total })}</span>
+
           </div>
 
           <div className="row g3 wrap">
@@ -188,6 +175,7 @@ function UsersManager() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
+
             </form>
 
             <select
@@ -200,10 +188,12 @@ function UsersManager() {
               }}
             >
               <option value="">{t('admin.allRoles')}</option>
+
               {ROLES.map((role) => (
                 <option key={role} value={role}>
                   {t(ROLE_LABEL[role])}
                 </option>
+
               ))}
             </select>
 
@@ -217,14 +207,17 @@ function UsersManager() {
               }}
             >
               <option value="">{t('admin.allStatuses')}</option>
+
               <option value="active">{t('admin.statusActive')}</option>
+
               <option value="pending">{t('admin.statusPending')}</option>
+
               <option value="blocked">{t('admin.statusBlocked')}</option>
+
             </select>
+
           </div>
 
-          {/* Панель инструментов вместо кнопок в строках — прямое требование
-              задания. Появляется, когда есть что применять. */}
           {chosen.length > 0 && (
             <Toolbar
               chosen={chosen}
@@ -236,20 +229,25 @@ function UsersManager() {
               onDelete={() => void apply((user) => adminApi.deleteUser(user.id))}
               onClear={() => setSelected(new Set())}
             />
+
           )}
 
           {error && (
             <div className="notice notice--error" role="alert">
               <span>{error}</span>
+
             </div>
+
           )}
 
           {loading ? (
             <p className="muted table__empty" role="status">
               {t('common.loading')}
             </p>
+
           ) : items.length === 0 ? (
             <p className="muted table__empty">{t('admin.empty')}</p>
+
           ) : (
             <div className="table__scroll">
               <table className="table">
@@ -274,14 +272,21 @@ function UsersManager() {
                           )
                         }
                       />
+
                     </th>
+
                     <th scope="col">{t('admin.colUser')}</th>
+
                     <th scope="col">{t('admin.colStatus')}</th>
+
                     <th scope="col">{t('admin.colRoles')}</th>
+
                     <th scope="col" className="is-secondary">
                       {t('admin.colCreated')}
                     </th>
+
                   </tr>
+
                 </thead>
 
                 <tbody>
@@ -293,10 +298,14 @@ function UsersManager() {
                       checked={selected.has(user.id)}
                       onToggle={() => toggle(user.id)}
                     />
+
                   ))}
                 </tbody>
+
               </table>
+
             </div>
+
           )}
 
           {pages > 1 && (
@@ -309,7 +318,9 @@ function UsersManager() {
               >
                 {t('admin.prev')}
               </button>
+
               <span className="muted-3 t-sm">{t('admin.pageOf', { page, pages })}</span>
+
               <button
                 type="button"
                 className="btn btn--ghost"
@@ -318,22 +329,19 @@ function UsersManager() {
               >
                 {t('admin.next')}
               </button>
+
             </div>
+
           )}
         </section>
+
       </main>
+
     </>
+
   )
 }
 
-/**
- * Действия над выделенными пользователями.
- *
- * Блокировка и разблокировка — две кнопки, а не переключатель: в выделении
- * могут оказаться и заблокированные, и активные, и тогда «переключить» не
- * имеет однозначного смысла. Кнопка показывается, только если есть кого ей
- * обработать, а её счётчик говорит, скольких именно.
- */
 function Toolbar({
   chosen,
   busy,
@@ -365,9 +373,6 @@ function Toolbar({
 
       <div className="row g2 wrap">
         {ROLES.map((role) => {
-          // Кому из выделенных роль можно выдать, а у кого снять. Обе кнопки
-          // сразу показываются только в смешанном выделении — в остальных
-          // случаях лишняя просто не появляется.
           const toGrant = chosen.filter((user) => !user.roles.includes(role))
           const toRevoke = chosen.filter((user) => user.roles.includes(role))
 
@@ -383,6 +388,7 @@ function Toolbar({
                   <UserGearIcon size={14} aria-hidden="true" />
                   {t('admin.grantRole', { role: t(ROLE_LABEL[role]), count: toGrant.length })}
                 </button>
+
               )}
 
               {toRevoke.length > 0 && (
@@ -395,8 +401,10 @@ function Toolbar({
                   <UserGearIcon size={14} aria-hidden="true" />
                   {t('admin.revokeRole', { role: t(ROLE_LABEL[role]), count: toRevoke.length })}
                 </button>
+
               )}
             </span>
+
           )
         })}
 
@@ -405,6 +413,7 @@ function Toolbar({
             <ProhibitIcon size={14} aria-hidden="true" />
             {t('admin.blockCount', { count: blockable.length })}
           </button>
+
         )}
 
         {unblockable.length > 0 && (
@@ -412,6 +421,7 @@ function Toolbar({
             <ProhibitIcon size={14} aria-hidden="true" />
             {t('admin.unblockCount', { count: unblockable.length })}
           </button>
+
         )}
 
         <button
@@ -427,6 +437,7 @@ function Toolbar({
         <button type="button" className="btn btn--ghost" disabled={busy} onClick={onClear}>
           {t('admin.clearSelection')}
         </button>
+
       </div>
 
       {confirming && (
@@ -445,6 +456,7 @@ function Toolbar({
             >
               {t('admin.confirmDeleteYes')}
             </button>
+
             <button
               type="button"
               className="btn btn--ghost"
@@ -452,10 +464,14 @@ function Toolbar({
             >
               {t('common.cancel')}
             </button>
+
           </div>
+
         </div>
+
       )}
     </div>
+
   )
 }
 
@@ -483,19 +499,20 @@ function UserRow({
           onChange={onToggle}
           aria-label={t('admin.selectOne', { email: user.email })}
         />
+
       </td>
 
       <td>
-        {/* Ссылка, а не кнопка: переход — это навигация, и запрет на кнопки
-            в строках её не касается. Профиль админу доступен целиком. */}
         {user.profileId === null ? (
           user.email
         ) : (
           <Link className="table__link" to={`/profiles/${user.profileId}`}>
             {user.email}
           </Link>
+
         )}
         {isMe && <span className="table__sub">{t('admin.you')}</span>}
+
       </td>
 
       <td>
@@ -508,6 +525,7 @@ function UserRow({
                 : 'admin.statusActive',
           )}
         </span>
+
       </td>
 
       <td>
@@ -516,11 +534,15 @@ function UserRow({
             <span key={role} className="chip">
               {t(ROLE_LABEL[role])}
             </span>
+
           ))}
         </div>
+
       </td>
 
       <td className="is-secondary">{formatDate(user.createdAt)}</td>
+
     </tr>
+
   )
 }
