@@ -170,6 +170,32 @@ final class SeedDemoDataCommand extends Command
             ['Available from', AttributeCategory::PersonalInformation, AttributeType::Date, false, null],
             ['Last employment', AttributeCategory::DomainKnowledge, AttributeType::Period, false, null],
             ['Preferred stack', AttributeCategory::DomainKnowledge, AttributeType::Select, false, ['Backend', 'Frontend', 'Fullstack', 'DevOps', 'Data']],
+
+            // Вторая половина библиотеки набрана так, чтобы каждый тип поля
+            // встречался не по одному разу: шаблон позиции, собранный из неё,
+            // показывает и длинный PDF, и широкую выгрузку в Excel.
+            ['Phone', AttributeCategory::PersonalInformation, AttributeType::String, false, null],
+            ['LinkedIn', AttributeCategory::PersonalInformation, AttributeType::String, false, null],
+            ['GitHub', AttributeCategory::PersonalInformation, AttributeType::String, false, null],
+            ['Date of birth', AttributeCategory::PersonalInformation, AttributeType::Date, false, null],
+            ['Citizenship', AttributeCategory::PersonalInformation, AttributeType::String, false, null],
+            ['Work permit', AttributeCategory::PersonalInformation, AttributeType::Boolean, false, null],
+            ['Highest degree', AttributeCategory::DomainKnowledge, AttributeType::Select, false, ['Bachelor', 'Master', 'PhD']],
+            ['University', AttributeCategory::DomainKnowledge, AttributeType::String, false, null],
+            ['Studied', AttributeCategory::DomainKnowledge, AttributeType::Period, false, null],
+            ['Primary language', AttributeCategory::DomainKnowledge, AttributeType::Select, false, ['PHP', 'Go', 'Java', 'Python', 'TypeScript', 'C#']],
+            ['Team size managed', AttributeCategory::DomainKnowledge, AttributeType::Numeric, false, null],
+            ['Public speaking', AttributeCategory::DomainKnowledge, AttributeType::Text, false, null],
+            ['Expected salary', AttributeCategory::DomainKnowledge, AttributeType::Numeric, false, null],
+            ['Notice period (weeks)', AttributeCategory::DomainKnowledge, AttributeType::Numeric, false, null],
+            ['Leadership experience', AttributeCategory::SoftSkills, AttributeType::Boolean, false, null],
+            ['Mentoring', AttributeCategory::SoftSkills, AttributeType::Select, false, ['None', 'Occasional', 'Regular']],
+            ['Communication style', AttributeCategory::SoftSkills, AttributeType::Text, false, null],
+            ['Comfortable on call', AttributeCategory::SoftSkills, AttributeType::Boolean, false, null],
+            ['Kubernetes certification', AttributeCategory::Certification, AttributeType::Boolean, false, null],
+            ['Security clearance', AttributeCategory::Certification, AttributeType::Boolean, false, null],
+            ['Certificate scan', AttributeCategory::Certification, AttributeType::Image, false, null],
+            ['Certified until', AttributeCategory::Certification, AttributeType::Date, false, null],
         ];
 
         $attributes = [];
@@ -233,6 +259,11 @@ final class SeedDemoDataCommand extends Command
             $this->setString($profile, $attributes['First name'], $first);
             $this->setString($profile, $attributes['Last name'], $last);
             $this->setString($profile, $attributes['Location'], $location);
+            // Портрет-заглушка со стороннего сервиса: своих файлов мы не
+            // храним (по заданию картинки живут во внешнем облаке), а для
+            // демонстрации печати резюме фото нужно.
+            $profile->addAttribute($attributes['Photo'])
+                ->setValueImageUrl(sprintf('https://i.pravatar.cc/480?img=%d', 11 + $index));
             $profile->addAttribute($attributes['Summary'])
                 ->setValueText(sprintf('%s %s — %s engineer with %d years of experience.', $first, $last, $stack, $years));
 
@@ -245,12 +276,99 @@ final class SeedDemoDataCommand extends Command
             $profile->addAttribute($attributes['Preferred stack'])->setValueOption($stack);
             $profile->addAttribute($attributes['AWS certification'])->setValueBool(0 === $index % 3);
 
+            $this->fillExtendedProfile($profile, $attributes, $index, $first, $last, $years, $stack);
+
             $this->createProjects($profile, $tags, $projectTags, $first);
 
             $profiles[] = $profile;
         }
 
         return $profiles;
+    }
+
+    /**
+     * Заполняет расширенную часть профиля.
+     *
+     * Значения выводятся из индекса кандидата, а не задаются списком: колонок
+     * два десятка, и таблица людей от них стала бы нечитаемой. Заодно часть
+     * полей намеренно остаётся пустой — резюме с пропусками показывает, как
+     * приложение подсвечивает незаполненное.
+     *
+     * @param array<string, Attribute> $attributes
+     */
+    private function fillExtendedProfile(
+        Profile $profile,
+        array $attributes,
+        int $index,
+        string $first,
+        string $last,
+        int $years,
+        string $stack,
+    ): void {
+        $handle    = mb_strtolower($first . '.' . $last);
+        $languages = ['PHP', 'Go', 'Java', 'Python', 'TypeScript', 'C#'];
+        $degrees   = ['Bachelor', 'Master', 'PhD'];
+        $mentoring = ['None', 'Occasional', 'Regular'];
+
+        $profile->addAttribute($attributes['Phone'])
+            ->setValueString(sprintf('+49 30 %07d', 1234567 + $index * 1111));
+        $profile->addAttribute($attributes['LinkedIn'])
+            ->setValueString('https://linkedin.com/in/' . $handle);
+        $profile->addAttribute($attributes['GitHub'])
+            ->setValueString('https://github.com/' . $handle);
+        $profile->addAttribute($attributes['Date of birth'])
+            ->setValueDate(new \DateTimeImmutable(sprintf('-%d years -%d days', 24 + $index, 30 * $index)));
+        $profile->addAttribute($attributes['Citizenship'])
+            ->setValueString(['Germany', 'Spain', 'Singapore', 'Egypt', 'Czechia', 'South Korea', 'UAE', 'Poland'][$index % 8]);
+        $profile->addAttribute($attributes['Work permit'])->setValueBool(0 !== $index % 4);
+
+        $profile->addAttribute($attributes['Highest degree'])->setValueOption($degrees[$index % 3]);
+        $profile->addAttribute($attributes['University'])
+            ->setValueString(['TU Berlin', 'UPM Madrid', 'NUS', 'Cairo University', 'CTU Prague', 'KAIST', 'Khalifa University', 'Warsaw Tech'][$index % 8]);
+        $profile->addAttribute($attributes['Studied'])->setPeriod(
+            new \DateTimeImmutable(sprintf('-%d years', $years + 5)),
+            new \DateTimeImmutable(sprintf('-%d years', $years + 1)),
+        );
+        $profile->addAttribute($attributes['Primary language'])->setValueOption($languages[$index % 6]);
+        $profile->addAttribute($attributes['Expected salary'])->setValueNumber(60000 + $index * 7500);
+        $profile->addAttribute($attributes['Notice period (weeks)'])->setValueNumber(2 + $index % 6);
+
+        $profile->addAttribute($attributes['Leadership experience'])->setValueBool($years >= 6);
+        $profile->addAttribute($attributes['Mentoring'])->setValueOption($mentoring[$index % 3]);
+        $profile->addAttribute($attributes['Comfortable on call'])->setValueBool(0 === $index % 2);
+        $profile->addAttribute($attributes['Communication style'])
+            ->setValueText(sprintf(
+                'Пишу раньше, чем зову на встречу: решения — в тексте, %s-задачи разбираю в треде, а не голосом.',
+                mb_strtolower($stack),
+            ));
+
+        // Эти поля входят в широкие шаблоны, а резюме публикуется только
+        // заполненным целиком — поэтому значение есть у каждого, пусть и
+        // нулевое для тех, кто никем не руководил.
+        $profile->addAttribute($attributes['Team size managed'])
+            ->setValueNumber($years >= 6 ? 3 + $index : 0);
+        $profile->addAttribute($attributes['Public speaking'])->setValueText(
+            $years >= 6
+                ? 'Доклады на внутренних митапах и два выступления на локальной конференции.'
+                : 'Пока только внутренние демо для своей команды.',
+        );
+
+        $profile->addAttribute($attributes['Kubernetes certification'])->setValueBool(0 === $index % 3);
+        $profile->addAttribute($attributes['Security clearance'])->setValueBool(0 === $index % 4);
+        $profile->addAttribute($attributes['Certified until'])
+            ->setValueDate(new \DateTimeImmutable(sprintf('+%d months', 6 + $index)));
+        $profile->addAttribute($attributes['Certificate scan'])
+            ->setValueImageUrl(sprintf('https://i.pravatar.cc/360?img=%d', 41 + $index));
+
+        // Поля из исходной библиотеки, которые раньше никто не заполнял:
+        // без них резюме на широкий шаблон не публикуется.
+        $profile->addAttribute($attributes['Available from'])
+            ->setValueDate(new \DateTimeImmutable(sprintf('+%d weeks', 2 + $index % 6)));
+        $profile->addAttribute($attributes['Willing to relocate'])->setValueBool(0 !== $index % 3);
+        $profile->addAttribute($attributes['Last employment'])->setPeriod(
+            new \DateTimeImmutable(sprintf('-%d years', $years)),
+            0 === $index % 5 ? null : new \DateTimeImmutable('-1 month'),
+        );
     }
 
     /**
@@ -393,6 +511,65 @@ final class SeedDemoDataCommand extends Command
                 ['First name', 'Last name', 'Location', 'Years of experience', 'Open to remote work'],
                 [['Willing to relocate', FilterOperator::IsSet, null]],
             ],
+
+            // Позиции с широким шаблоном: на них видно, как ведёт себя
+            // длинное резюме в PDF и выгрузка в два десятка колонок.
+            [
+                'Principal Engineer', 'Nordwind Software', 'C-level',
+                'Техническое направление всей продуктовой разработки: архитектура, найм и стандарты, которым следуют четыре команды.',
+                true, ['PHP', 'Go', 'Kubernetes', 'PostgreSQL'],
+                [
+                    'First name', 'Last name', 'Photo', 'Location', 'Citizenship', 'Phone',
+                    'LinkedIn', 'GitHub', 'Date of birth', 'Work permit', 'Summary',
+                    'Years of experience', 'Primary language', 'Preferred stack',
+                    'Highest degree', 'University', 'Studied', 'GPA',
+                    'Team size managed', 'Expected salary', 'Notice period (weeks)',
+                    'English level', 'Presentation skills', 'Leadership experience',
+                    'Mentoring', 'Public speaking', 'Communication style',
+                    'Open to remote work', 'Comfortable on call',
+                    'AWS certification', 'Kubernetes certification', 'Certified until',
+                ],
+                [
+                    ['Years of experience', FilterOperator::GreaterOrEqual, 8],
+                    ['Leadership experience', FilterOperator::Equals, true],
+                ],
+            ],
+            [
+                'Head of Engineering', 'Helio Cloud', 'C-level',
+                'Отвечает за инженерную функцию целиком: бюджет, найм, сроки и то, чтобы платформа выдерживала рост клиентской базы.',
+                true, ['Kubernetes', 'AWS', 'Terraform', 'PostgreSQL'],
+                [
+                    'First name', 'Last name', 'Photo', 'Location', 'Phone', 'LinkedIn',
+                    'Summary', 'Years of experience', 'Team size managed',
+                    'Leadership experience', 'Mentoring', 'Public speaking',
+                    'Presentation skills', 'Communication style', 'English level',
+                    'Highest degree', 'University', 'Expected salary',
+                    'Notice period (weeks)', 'Willing to relocate', 'Open to remote work',
+                    'Comfortable on call', 'Security clearance', 'Available from',
+                ],
+                [
+                    ['Years of experience', FilterOperator::GreaterOrEqual, 7],
+                    ['Presentation skills', FilterOperator::Equals, 'Advanced'],
+                ],
+            ],
+            [
+                'Solution Architect', 'Aurora Consulting', 'Senior',
+                'Проектирует решения для корпоративных клиентов и защищает их перед заказчиком — от оценки до передачи команде внедрения.',
+                true, ['Java', 'Spring', 'Kafka', 'PostgreSQL', 'Docker'],
+                [
+                    'First name', 'Last name', 'Photo', 'Location', 'Citizenship',
+                    'Work permit', 'LinkedIn', 'Summary', 'Years of experience',
+                    'Primary language', 'Preferred stack', 'Highest degree',
+                    'University', 'Studied', 'GPA', 'IELTS score', 'English level',
+                    'Presentation skills', 'Communication style', 'Mentoring',
+                    'Expected salary', 'Available from', 'Last employment',
+                    'AWS certification', 'Kubernetes certification', 'Certificate scan',
+                ],
+                [
+                    ['English level', FilterOperator::Equals, 'C1'],
+                    ['Years of experience', FilterOperator::GreaterOrEqual, 5],
+                ],
+            ],
         ];
 
         if ($minimal) {
@@ -477,7 +654,10 @@ final class SeedDemoDataCommand extends Command
      */
     private function createCvs(array $positions, array $candidates): int
     {
-        $spread = [8, 6, 5, 4, 4, 3, 3, 2, 2, 1, 1, 0];
+        // По одному числу на позицию, в том же порядке, что и определения.
+        // Последние три — позиции с широким шаблоном: им отклики нужны, иначе
+        // не на чем посмотреть ни длинный PDF, ни выгрузку в много колонок.
+        $spread = [8, 6, 5, 4, 4, 3, 3, 2, 2, 1, 1, 0, 6, 4, 5];
         $total  = 0;
 
         foreach ($positions as $index => $position) {
