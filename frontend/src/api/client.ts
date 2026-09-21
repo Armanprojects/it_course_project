@@ -10,6 +10,7 @@ import type {
   AdminUserPage,
   AuthResponse,
   CvDetail,
+  CvPage,
   CvRow,
   DiscussionMessage,
   FilterOperator,
@@ -379,8 +380,14 @@ export const cvApi = {
   unlike: (id: number) =>
     request<{ likesCount: number; likedByMe: boolean }>(() => api.delete(`/cvs/${id}/like`)),
 
-  search: (q: string) =>
-    request<{ items: CvRow[]; total: number }>(() => api.get('/cvs/search', { params: { q } })),
+  /**
+   * Каталог опубликованных резюме. Пустой запрос — не «ничего не найдено»,
+   * а «фильтра нет»: сервер отдаёт всех кандидатов постранично.
+   */
+  search: (q: string, page = 1) =>
+    request<CvPage>(() =>
+      api.get('/cvs/search', { params: { q: q || undefined, page: page > 1 ? page : undefined } }),
+    ),
 
   pdf: (id: number) =>
     download(() => api.get<Blob>(`/cvs/${id}/pdf`, { responseType: 'blob' }), `cv-${id}.pdf`),

@@ -36,18 +36,25 @@ final class CvController extends AbstractController
     }
 
 
+    /**
+     * Каталог опубликованных резюме, он же поиск по ним: без `q` рекрутёр
+     * видит всех кандидатов, с `q` — отфильтрованных.
+     */
     #[Route('/search', name: 'api_cvs_search', methods: ['GET'])]
     #[IsGranted('ROLE_RECRUITER')]
     public function search(Request $request, #[CurrentUser] User $user): JsonResponse
     {
-        $found = $this->cvs->search((string) $request->query->get('q', ''));
+        $found = $this->cvs->searchPage(
+            (string) $request->query->get('q', ''),
+            $request->query->getInt('page', 1),
+        );
 
         return $this->json([
+            ...$found,
             'items' => array_map(
                 fn (Cv $cv): array => $this->serializer->serializeRow($cv, $user),
-                $found,
+                $found['items'],
             ),
-            'total' => \count($found),
         ]);
     }
 

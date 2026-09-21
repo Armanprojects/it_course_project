@@ -66,6 +66,14 @@ export interface PositionPage {
   pages: number
 }
 
+export interface CvPage {
+  items: CvRow[]
+  total: number
+  page: number
+  pageSize: number
+  pages: number
+}
+
 export interface PositionAttribute {
   id: number
   name: string
