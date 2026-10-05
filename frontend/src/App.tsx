@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { SupportTicketWidget } from './components/SupportTicketWidget'
 import { SettingsProvider } from './i18n/SettingsContext'
 import { AttributeLibraryPage } from './pages/AttributeLibraryPage'
 import { CvPage } from './pages/CvPage'
@@ -49,6 +50,9 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
 
         </Routes>
+
+        {/* Тикет поддержки доступен с любой страницы (Power Automate). */}
+        <SupportTicketWidget />
 
       </BrowserRouter>
 

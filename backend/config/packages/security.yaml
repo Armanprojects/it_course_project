@@ -52,6 +52,10 @@ security:
         - { path: ^/api/positions$, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: '^/api/positions/\d+$', roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/api/admin, roles: ROLE_ADMIN }
+        # Интеграции доступны любому вошедшему: экспорт в CRM — действие
+        # пользователя над собственной учёткой, тикеты — тем более.
+        - { path: ^/api/integrations, roles: ROLE_USER }
+        - { path: ^/api/support, roles: ROLE_USER }
         - { path: ^/api/auth, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:

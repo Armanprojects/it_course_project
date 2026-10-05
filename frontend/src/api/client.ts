@@ -26,8 +26,12 @@ import type {
   ProfileProject,
   ProjectInput,
   RegistrationPending,
+  SalesforceExportInput,
+  SalesforceExportResult,
   SelectableRole,
   SortDirection,
+  SupportTicketInput,
+  SupportTicketResult,
   TagSuggestion,
   User,
 } from './types'
@@ -391,6 +395,14 @@ export const cvApi = {
 
   pdf: (id: number) =>
     download(() => api.get<Blob>(`/cvs/${id}/pdf`, { responseType: 'blob' }), `cv-${id}.pdf`),
+}
+
+export const integrationApi = {
+  salesforceExport: (input: SalesforceExportInput) =>
+    request<SalesforceExportResult>(() => api.post('/integrations/salesforce/export', input)),
+
+  createSupportTicket: (input: SupportTicketInput) =>
+    request<SupportTicketResult>(() => api.post('/support/tickets', input)),
 }
 
 export const discussionApi = {

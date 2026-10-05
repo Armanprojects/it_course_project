@@ -1,4 +1,10 @@
-import { CheckCircleIcon, CloudArrowUpIcon, PlusIcon, WarningCircleIcon } from '@phosphor-icons/react'
+import {
+  AddressBookIcon,
+  CheckCircleIcon,
+  CloudArrowUpIcon,
+  PlusIcon,
+  WarningCircleIcon,
+} from '@phosphor-icons/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { profileApi, RequestError, tokenStorage, type ProfileTarget } from '../api/client'
@@ -7,6 +13,8 @@ import { AppHeader } from '../components/AppHeader'
 import { AttributeField } from '../components/AttributeField'
 import { AttributePicker } from '../components/AttributePicker'
 import { ProjectsSection } from '../components/ProjectsSection'
+import { SalesforceExportDialog } from '../components/SalesforceExportDialog'
+import { useCurrentUser } from '../lib/useCurrentUser'
 import { useAutosave, type SaveState } from '../lib/useAutosave'
 import { useTranslation } from '../i18n/context'
 import { useDateFormat } from '../i18n/useDateFormat'
@@ -31,9 +39,11 @@ function ProfileView() {
   const t = useTranslation()
   const errorText = useErrorText()
   const navigate = useNavigate()
+  const { user: currentUser, isAdmin } = useCurrentUser()
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [picking, setPicking] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const [draft, setDraft] = useState<Draft>({})
 
@@ -139,6 +149,19 @@ function ProfileView() {
   const valueOf = (attribute: ProfileAttribute): AttributeValue =>
     attribute.attributeId in draft ? draft[attribute.attributeId] : attribute.value
 
+  // Экспорт в CRM: владелец — со своей страницы, администратор — с любой.
+  const ownProfile = currentUser !== null && profile?.user.id === currentUser.id
+  const canExport = profile !== null && (ownProfile || isAdmin)
+
+  // Имя — из несъёмных полей, телефон — из добавляемых, если он заполнен.
+  const attributeString = (name: string): string | undefined => {
+    const attribute = [...(profile?.me ?? []), ...(profile?.info ?? [])].find(
+      (item) => item.name === name,
+    )
+
+    return typeof attribute?.value === 'string' && attribute.value !== '' ? attribute.value : undefined
+  }
+
   if (error && profile === null) {
     return (
       <>
@@ -187,9 +210,32 @@ function ProfileView() {
 
           </div>
 
-          <SaveBadge state={autosave.state} />
+          <div className="row g2">
+            <SaveBadge state={autosave.state} />
+
+            {canExport && (
+              <button type="button" className="btn btn--outline" onClick={() => setExporting(true)}>
+                <AddressBookIcon size={14} aria-hidden="true" />
+                {t('crm.export')}
+              </button>
+
+            )}
+          </div>
 
         </div>
+
+        {exporting && (
+          <SalesforceExportDialog
+            defaults={{
+              firstName: attributeString('First name'),
+              lastName: attributeString('Last name'),
+              phone: attributeString('Phone'),
+            }}
+            userId={ownProfile ? undefined : profile.user.id}
+            onClose={() => setExporting(false)}
+          />
+
+        )}
 
         {error && (
           <div className="notice notice--error" role="alert">

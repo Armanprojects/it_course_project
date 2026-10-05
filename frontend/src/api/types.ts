@@ -370,3 +370,43 @@ export interface ApiError {
 }
 
 export type OAuthProvider = 'google' | 'github'
+
+export interface SalesforceExportInput {
+  firstName: string
+  lastName: string
+  company?: string
+  phone?: string
+  jobTitle?: string
+  notes?: string
+  /** Админ может завести в CRM другого пользователя. */
+  userId?: number
+}
+
+export interface SalesforceExportResult {
+  accountId: string
+  contactId: string
+  accountUrl: string
+  contactUrl: string
+}
+
+export type TicketPriority = 'High' | 'Average' | 'Low'
+
+export interface SupportTicketInput {
+  summary: string
+  priority: TicketPriority
+  link?: string
+  position?: string
+}
+
+export interface SupportTicketResult {
+  path: string
+  ticket: {
+    summary: string
+    priority: TicketPriority
+    reportedBy: string
+    position: string | null
+    link: string | null
+    admins: string[]
+    createdAt: string
+  }
+}
